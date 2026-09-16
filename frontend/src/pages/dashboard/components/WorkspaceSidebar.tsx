@@ -1,0 +1,382 @@
+import {
+  Avatar,
+  Button,
+  Chip,
+  Drawer,
+  Popover,
+  ScrollShadow,
+  Tooltip,
+  useMediaQuery,
+} from "@heroui/react";
+import { useMemo, useState } from "react";
+
+import { Role, type UserDto } from "@/api/types/auth";
+import { BrandMark } from "@/components/BrandMark";
+
+import { LogoutConfirmationDialog } from "@/components/LogoutConfirmationDialog";
+import { cn } from "@/lib/utils";
+import { DashboardIcon, type DashboardIconName } from "./DashboardIcon";
+import { SystemStatusPopover } from "./SystemStatusPopover";
+import { ThemeSwitcher } from "./ThemeSwitcher";
+
+import AvatarBlue from "@/assets/images/avatar-fallback/blue.jpg";
+import AvatarGreen from "@/assets/images/avatar-fallback/green.jpg";
+import AvatarOrange from "@/assets/images/avatar-fallback/orange.jpg";
+import AvatarPurple from "@/assets/images/avatar-fallback/purple.jpg";
+import AvatarRed from "@/assets/images/avatar-fallback/red.jpg";
+
+const fallbackAvatars = [
+  AvatarBlue,
+  AvatarRed,
+  AvatarGreen,
+  AvatarOrange,
+  AvatarPurple,
+];
+
+type NavigationItemId =
+  | "create"
+  | "checks"
+  | "search"
+  | "documents"
+  | "more"
+  | "archive"
+  | "messages"
+  | "help";
+
+interface NavigationItem {
+  icon: DashboardIconName;
+  id: NavigationItemId;
+  label: string;
+  onClick?: () => void;
+}
+
+const primaryItems: readonly NavigationItem[] = [
+  { icon: "plus", id: "create", label: "Создать" },
+  { icon: "lightning", id: "checks", label: "Проверки" },
+  { icon: "search", id: "search", label: "Поиск" },
+  { icon: "calendar", id: "documents", label: "Документы" },
+  { icon: "more", id: "more", label: "Ещё" },
+];
+
+const secondaryItems: readonly NavigationItem[] = [
+  { icon: "folder", id: "archive", label: "Архив" },
+  { icon: "chat", id: "messages", label: "Сообщения" },
+];
+
+const roleLabels: Record<Role, string> = {
+  [Role.ADMINISTRATOR]: "Администратор",
+  [Role.INSPECTOR]: "Инспектор",
+  [Role.ML_ENGINEER]: "ML-инженер",
+};
+
+interface SidebarSharedProps {
+  isLoggingOut: boolean;
+  logoutError?: string;
+  onLogout: () => void;
+  user: UserDto | null;
+}
+
+interface NavigationListProps {
+  activeItem: NavigationItemId;
+  collapsed: boolean;
+  items: readonly NavigationItem[];
+  className?: string;
+  onActiveItemChange: (item: NavigationItemId) => void;
+}
+
+function NavigationList({
+  activeItem,
+  collapsed,
+  items,
+  className,
+  onActiveItemChange,
+}: NavigationListProps) {
+  return (
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      {items.map((item) => {
+        const isActive = item.id === activeItem;
+
+        return (
+          <Tooltip key={item.id} isDisabled={!collapsed}>
+            <Button
+              aria-label={collapsed ? item.label : undefined}
+              aria-pressed={isActive}
+              className={cn(
+                "h-11 w-full justify-start gap-3 overflow-hidden rounded-[14px] px-3.75 shadow-none",
+                "before:bg-primary before:absolute before:left-0 before:h-[18px] before:w-0.5 before:scale-y-[0.3] before:rounded-full before:opacity-0 before:transition-all before:duration-[160ms] before:ease-[ease] before:content-['']",
+                isActive &&
+                  "bg-accent/10 text-accent-hover data-[hovered=true]:bg-accent/15 dark:bg-accent/15 dark:data-[hovered=true]:bg-accent/20 before:scale-y-100 before:opacity-100",
+              )}
+              isIconOnly={collapsed}
+              onPress={() => {
+                onActiveItemChange(item.id);
+              }}
+              variant="ghost"
+            >
+              <DashboardIcon className="size-5 shrink-0" name={item.icon} />
+              <span className={cn("transition-all", collapsed && "opacity-0")}>
+                {item.label}
+              </span>
+            </Button>
+            <Tooltip.Content offset={5} placement="right">
+              {item.label}
+            </Tooltip.Content>
+          </Tooltip>
+        );
+      })}
+    </div>
+  );
+}
+
+function AccountPopover({
+  compact,
+  isLoggingOut,
+  logoutError,
+  onLogout,
+  user,
+}: SidebarSharedProps & { compact: boolean }) {
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+
+  const isMobile = useMediaQuery("(max-width: 761px)");
+  const login = user?.login ?? "Пользователь";
+  const role = user?.role ? roleLabels[user.role] : "Роль не назначена";
+
+  const randomNumberFromId = useMemo(
+    () =>
+      Array.from(user?.id ?? "").reduce((acc, curr) => {
+        return acc + (!isNaN(+curr) ? +curr : 0);
+      }, 0),
+    [user],
+  );
+
+  return (
+    <>
+      <Popover>
+        <Button
+          aria-label={`Профиль: ${login}`}
+          className="h-12 w-full justify-start gap-3 rounded-[14px] px-1.5"
+          isIconOnly={compact}
+          variant="ghost"
+        >
+          <Avatar>
+            <Avatar.Image
+              src={fallbackAvatars[randomNumberFromId % fallbackAvatars.length]}
+            />
+          </Avatar>
+          <span
+            className={cn(
+              "min-w-0 text-left transition-all",
+              compact && "opacity-0",
+            )}
+          >
+            <span className="block truncate text-sm font-semibold">
+              {login}
+            </span>
+            <span className="text-copy-muted block truncate text-xs">
+              {role}
+            </span>
+          </span>
+        </Button>
+
+        <Popover.Content
+          className="border-line bg-surface w-[min(280px,calc(100vw-24px))] rounded-[18px] border p-0 shadow-xl"
+          offset={12}
+          placement={!isMobile ? "right" : undefined}
+        >
+          <Popover.Dialog className="p-4 outline-none">
+            <div className="flex flex-wrap items-center gap-2">
+              <Popover.Heading className="truncate text-sm font-semibold">
+                {login}
+              </Popover.Heading>
+              <Chip className="bg-accent/15 text-accent text-xs">{role}</Chip>
+              {logoutError ? (
+                <p className="text-destructive mt-3 text-xs" role="alert">
+                  {logoutError}
+                </p>
+              ) : null}
+            </div>
+            <div className="border-line mt-4 border-t pt-4">
+              <p className="text-copy-muted text-xs font-medium">
+                Тема оформления
+              </p>
+              <ThemeSwitcher />
+            </div>
+            <Button
+              className="mt-3 w-full"
+              onPress={() => setIsLogoutDialogOpen(true)}
+              size="sm"
+              variant="danger-soft"
+            >
+              Выйти
+            </Button>
+          </Popover.Dialog>
+        </Popover.Content>
+      </Popover>
+
+      <LogoutConfirmationDialog
+        isOpen={isLogoutDialogOpen}
+        isPending={isLoggingOut}
+        onConfirm={onLogout}
+        onOpenChange={setIsLogoutDialogOpen}
+      />
+    </>
+  );
+}
+
+interface SidebarContentProps extends SidebarSharedProps {
+  collapsed: boolean;
+}
+
+function SidebarContent({
+  collapsed,
+  isLoggingOut,
+  logoutError,
+  onLogout,
+  user,
+}: SidebarContentProps) {
+  const isMobile = useMediaQuery("(max-width: 761px)");
+  const [activeItem, setActiveItem] = useState<NavigationItemId>("create");
+
+  return (
+    <>
+      <ScrollShadow
+        hideScrollBar={isMobile || collapsed}
+        className="flex min-h-0 flex-1 flex-col overflow-x-hidden py-1"
+      >
+        <nav
+          aria-label="Основная навигация"
+          className="flex min-h-0 flex-1 flex-col"
+        >
+          <NavigationList
+            activeItem={activeItem}
+            collapsed={collapsed}
+            items={primaryItems}
+            onActiveItemChange={setActiveItem}
+          />
+          <div className="bg-line/50 mx-auto my-4 h-px w-[95%] flex-none" />
+          <NavigationList
+            activeItem={activeItem}
+            collapsed={collapsed}
+            items={secondaryItems}
+            onActiveItemChange={setActiveItem}
+          />
+          <NavigationList
+            activeItem={activeItem}
+            collapsed={collapsed}
+            items={[{ icon: "help", id: "help", label: "Помощь" }]}
+            className="mt-auto"
+            onActiveItemChange={setActiveItem}
+          />
+          <SystemStatusPopover compact={collapsed} />
+        </nav>
+      </ScrollShadow>
+      <div className="bg-line my-3 h-px w-full" />
+      <div>
+        <AccountPopover
+          compact={collapsed}
+          isLoggingOut={isLoggingOut}
+          logoutError={logoutError}
+          onLogout={onLogout}
+          user={user}
+        />
+      </div>
+    </>
+  );
+}
+
+export function WorkspaceSidebar(props: SidebarSharedProps) {
+  const isNarrow = useMediaQuery("(max-width: 1280px)");
+  const [isManuallyCollapsed, setIsManuallyCollapsed] = useState(false);
+  const isCollapsed = isNarrow || isManuallyCollapsed;
+
+  return (
+    <aside
+      aria-label="Боковая панель"
+      className={cn(
+        "border-line bg-surface hidden h-svh shrink-0 flex-col border-r py-4 transition-[width] duration-200 *:px-3 min-[761px]:flex",
+        isCollapsed ? "w-[72px]" : "w-[var(--sidebar-width)]",
+      )}
+      data-collapsed={isCollapsed}
+    >
+      <div className="mb-6 flex h-10 items-center">
+        {isCollapsed ? (
+          <Button
+            aria-expanded="false"
+            aria-label="Развернуть боковую панель"
+            className="size-10 min-w-12 justify-start rounded-xl p-0 px-2.5 disabled:opacity-100"
+            isIconOnly
+            isDisabled={isNarrow}
+            onPress={() => {
+              setIsManuallyCollapsed(false);
+            }}
+            variant="ghost"
+          >
+            <BrandMark className="text-accent size-8" />
+          </Button>
+        ) : (
+          <>
+            <div className="flex min-w-0 flex-1 items-center gap-2 pl-2">
+              <BrandMark className="text-accent size-8 shrink-0" />
+              <p className="truncate text-sm font-medium">
+                Инспектор <span className="text-accent font-semibold">ИИ</span>
+              </p>
+            </div>
+            <Button
+              aria-expanded="true"
+              aria-label="Свернуть боковую панель"
+              className="justify-left text-muted-foreground size-9 min-w-9 rounded-xl"
+              isIconOnly
+              onPress={() => {
+                setIsManuallyCollapsed(true);
+              }}
+              variant="ghost"
+            >
+              <DashboardIcon className="size-[18px]" name="chevron-left" />
+            </Button>
+          </>
+        )}
+      </div>
+
+      <SidebarContent collapsed={isCollapsed} {...props} />
+    </aside>
+  );
+}
+
+export function MobileNavigation(props: SidebarSharedProps) {
+  return (
+    <Drawer>
+      <Button
+        aria-label="Открыть меню"
+        className="size-11 min-w-11 rounded-[14px]"
+        isIconOnly
+        variant="ghost"
+      >
+        <DashboardIcon className="size-5" name="menu" />
+      </Button>
+      <Drawer.Backdrop>
+        <Drawer.Content
+          className="w-[min(330px,calc(100vw-24px))]"
+          placement="left"
+        >
+          <Drawer.Dialog
+            aria-label="Навигация"
+            className="border-line bg-surface flex h-full flex-col border-r p-0"
+          >
+            <Drawer.Header className="border-line min-h-[72px] flex-row items-center gap-3 border-b px-4">
+              <BrandMark className="text-accent size-9" />
+              <Drawer.Heading className="text-base font-semibold">
+                <p className="truncate font-medium">
+                  Инспектор{" "}
+                  <span className="text-accent font-semibold">ИИ</span>
+                </p>
+              </Drawer.Heading>
+            </Drawer.Header>
+            <Drawer.Body className="flex min-h-0 flex-1 flex-col py-2 *:px-3">
+              <SidebarContent collapsed={false} {...props} />
+            </Drawer.Body>
+          </Drawer.Dialog>
+        </Drawer.Content>
+      </Drawer.Backdrop>
+    </Drawer>
+  );
+}

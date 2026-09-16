@@ -44,25 +44,25 @@
 .light,
 [data-theme="light"] {
   color-scheme: light;
-  --background: hsl(228 33% 98%);
-  --foreground: hsl(228 22% 13%);
+  --background: hsl(246 33% 98%);
+  --foreground: hsl(246 22% 13%);
   --card: hsl(0 0% 100%);
-  --card-foreground: hsl(228 22% 13%);
+  --card-foreground: hsl(246 22% 13%);
   --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(228 22% 13%);
-  --primary: 247 78% 58%;
+  --popover-foreground: hsl(246 22% 13%);
+  --primary: 246 99% 60%;
   --primary-foreground: 0 0% 100%;
   --accent: hsl(var(--primary));
   --accent-foreground: hsl(var(--primary-foreground));
-  --secondary: hsl(228 24% 94%);
-  --secondary-foreground: hsl(228 20% 18%);
-  --muted: hsl(228 9% 43%);
-  --muted-foreground: hsl(228 9% 43%);
+  --secondary: hsl(246 24% 94%);
+  --secondary-foreground: hsl(246 20% 18%);
+  --muted: hsl(246 9% 43%);
+  --muted-foreground: hsl(246 9% 43%);
   --destructive: hsl(341 72% 49%);
   --destructive-foreground: hsl(0 0% 100%);
-  --border: hsl(228 18% 88%);
-  --input: hsl(228 18% 88%);
-  --ring: hsl(247 78% 58%);
+  --border: hsl(246 18% 88%);
+  --input: hsl(246 18% 88%);
+  --ring: hsl(246 99% 60%);
   --field-background: #ffffff;
   --field-foreground: var(--foreground);
   --field-placeholder: var(--muted);
@@ -99,25 +99,25 @@
 .dark,
 [data-theme="dark"] {
   color-scheme: dark;
-  --background: hsl(228 24% 4%);
+  --background: hsl(246 24% 4%);
   --foreground: hsl(225 18% 95%);
-  --card: hsl(228 15% 8%);
+  --card: hsl(246 15% 8%);
   --card-foreground: hsl(225 18% 95%);
-  --popover: hsl(228 14% 10%);
+  --popover: hsl(246 14% 10%);
   --popover-foreground: hsl(225 18% 95%);
-  --primary: 247 100% 70%;
+  --primary: 246 99% 65%;
   --primary-foreground: 0 0% 100%;
   --accent: hsl(var(--primary));
   --accent-foreground: hsl(var(--primary-foreground));
-  --secondary: hsl(228 12% 12%);
+  --secondary: hsl(246 12% 12%);
   --secondary-foreground: hsl(225 15% 91%);
-  --muted: hsl(228 9% 59%);
-  --muted-foreground: hsl(228 9% 59%);
+  --muted: hsl(246 9% 59%);
+  --muted-foreground: hsl(246 9% 59%);
   --destructive: hsl(341 84% 61%);
   --destructive-foreground: hsl(0 0% 100%);
-  --border: hsl(228 10% 16%);
-  --input: hsl(228 10% 16%);
-  --ring: hsl(247 100% 70%);
+  --border: hsl(246 10% 16%);
+  --input: hsl(246 10% 16%);
+  --ring: hsl(246 99% 65%);
   --field-background: #15161b;
   --field-foreground: var(--foreground);
   --field-placeholder: var(--muted);
@@ -152,13 +152,13 @@
 }
 
 :root {
-  min-width: 320px;
-  color: var(--foreground);
-  background: var(--background);
-  font-family:
-    Inter, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+
+  --sidebar-width: 260px;
+  --topbar-height: 64px;
+  --tooltip-delay: 250ms;
+  --tooltip-close-delay: 0ms;
 }
 
 @layer base {
@@ -183,7 +183,6 @@
 
   body {
     min-height: 100vh;
-    overflow: hidden;
     color: var(--foreground);
     font-family: var(--font-sans);
     font-size: 16px;

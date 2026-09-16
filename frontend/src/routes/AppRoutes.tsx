@@ -37,7 +37,11 @@ export function AppRoutes() {
   if (currentUserQuery.isError) {
     return (
       <div className="text-muted-foreground mx-auto flex min-h-svh w-[calc(100%-2rem)] max-w-[560px] flex-col items-center justify-center gap-[18px]">
-        <Alert role="alert" status="danger">
+        <Alert
+          role="alert"
+          status="danger"
+          className="bg-danger/10 shadow-none"
+        >
           <Alert.Indicator />
           <Alert.Content>
             <Alert.Title>Не удалось проверить сессию</Alert.Title>

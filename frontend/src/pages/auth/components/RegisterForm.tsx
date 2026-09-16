@@ -50,7 +50,11 @@ export function RegisterForm() {
       }}
     >
       {registerMutation.error ? (
-        <Alert role="alert" status="danger">
+        <Alert
+          role="alert"
+          status="danger"
+          className="bg-danger/10 shadow-none"
+        >
           <Alert.Indicator />
           <Alert.Content>
             <Alert.Title>Не удалось создать аккаунт</Alert.Title>

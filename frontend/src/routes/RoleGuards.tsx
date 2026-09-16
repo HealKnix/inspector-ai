@@ -34,7 +34,11 @@ export function RoleGuard({ roles }: RoleGuardProps) {
   if (!user.role || !allowedRoles.includes(user.role)) {
     return (
       <div className="mx-auto flex min-h-svh w-[calc(100%-2rem)] max-w-[560px] items-center justify-center">
-        <Alert role="alert" status="danger">
+        <Alert
+          role="alert"
+          status="danger"
+          className="bg-danger/10 shadow-none"
+        >
           <Alert.Indicator />
           <Alert.Content>
             <Alert.Title>Недостаточно прав</Alert.Title>

@@ -1,5 +1,5 @@
 import authVisual from "@/assets/images/auth-visual.png";
-import { BrandMark } from "@/components/brand/BrandMark";
+import { BrandMark } from "@/components/BrandMark";
 
 export function AuthVisual() {
   return (

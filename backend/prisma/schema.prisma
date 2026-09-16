@@ -18,7 +18,7 @@ model User {
   id           String        @id @default(uuid())
   login        String        @unique @db.VarChar(64)
   passwordHash String        @map("password_hash")
-  role         Role?
+  role         Role?         @default(INSPECTOR)
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
   authSessions AuthSession[]
