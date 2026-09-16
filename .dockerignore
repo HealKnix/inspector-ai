@@ -1,0 +1,12 @@
+.git
+.agents
+.heroui-docs
+node_modules
+**/node_modules
+**/dist
+**/coverage
+*.tsbuildinfo
+**/*.tsbuildinfo
+.env*
+**/.env*
+*.log

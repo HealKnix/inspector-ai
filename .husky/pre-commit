@@ -1,0 +1,11 @@
+bun run lint
+if [ $? -ne 0 ]; then
+  echo "❌ Type check failed. Fix the errors above before commit."
+  exit 1
+fi
+
+bun run test
+if [ $? -ne 0 ]; then
+  echo "❌ Tests failed. Fix the errors above before commit."
+  exit 1
+fi

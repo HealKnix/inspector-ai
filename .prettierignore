@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+.agents
+.heroui-docs
+AGENTS.md
+backend/src/generated
+frontend/src/assets/images
+bun.lock

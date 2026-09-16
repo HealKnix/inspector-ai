@@ -1,0 +1,42 @@
+{
+  "name": "inspector-ai",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "packageManager": "bun@1.4.2",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "dev": "concurrently -n frontend,backend -c cyan,magenta \"bun run --cwd frontend dev\" \"bun run --cwd backend dev\"",
+    "build": "bun run --cwd backend build && bun run --cwd frontend build",
+    "eslint": "eslint --fix .",
+    "prettier": "prettier --ignore-unknown --write .",
+    "typecheck": "bun run --cwd backend typecheck && bun run --cwd frontend typecheck",
+    "lint": "bun run prettier && bun run eslint && bun run typecheck",
+    "test": "bun run --cwd backend test && bun run --cwd frontend test",
+    "test:watch": "concurrently -n frontend-tests,backend-tests -c cyan,magenta \"bun run --cwd frontend test:watch\" \"bun run --cwd backend test:watch\"",
+    "test:coverage": "bun run --cwd backend test:coverage && bun run --cwd frontend test:coverage",
+    "prisma:generate": "bun run --cwd backend prisma:generate",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^9.2.4",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "globals": "^16.5.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.9.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.0",
+    "prettier-plugin-organize-imports": "^4.3.0",
+    "prettier-plugin-tailwindcss": "^0.8.1"
+  }
+}
