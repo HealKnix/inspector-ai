@@ -11,7 +11,7 @@ export function ProtectedRoute() {
   if (!initialized) {
     return (
       <div
-        className="text-muted-foreground mx-auto flex min-h-svh w-[calc(100%-2rem)] max-w-[560px] flex-col items-center justify-center gap-[18px]"
+        className="text-muted-foreground mx-auto flex min-h-svh w-[calc(100%-2rem)] max-w-[560px] flex-col items-center justify-center gap-4.5"
         role="status"
       >
         <Spinner size="lg" />

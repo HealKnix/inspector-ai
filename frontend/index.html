@@ -9,6 +9,56 @@
       content="Инспектор ИИ — интеллектуальный сервис проверки строительной документации"
     />
     <title>Инспектор ИИ</title>
+    <script>
+      (() => {
+        let selectedTheme = null;
+
+        try {
+          const themeKey = "inspector-ai:theme:v1";
+          const parseTheme = (value) => {
+            if (value === null) return null;
+            try {
+              return JSON.parse(value);
+            } catch {
+              return value;
+            }
+          };
+          const storedTheme = parseTheme(localStorage.getItem(themeKey));
+
+          if (storedTheme === "light" || storedTheme === "dark") {
+            selectedTheme = storedTheme;
+          }
+        } catch {
+          // The dark default remains available when storage is blocked.
+        }
+
+        if (!selectedTheme) return;
+
+        const root = document.documentElement;
+        root.classList.remove("light", "dark");
+        root.classList.add(selectedTheme);
+        root.dataset.theme = selectedTheme;
+      })();
+    </script>
+    <style>
+      @media (prefers-color-scheme: dark) {
+        html {
+          background-color: #08090d;
+        }
+      }
+      @media (prefers-color-scheme: light) {
+        html {
+          background-color: #f8f9fc;
+        }
+      }
+
+      html[data-theme="dark"] {
+        background-color: #08090d;
+      }
+      html[data-theme="light"] {
+        background-color: #f8f9fc;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

@@ -1,7 +1,6 @@
 import { Button } from "@heroui/react";
 
-import { BrandMark } from "@/components/BrandMark";
-
+import { cn } from "@/lib/utils";
 import { DashboardIcon } from "./DashboardIcon";
 
 export interface ChatPanelProps {
@@ -12,13 +11,13 @@ function ArtifactPreview() {
   return (
     <div
       aria-hidden="true"
-      className="border-line bg-surface relative h-[68px] w-[112px] shrink-0 overflow-hidden rounded-[8px] border p-2 shadow-sm"
+      className="border-border bg-surface relative h-[68px] w-[112px] shrink-0 overflow-hidden rounded-[8px] border p-2 shadow-sm"
     >
       <div className="bg-surface-raised mb-2 h-1 w-8 rounded-full" />
       <div className="grid h-[43px] grid-cols-[1.1fr_0.9fr] gap-1.5">
         <div className="flex min-w-0 flex-col gap-1.5">
           <div className="bg-accent h-[14px] rounded-[3px]" />
-          <div className="border-line flex flex-1 items-end gap-px rounded-[3px] border px-1 pt-1">
+          <div className="border-border flex flex-1 items-end gap-px rounded-[3px] border px-1 pt-1">
             <span className="bg-accent/15 h-full flex-1" />
             <span className="bg-accent/30 h-3/4 flex-1" />
             <span className="bg-accent/50 h-1/2 flex-1" />
@@ -26,7 +25,7 @@ function ArtifactPreview() {
           </div>
         </div>
         <div className="flex flex-col gap-1.5">
-          <div className="border-line flex flex-1 items-end gap-px rounded-[3px] border px-1 pt-1">
+          <div className="border-border flex flex-1 items-end gap-px rounded-[3px] border px-1 pt-1">
             <span className="bg-accent h-1/2 flex-1 rounded-t-[1px]" />
             <span className="bg-accent h-3/4 flex-1 rounded-t-[1px]" />
             <span className="bg-accent h-1/3 flex-1 rounded-t-[1px]" />
@@ -40,15 +39,14 @@ function ArtifactPreview() {
 
 function ChatHeader() {
   return (
-    <header className="border-line flex h-[72px] shrink-0 items-center justify-between gap-3 border-b px-5 max-[420px]:px-4">
+    <header className="border-border flex h-[72px] shrink-0 items-center justify-between gap-3 border-b px-5 max-[420px]:px-4">
       <Button
         aria-label="Открыть меню агента"
-        className="min-w-0 gap-2 px-1 text-[14px] font-semibold"
+        className="ext-[14px] min-w-0 gap-2 font-semibold"
         size="sm"
         variant="ghost"
       >
-        <BrandMark className="text-accent size-7 shrink-0" />
-        <span className="truncate">Инспектор ИИ</span>
+        <span className="truncate">Ассистент</span>
         <DashboardIcon
           className="text-copy-muted size-4 shrink-0"
           name="chevron-down"
@@ -164,7 +162,7 @@ function Conversation() {
 function ChatComposer() {
   return (
     <div className="shrink-0 px-5 pt-2 pb-3 max-[420px]:px-3">
-      <div className="border-line bg-surface-high flex h-[54px] items-center gap-2 rounded-full border pr-2 pl-4">
+      <div className="border-border bg-surface-high flex h-[54px] items-center gap-2 rounded-full border pr-2 pl-4">
         <DashboardIcon
           className="text-foreground size-[18px] shrink-0"
           name="lightning"
@@ -222,7 +220,10 @@ export function ChatPanel({ className }: ChatPanelProps) {
   return (
     <section
       aria-label="Чат с агентом"
-      className={`border-line bg-surface flex h-full min-h-0 min-w-0 flex-col border-r ${className ?? ""}`}
+      className={cn(
+        "border-border bg-surface flex h-full min-h-0 min-w-0 flex-col border-r",
+        className,
+      )}
     >
       <ChatHeader />
       <Conversation />

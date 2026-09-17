@@ -179,7 +179,7 @@ function AccountPopover({
         </Button>
 
         <Popover.Content
-          className="border-line bg-surface w-[min(280px,calc(100vw-24px))] rounded-[18px] border p-0 shadow-xl"
+          className="border-border bg-surface w-[min(280px,calc(100vw-24px))] rounded-[18px] border p-0 shadow-xl"
           offset={12}
           placement={!isMobile ? "right" : undefined}
         >
@@ -195,7 +195,7 @@ function AccountPopover({
                 </p>
               ) : null}
             </div>
-            <div className="border-line mt-4 border-t pt-4">
+            <div className="border-border mt-4 border-t pt-4">
               <p className="text-copy-muted text-xs font-medium">
                 Тема оформления
               </p>
@@ -234,7 +234,7 @@ function SidebarContent({
   onLogout,
   user,
 }: SidebarContentProps) {
-  const isMobile = useMediaQuery("(max-width: 761px)");
+  const isMobile = useMediaQuery("(max-width: 760px)");
   const [activeItem, setActiveItem] = useState<NavigationItemId>("create");
 
   return (
@@ -245,7 +245,7 @@ function SidebarContent({
       >
         <nav
           aria-label="Основная навигация"
-          className="flex min-h-0 flex-1 flex-col"
+          className="flex min-h-0 flex-1 flex-col gap-1.5"
         >
           <NavigationList
             activeItem={activeItem}
@@ -253,7 +253,7 @@ function SidebarContent({
             items={primaryItems}
             onActiveItemChange={setActiveItem}
           />
-          <div className="bg-line/50 mx-auto my-4 h-px w-[95%] flex-none" />
+          <div className="bg-border/50 mx-auto h-px w-[95%] flex-none" />
           <NavigationList
             activeItem={activeItem}
             collapsed={collapsed}
@@ -270,8 +270,7 @@ function SidebarContent({
           <SystemStatusPopover compact={collapsed} />
         </nav>
       </ScrollShadow>
-      <div className="bg-line my-3 h-px w-full" />
-      <div>
+      <div className="mt-4">
         <AccountPopover
           compact={collapsed}
           isLoggingOut={isLoggingOut}
@@ -293,7 +292,7 @@ export function WorkspaceSidebar(props: SidebarSharedProps) {
     <aside
       aria-label="Боковая панель"
       className={cn(
-        "border-line bg-surface hidden h-svh shrink-0 flex-col border-r py-4 transition-[width] duration-200 *:px-3 min-[761px]:flex",
+        "border-border bg-surface hidden h-svh shrink-0 flex-col border-r py-3 transition-[width] duration-200 *:px-3 min-[761px]:flex",
         isCollapsed ? "w-[72px]" : "w-[var(--sidebar-width)]",
       )}
       data-collapsed={isCollapsed}
@@ -360,9 +359,12 @@ export function MobileNavigation(props: SidebarSharedProps) {
         >
           <Drawer.Dialog
             aria-label="Навигация"
-            className="border-line bg-surface flex h-full flex-col border-r p-0"
+            className={cn(
+              "bg-surface flex h-full flex-col p-0 pr-10",
+              "after:bg-border after:pointer-events-none after:absolute after:top-1/2 after:right-2 after:h-12 after:w-1 after:-translate-y-1/2 after:rounded-full",
+            )}
           >
-            <Drawer.Header className="border-line min-h-[72px] flex-row items-center gap-3 border-b px-4">
+            <Drawer.Header className="flex-row items-center gap-3 px-4 py-4">
               <BrandMark className="text-accent size-9" />
               <Drawer.Heading className="text-base font-semibold">
                 <p className="truncate font-medium">
@@ -371,7 +373,7 @@ export function MobileNavigation(props: SidebarSharedProps) {
                 </p>
               </Drawer.Heading>
             </Drawer.Header>
-            <Drawer.Body className="flex min-h-0 flex-1 flex-col py-2 *:px-3">
+            <Drawer.Body className="mt-0 flex min-h-0 flex-1 flex-col py-2 pt-0 *:px-3 *:pr-0">
               <SidebarContent collapsed={false} {...props} />
             </Drawer.Body>
           </Drawer.Dialog>

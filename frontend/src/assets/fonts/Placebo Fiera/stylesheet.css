@@ -1,0 +1,179 @@
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-Light.woff2") format("woff2"),
+    url("Font-Light.woff") format("woff"),
+    url("Font-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-Regular.woff2") format("woff2"),
+    url("Font-Regular.woff") format("woff"),
+    url("Font-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-BoldItalic.woff2") format("woff2"),
+    url("Font-BoldItalic.woff") format("woff"),
+    url("Font-BoldItalic.ttf") format("truetype");
+  font-weight: bold;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-DemiBoldItalic.woff2") format("woff2"),
+    url("Font-DemiBoldItalic.woff") format("woff"),
+    url("Font-DemiBoldItalic.ttf") format("truetype");
+  font-weight: 600;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-ExtraLight.woff2") format("woff2"),
+    url("Font-ExtraLight.woff") format("woff"),
+    url("Font-ExtraLight.ttf") format("truetype");
+  font-weight: 200;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-ThinItalic.woff2") format("woff2"),
+    url("Font-ThinItalic.woff") format("woff"),
+    url("Font-ThinItalic.ttf") format("truetype");
+  font-weight: 100;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-MediumItalic.woff2") format("woff2"),
+    url("Font-MediumItalic.woff") format("woff"),
+    url("Font-MediumItalic.ttf") format("truetype");
+  font-weight: 500;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-DemiBold.woff2") format("woff2"),
+    url("Font-DemiBold.woff") format("woff"),
+    url("Font-DemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-BlackItalic.woff2") format("woff2"),
+    url("Font-BlackItalic.woff") format("woff"),
+    url("Font-BlackItalic.ttf") format("truetype");
+  font-weight: 900;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-LightItalic.woff2") format("woff2"),
+    url("Font-LightItalic.woff") format("woff"),
+    url("Font-LightItalic.ttf") format("truetype");
+  font-weight: 300;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-ExtraLightItalic.woff2") format("woff2"),
+    url("Font-ExtraLightItalic.woff") format("woff"),
+    url("Font-ExtraLightItalic.ttf") format("truetype");
+  font-weight: 200;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-Bold.woff2") format("woff2"),
+    url("Font-Bold.woff") format("woff"),
+    url("Font-Bold.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-ExtraBold.woff2") format("woff2"),
+    url("Font-ExtraBold.woff") format("woff"),
+    url("Font-ExtraBold.ttf") format("truetype");
+  font-weight: 800;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-Medium.woff2") format("woff2"),
+    url("Font-Medium.woff") format("woff"),
+    url("Font-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-Thin.woff2") format("woff2"),
+    url("Font-Thin.woff") format("woff"),
+    url("Font-Thin.ttf") format("truetype");
+  font-weight: 100;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-ExtraBoldItalic.woff2") format("woff2"),
+    url("Font-ExtraBoldItalic.woff") format("woff"),
+    url("Font-ExtraBoldItalic.ttf") format("truetype");
+  font-weight: 800;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-Black.woff2") format("woff2"),
+    url("Font-Black.woff") format("woff"),
+    url("Font-Black.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Placebo Fiera";
+  src:
+    url("Font-Italic.woff2") format("woff2"),
+    url("Font-Italic.woff") format("woff"),
+    url("Font-Italic.ttf") format("truetype");
+  font-weight: normal;
+  font-style: italic;
+}

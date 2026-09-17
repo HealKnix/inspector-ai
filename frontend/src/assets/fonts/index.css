@@ -1,0 +1,10 @@
+@import "./Placebo Fiera/stylesheet.css";
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-display: swap;
+  src:
+    local("JetBrains Mono"),
+    url("JetBrainsMono-VariableFont_wght.ttf") format("truetype");
+}

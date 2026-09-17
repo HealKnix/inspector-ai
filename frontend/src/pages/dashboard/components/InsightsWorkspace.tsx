@@ -114,7 +114,7 @@ function FilterButton({ label, value }: { label: string; value: string }) {
         {label}
       </span>
       <Button
-        className="border-line bg-surface text-foreground h-11 w-full min-w-0 justify-between gap-3 rounded-[12px] border px-3.5 text-[13px] font-semibold shadow-none"
+        className="border-border bg-surface text-foreground h-11 w-full min-w-0 justify-between gap-3 rounded-[12px] border px-3.5 text-[13px] font-semibold shadow-none"
         variant="ghost"
       >
         <span className="truncate">{value}</span>
@@ -148,7 +148,7 @@ function CardHeading({
 
 function SurveyCountCard() {
   return (
-    <article className="bg-accent text-accent-foreground selection:bg-background selection:text-foreground flex min-h-[202px] flex-col overflow-hidden rounded-[25px] px-[clamp(22px,2.3vw,34px)] py-7">
+    <article className="bg-accent text-accent-foreground flex min-h-[202px] flex-col overflow-hidden rounded-[25px] px-[clamp(22px,2.3vw,34px)] py-7">
       <div>
         <h2 className="text-[15px] font-semibold">Survey Count</h2>
         <p className="text-accent-foreground/65 mt-1 max-w-60 text-[13px] leading-[1.45]">
@@ -174,7 +174,7 @@ function SurveyCountCard() {
 
 function GenderBalanceCard() {
   return (
-    <article className="border-line bg-card min-h-[268px] overflow-hidden rounded-[25px] border p-[clamp(22px,2.2vw,32px)]">
+    <article className="border-border bg-card min-h-[268px] overflow-hidden rounded-[25px] border p-[clamp(22px,2.2vw,32px)]">
       <CardHeading description="Pipeline composition" title="Gender Balance" />
 
       <div className="relative mt-8 h-[151px]">
@@ -184,7 +184,7 @@ function GenderBalanceCard() {
         >
           {["100%", "75%", "50%", "25%"].map((label) => (
             <div
-              className="border-line/70 relative border-t border-dashed"
+              className="border-border/70 relative border-t border-dashed"
               key={label}
             >
               <span className="text-copy-muted bg-card absolute -top-2.5 right-0 pl-2 text-[9px]">
@@ -199,7 +199,7 @@ function GenderBalanceCard() {
             <strong className="mb-2 text-[clamp(23px,2.2vw,35px)] leading-none font-normal tracking-[-0.04em]">
               46%
             </strong>
-            <div className="bg-accent selection:bg-background selection:text-foreground text-accent-foreground h-[46%] min-h-[58px] rounded-t-md px-3 pt-4">
+            <div className="bg-accent text-accent-foreground h-[46%] min-h-[58px] rounded-t-md px-3 pt-4">
               <span className="block truncate text-[12px] opacity-65">
                 Female
               </span>
@@ -210,7 +210,7 @@ function GenderBalanceCard() {
             <strong className="mb-2 text-[clamp(23px,2.2vw,35px)] leading-none font-normal tracking-[-0.04em]">
               48%
             </strong>
-            <div className="bg-accent selection:bg-background selection:text-foreground text-accent-foreground h-[48%] min-h-[60px] rounded-t-md px-3 pt-4">
+            <div className="bg-accent text-accent-foreground h-[48%] min-h-[60px] rounded-t-md px-3 pt-4">
               <span className="block truncate text-[12px] opacity-65">
                 Male
               </span>
@@ -221,7 +221,7 @@ function GenderBalanceCard() {
             <strong className="mb-2 text-[clamp(23px,2.2vw,35px)] leading-none font-normal tracking-[-0.04em]">
               6%
             </strong>
-            <div className="bg-accent selection:bg-background selection:text-foreground text-accent-foreground h-[15%] min-h-[28px] rounded-t-md px-2 pt-1.5">
+            <div className="bg-accent text-accent-foreground h-[15%] min-h-[28px] rounded-t-md px-2 pt-1.5">
               <span className="block truncate text-[10px] opacity-65">
                 Non-binary
               </span>
@@ -235,7 +235,7 @@ function GenderBalanceCard() {
 
 function PipelineStagesCard() {
   return (
-    <article className="border-line bg-card min-h-[392px] overflow-hidden rounded-[25px] border p-[clamp(22px,2.2vw,32px)]">
+    <article className="border-border bg-card min-h-[392px] overflow-hidden rounded-[25px] border p-[clamp(22px,2.2vw,32px)]">
       <CardHeading
         description="Applied/Sourced through hire"
         title="Pipeline Stages"
@@ -246,7 +246,7 @@ function PipelineStagesCard() {
           <div className="relative grid h-[222px] grid-cols-6 items-center overflow-hidden">
             {pipelineStages.map((stage) => (
               <div
-                className="border-line/80 relative flex h-full items-center border-r border-dashed last:border-r-0"
+                className="border-border/80 relative flex h-full items-center border-r border-dashed last:border-r-0"
                 key={stage.label}
               >
                 <div className={cn("relative w-[calc(100%+1px)]", stage.shape)}>
@@ -280,7 +280,7 @@ function PipelineStagesCard() {
 
 function OfferAcceptanceCard() {
   return (
-    <article className="border-line bg-card flex min-h-[202px] flex-col rounded-[25px] border p-[clamp(22px,2.2vw,32px)]">
+    <article className="border-border bg-card flex min-h-[202px] flex-col rounded-[25px] border p-[clamp(22px,2.2vw,32px)]">
       <CardHeading
         description="% of offers accepted"
         title="Offer Acceptance Rate"
@@ -303,8 +303,8 @@ function OfferAcceptanceCard() {
 
 function SelectedFeedbackCard() {
   return (
-    <article className="border-line bg-card flex min-h-[594px] flex-1 flex-col overflow-hidden rounded-[25px] border p-[clamp(22px,2.2vw,32px)] max-[1120px]:min-h-0">
-      <div className="border-line flex items-start justify-between gap-5 border-b pb-5 max-[520px]:block">
+    <article className="border-border bg-card flex min-h-[594px] flex-1 flex-col overflow-hidden rounded-[25px] border p-[clamp(22px,2.2vw,32px)] max-[1120px]:min-h-0">
+      <div className="border-border flex items-start justify-between gap-5 border-b pb-5 max-[520px]:block">
         <CardHeading
           description="Candidates in active process"
           title="Selected Feedback"
@@ -315,10 +315,10 @@ function SelectedFeedbackCard() {
         </div>
       </div>
 
-      <div className="divide-line flex flex-1 flex-col divide-y">
+      <div className="divide-border flex flex-1 flex-col divide-y">
         {feedback.map((item) => (
           <div className="flex gap-3 py-5" key={item.name}>
-            <div className="bg-surface-high text-copy-muted grid size-9 shrink-0 place-items-center rounded-[11px] text-[10px] font-semibold">
+            <div className="bg-surface-raised text-copy-muted grid size-9 shrink-0 place-items-center rounded-[11px] text-[10px] font-semibold">
               {item.initials}
             </div>
             <div className="min-w-0 flex-1">
@@ -329,13 +329,13 @@ function SelectedFeedbackCard() {
                 {item.note}
               </p>
               <div className="mt-3 flex flex-wrap gap-1.5">
-                <span className="border-line rounded-full border px-2.5 py-1 text-[9px]">
+                <span className="border-border rounded-full border px-2.5 py-1 text-[9px]">
                   {item.stage}
                 </span>
-                <span className="border-line text-copy-muted rounded-full border px-2.5 py-1 text-[9px]">
+                <span className="border-border text-copy-muted rounded-full border px-2.5 py-1 text-[9px]">
                   {item.team}
                 </span>
-                <span className="border-line text-copy-muted rounded-full border px-2.5 py-1 font-mono text-[9px]">
+                <span className="border-border text-copy-muted rounded-full border px-2.5 py-1 font-mono text-[9px]">
                   {item.reference}
                 </span>
               </div>
@@ -352,7 +352,7 @@ function WorkspaceToolbar() {
     <header className="flex h-[var(--topbar-height)] shrink-0 items-center gap-4 px-4 py-10 max-[680px]:gap-2 max-[680px]:px-2.5">
       <div className="bg-surface-high flex shrink-0 items-center rounded-[14px] p-1">
         <ToolbarIconButton label="Закрыть рабочую область" name="close" />
-        <span className="bg-line mx-0.5 h-5 w-px max-[520px]:hidden" />
+        <span className="bg-border mx-0.5 h-5 w-px max-[520px]:hidden" />
         <span className="max-[520px]:hidden">
           <ToolbarIconButton label="Развернуть" name="expand" />
         </span>
@@ -370,9 +370,9 @@ function WorkspaceToolbar() {
       <div className="flex shrink-0 items-center gap-2">
         <div className="bg-surface-high flex items-center rounded-[14px] p-1 max-[930px]:hidden">
           <ToolbarIconButton label="История" name="history" />
-          <span className="bg-line h-5 w-px" />
+          <span className="bg-border h-5 w-px" />
           <ToolbarIconButton label="Копировать" name="copy" />
-          <span className="bg-line h-5 w-px" />
+          <span className="bg-border h-5 w-px" />
           <ToolbarIconButton label="Открыть папку" name="folder" />
         </div>
 

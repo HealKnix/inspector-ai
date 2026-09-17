@@ -1,10 +1,11 @@
 import { Alert, Button, Spinner } from "@heroui/react";
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { useCurrentUser } from "@/api/hooks/use-auth";
 import routeNames from "@/routes/routeNames";
 
+import { CubeLoader } from "@/components/cube-loader/CubeLoader";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicOnlyRoute } from "./PublicOnlyRoute";
 
@@ -21,11 +22,12 @@ const DashboardPage = lazy(() =>
 
 export function AppRoutes() {
   const currentUserQuery = useCurrentUser();
+  const location = useLocation();
 
   if (currentUserQuery.isPending) {
     return (
       <div
-        className="text-muted-foreground mx-auto flex min-h-svh w-[calc(100%-2rem)] max-w-[560px] flex-col items-center justify-center gap-[18px]"
+        className="text-muted-foreground mx-auto flex min-h-svh w-[calc(100%-2rem)] max-w-[560px] flex-col items-center justify-center gap-4.5"
         role="status"
       >
         <Spinner size="lg" />
@@ -36,7 +38,7 @@ export function AppRoutes() {
 
   if (currentUserQuery.isError) {
     return (
-      <div className="text-muted-foreground mx-auto flex min-h-svh w-[calc(100%-2rem)] max-w-[560px] flex-col items-center justify-center gap-[18px]">
+      <div className="text-muted-foreground mx-auto flex min-h-svh w-[calc(100%-2rem)] max-w-[560px] flex-col items-center justify-center gap-4.5">
         <Alert
           role="alert"
           status="danger"
@@ -66,12 +68,14 @@ export function AppRoutes() {
     <Suspense
       fallback={
         <div
-          className="text-muted-foreground mx-auto flex min-h-svh w-[calc(100%-2rem)] max-w-[560px] flex-col items-center justify-center gap-[18px]"
+          className="text-muted-foreground mx-auto flex min-h-svh w-[calc(100%-2rem)] max-w-[560px] flex-col items-center justify-center gap-5"
           role="status"
         >
+          <CubeLoader />
           <p>Загружаем интерфейс…</p>
         </div>
       }
+      key={location.pathname}
     >
       <Routes>
         <Route element={<PublicOnlyRoute />}>

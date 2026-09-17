@@ -3,6 +3,8 @@
 @source "../index.html";
 @import "@heroui/styles";
 
+@import "./assets/fonts/index.css";
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
@@ -36,7 +38,7 @@
   --color-syntax-number: var(--syntax-number);
   --color-syntax-type: var(--syntax-type);
   --color-syntax-comment: var(--syntax-comment);
-  --font-sans: "TT Firs Neue", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Placebo Fiera", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
@@ -206,6 +208,13 @@
     outline: none;
   }
 
+  *[class~="bg-accent"] {
+    ::selection {
+      background: var(--background);
+      color: var(--foreground);
+    }
+  }
+
   ::selection {
     background: hsl(var(--primary) / 0.15);
     color: var(--accent);
@@ -233,8 +242,8 @@
   *::before,
   *::after {
     scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
+    transition-duration: 0.0001ms !important;
+    animation-duration: 0.0001ms !important;
     animation-iteration-count: 1 !important;
   }
 }

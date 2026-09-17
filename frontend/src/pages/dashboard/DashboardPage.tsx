@@ -7,6 +7,7 @@ import { BrandMark } from "@/components/BrandMark";
 import routeNames from "@/routes/routeNames";
 import { useAuthSessionStore } from "@/store/auth-session";
 
+import { cn } from "@/lib/utils";
 import { ChatPanel } from "./components/ChatPanel";
 import { InsightsWorkspace } from "./components/InsightsWorkspace";
 import {
@@ -46,17 +47,11 @@ export function DashboardPage() {
 
         <div className="flex min-w-0 flex-1 flex-col">
           {isMobile ? (
-            <header className="border-line bg-surface flex min-h-16 items-center gap-3 border-b px-3">
+            <header className="border-border bg-surface flex min-h-16 items-center gap-3 border-b px-3">
               <MobileNavigation {...sidebarProps} />
               <BrandMark className="text-accent size-8 shrink-0" />
               <span className="min-w-0 flex-1 truncate text-sm font-semibold">
                 Инспектор ИИ
-              </span>
-              <span
-                aria-hidden="true"
-                className="bg-accent text-accent-foreground grid size-9 shrink-0 place-items-center rounded-full text-xs font-bold"
-              >
-                {user?.login.slice(0, 1).toUpperCase() ?? "И"}
               </span>
             </header>
           ) : null}
@@ -64,17 +59,18 @@ export function DashboardPage() {
           {isMobile ? (
             <div
               aria-label="Раздел рабочей области"
-              className="border-line bg-surface flex gap-1 border-b p-1.5"
+              className="border-border bg-surface flex gap-1 border-b p-1.5"
               role="tablist"
             >
               <Button
                 aria-controls="mobile-chat-panel"
                 aria-selected={mobileWorkspace === "chat"}
-                className={`h-10 flex-1 rounded-xl ${
+                className={cn(
+                  "h-10 flex-1 rounded-xl",
                   mobileWorkspace === "chat"
                     ? "bg-foreground text-background"
-                    : "text-copy-muted"
-                }`}
+                    : "text-copy-muted",
+                )}
                 id="mobile-chat-tab"
                 onPress={() => {
                   setMobileWorkspace("chat");
@@ -87,11 +83,12 @@ export function DashboardPage() {
               <Button
                 aria-controls="mobile-dashboard-panel"
                 aria-selected={mobileWorkspace === "dashboard"}
-                className={`h-10 flex-1 rounded-xl ${
+                className={cn(
+                  "h-10 flex-1 rounded-xl",
                   mobileWorkspace === "dashboard"
                     ? "bg-foreground text-background"
-                    : "text-copy-muted"
-                }`}
+                    : "text-copy-muted",
+                )}
                 id="mobile-dashboard-tab"
                 onPress={() => {
                   setMobileWorkspace("dashboard");
