@@ -7,14 +7,17 @@ import {
   ScrollShadow,
   Tooltip,
   useMediaQuery,
+  useOverlayState,
 } from "@heroui/react";
 import { useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { Role, type UserDto } from "@/api/types/auth";
 import { BrandMark } from "@/components/BrandMark";
 
 import { LogoutConfirmationDialog } from "@/components/LogoutConfirmationDialog";
 import { cn } from "@/lib/utils";
+import routeNames from "@/routes/routeNames";
 import { DashboardIcon, type DashboardIconName } from "./DashboardIcon";
 import { SystemStatusPopover } from "./SystemStatusPopover";
 import { ThemeSwitcher } from "./ThemeSwitcher";
@@ -47,7 +50,6 @@ interface NavigationItem {
   icon: DashboardIconName;
   id: NavigationItemId;
   label: string;
-  onClick?: () => void;
 }
 
 const primaryItems: readonly NavigationItem[] = [
@@ -77,7 +79,7 @@ interface SidebarSharedProps {
 }
 
 interface NavigationListProps {
-  activeItem: NavigationItemId;
+  activeItem: NavigationItemId | null;
   collapsed: boolean;
   items: readonly NavigationItem[];
   className?: string;
@@ -225,17 +227,53 @@ function AccountPopover({
 
 interface SidebarContentProps extends SidebarSharedProps {
   collapsed: boolean;
+  onNavigate?: () => void;
 }
 
 function SidebarContent({
   collapsed,
   isLoggingOut,
   logoutError,
+  onNavigate,
   onLogout,
   user,
 }: SidebarContentProps) {
   const isMobile = useMediaQuery("(max-width: 760px)");
-  const [activeItem, setActiveItem] = useState<NavigationItemId>("create");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [selectedStubItem, setSelectedStubItem] = useState<{
+    item: NavigationItemId;
+    pathname: string;
+  } | null>(null);
+
+  const routeActiveItem: NavigationItemId | null =
+    location.pathname === routeNames.DOCUMENT_UPLOAD
+      ? "create"
+      : location.pathname === routeNames.APP
+        ? "checks"
+        : null;
+  const activeItem =
+    selectedStubItem?.pathname === location.pathname
+      ? selectedStubItem.item
+      : routeActiveItem;
+
+  const handleActiveItemChange = (item: NavigationItemId) => {
+    if (item === "create") {
+      setSelectedStubItem(null);
+      void navigate(routeNames.DOCUMENT_UPLOAD);
+      onNavigate?.();
+      return;
+    }
+
+    if (item === "checks") {
+      setSelectedStubItem(null);
+      void navigate(routeNames.APP);
+      onNavigate?.();
+      return;
+    }
+
+    setSelectedStubItem({ item, pathname: location.pathname });
+  };
 
   return (
     <>
@@ -251,21 +289,21 @@ function SidebarContent({
             activeItem={activeItem}
             collapsed={collapsed}
             items={primaryItems}
-            onActiveItemChange={setActiveItem}
+            onActiveItemChange={handleActiveItemChange}
           />
           <div className="bg-border/50 mx-auto h-px w-[95%] flex-none" />
           <NavigationList
             activeItem={activeItem}
             collapsed={collapsed}
             items={secondaryItems}
-            onActiveItemChange={setActiveItem}
+            onActiveItemChange={handleActiveItemChange}
           />
           <NavigationList
             activeItem={activeItem}
             collapsed={collapsed}
             items={[{ icon: "help", id: "help", label: "Помощь" }]}
             className="mt-auto"
-            onActiveItemChange={setActiveItem}
+            onActiveItemChange={handleActiveItemChange}
           />
           <SystemStatusPopover compact={collapsed} />
         </nav>
@@ -342,8 +380,10 @@ export function WorkspaceSidebar(props: SidebarSharedProps) {
 }
 
 export function MobileNavigation(props: SidebarSharedProps) {
+  const drawerState = useOverlayState();
+
   return (
-    <Drawer>
+    <Drawer state={drawerState}>
       <Button
         aria-label="Открыть меню"
         className="size-11 min-w-11 rounded-[14px]"
@@ -364,6 +404,10 @@ export function MobileNavigation(props: SidebarSharedProps) {
               "after:bg-border after:pointer-events-none after:absolute after:top-1/2 after:right-2 after:h-12 after:w-1 after:-translate-y-1/2 after:rounded-full",
             )}
           >
+            <Drawer.CloseTrigger
+              aria-label="Закрыть меню"
+              className="sr-only"
+            />
             <Drawer.Header className="flex-row items-center gap-3 px-4 py-4">
               <BrandMark className="text-accent size-9" />
               <Drawer.Heading className="text-base font-semibold">
@@ -374,7 +418,13 @@ export function MobileNavigation(props: SidebarSharedProps) {
               </Drawer.Heading>
             </Drawer.Header>
             <Drawer.Body className="mt-0 flex min-h-0 flex-1 flex-col py-2 pt-0 *:px-3 *:pr-0">
-              <SidebarContent collapsed={false} {...props} />
+              <SidebarContent
+                collapsed={false}
+                onNavigate={() => {
+                  drawerState.close();
+                }}
+                {...props}
+              />
             </Drawer.Body>
           </Drawer.Dialog>
         </Drawer.Content>

@@ -1,6 +1,7 @@
 class RouteNames {
   ROOT = "/" as const;
   APP = "/app" as const;
+  DOCUMENT_UPLOAD = "/app/documents/upload" as const;
   NOT_FOUND = "*" as const;
 
   // Авторизация

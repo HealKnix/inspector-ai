@@ -1,4 +1,5 @@
 import { act, render, screen } from "@testing-library/react";
+import { Outlet } from "react-router-dom";
 
 import { Role, type UserDto } from "@/api/types/auth";
 import { AppProviders } from "@/components/AppProviders";
@@ -37,6 +38,14 @@ vi.mock("@/pages/dashboard/DashboardPage", async () => {
   };
 });
 
+vi.mock("@/pages/document-upload/DocumentUploadPage", () => ({
+  DocumentUploadPage: () => <p>Загрузка документов</p>,
+}));
+
+vi.mock("@/layouts/WorkspaceLayout", () => ({
+  WorkspaceLayout: () => <Outlet />,
+}));
+
 const user: UserDto = {
   id: "27b43d75-2f24-4ff0-8bd8-d4758cfbd3cb",
   login: "inspector",
@@ -70,5 +79,22 @@ describe("AppRoutes", () => {
     dashboardImport.resolve();
 
     expect(await screen.findByText("Рабочая область")).toBeInTheDocument();
+  });
+
+  it("открывает защищённую страницу загрузки по прямой ссылке", async () => {
+    window.history.replaceState({}, "", routeNames.DOCUMENT_UPLOAD);
+    useAuthSessionStore.setState({
+      accessToken: "access-token",
+      initialized: true,
+      user,
+    });
+
+    render(
+      <AppProviders>
+        <AppRoutes />
+      </AppProviders>,
+    );
+
+    expect(await screen.findByText("Загрузка документов")).toBeInTheDocument();
   });
 });

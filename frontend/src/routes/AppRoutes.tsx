@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { useCurrentUser } from "@/api/hooks/use-auth";
+import { WorkspaceLayout } from "@/layouts/WorkspaceLayout";
 import routeNames from "@/routes/routeNames";
 
 import { CubeLoader } from "@/components/cube-loader/CubeLoader";
@@ -17,6 +18,11 @@ const AuthPage = lazy(() =>
 const DashboardPage = lazy(() =>
   import("@/pages/dashboard/DashboardPage").then((module) => ({
     default: module.DashboardPage,
+  })),
+);
+const DocumentUploadPage = lazy(() =>
+  import("@/pages/document-upload/DocumentUploadPage").then((module) => ({
+    default: module.DocumentUploadPage,
   })),
 );
 
@@ -86,7 +92,13 @@ export function AppRoutes() {
           />
         </Route>
         <Route element={<ProtectedRoute />}>
-          <Route element={<DashboardPage />} path={routeNames.APP} />
+          <Route element={<WorkspaceLayout />}>
+            <Route element={<DashboardPage />} path={routeNames.APP} />
+            <Route
+              element={<DocumentUploadPage />}
+              path={routeNames.DOCUMENT_UPLOAD}
+            />
+          </Route>
         </Route>
         <Route
           element={<Navigate replace to={routeNames.APP} />}

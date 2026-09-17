@@ -5,8 +5,10 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 import { Role, type UserDto } from "@/api/types/auth";
+import routeNames from "@/routes/routeNames";
 
 import { MobileNavigation, WorkspaceSidebar } from "./WorkspaceSidebar";
 
@@ -41,9 +43,15 @@ function installMatchMedia(): MatchMediaController {
         }
         listeners.set(query, queryListeners);
       },
-      addListener: () => undefined,
+      addListener: (listener: (event: MediaQueryListEvent) => void) => {
+        const queryListeners = listeners.get(query) ?? new Set();
+        queryListeners.add(listener);
+        listeners.set(query, queryListeners);
+      },
       dispatchEvent: () => true,
-      matches: states.get(query) ?? false,
+      get matches() {
+        return states.get(query) ?? false;
+      },
       media: query,
       onchange: null,
       removeEventListener: (
@@ -54,7 +62,9 @@ function installMatchMedia(): MatchMediaController {
           listeners.get(query)?.delete(listener);
         }
       },
-      removeListener: () => undefined,
+      removeListener: (listener: (event: MediaQueryListEvent) => void) => {
+        listeners.get(query)?.delete(listener);
+      },
     }),
     writable: true,
   });
@@ -70,9 +80,16 @@ function installMatchMedia(): MatchMediaController {
   };
 }
 
-function renderSidebar() {
+function LocationProbe() {
+  return <output data-testid="location">{useLocation().pathname}</output>;
+}
+
+function renderSidebar(initialEntry = routeNames.APP) {
   render(
-    <WorkspaceSidebar isLoggingOut={false} onLogout={vi.fn()} user={user} />,
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <WorkspaceSidebar isLoggingOut={false} onLogout={vi.fn()} user={user} />
+      <LocationProbe />
+    </MemoryRouter>,
   );
 }
 
@@ -112,8 +129,8 @@ describe("WorkspaceSidebar", () => {
     });
     expect(sidebar).toHaveAttribute("data-collapsed", "true");
     expect(
-      screen.queryByRole("button", { name: "Развернуть боковую панель" }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("button", { name: "Развернуть боковую панель" }),
+    ).toBeDisabled();
 
     act(() => {
       matchMedia.setMatches("(max-width: 1280px)", false);
@@ -136,10 +153,51 @@ describe("WorkspaceSidebar", () => {
     expect(screen.getByText("Онлайн")).toBeInTheDocument();
   });
 
+  it("переходит к загрузке документов и обратно к проверкам", () => {
+    installMatchMedia();
+    renderSidebar();
+
+    const checksButton = screen.getByRole("button", { name: "Проверки" });
+    const createButton = screen.getByRole("button", { name: "Создать" });
+
+    expect(checksButton).toHaveAttribute("aria-pressed", "true");
+
+    const searchButton = screen.getByRole("button", { name: "Поиск" });
+    fireEvent.click(searchButton);
+
+    expect(searchButton).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("location")).toHaveTextContent(routeNames.APP);
+
+    fireEvent.click(createButton);
+
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      routeNames.DOCUMENT_UPLOAD,
+    );
+    expect(createButton).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(checksButton);
+
+    expect(screen.getByTestId("location")).toHaveTextContent(routeNames.APP);
+    expect(checksButton).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("открывает и закрывает мобильную навигацию", async () => {
     installMatchMedia();
     render(
-      <MobileNavigation isLoggingOut={false} onLogout={vi.fn()} user={user} />,
+      <MemoryRouter>
+        <Routes>
+          <Route
+            element={
+              <MobileNavigation
+                isLoggingOut={false}
+                onLogout={vi.fn()}
+                user={user}
+              />
+            }
+            path="*"
+          />
+        </Routes>
+      </MemoryRouter>,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Открыть меню" }));
