@@ -20,3 +20,4 @@ frontend/.heroui-docs
 **/.pytest_cache
 backend/document-parser/models
 backend/document-parser/.cache
+backend/document-parser/experiments
