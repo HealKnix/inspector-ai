@@ -87,9 +87,11 @@ def parse(request, settings, versions, ocr, progress):
     reasons = sorted({reason for page in pages for reason in page["reasons"]})
     artifact = {"schema_version": 1, "source_sha256": request["source_sha256"], "pipeline_fingerprint": pipeline_hash,
         "versions": versions, "raw_text": raw, "normalized_text": normalize(raw),
-        "quality": "ABSTAIN" if not readable else "LOW_QUALITY" if any(page["quality"] != "OK" for page in pages) else "OK", "reasons": reasons,
+        "quality": "ABSTAIN" if all(page["quality"] == "ABSTAIN" for page in pages) else "LOW_QUALITY" if any(page["quality"] != "OK" for page in pages) else "OK", "reasons": reasons,
         "coverage": {"total_pages": len(pages), "readable_pages": readable, "unreadable_pages": len(pages) - readable},
         "pages": pages}
+    if request["format"] == "pdf":
+        artifact["region_schema_version"] = 1
     if len(json.dumps(artifact, ensure_ascii=False).encode()) > settings.max_output_bytes:
         raise ParseError("OUTPUT_SIZE_LIMIT")
     progress(len(pages), len(pages), "complete", {"current_page": None})

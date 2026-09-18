@@ -1,4 +1,5 @@
 import type { RenderedPage, TextBlock } from "@/api/types/parsing";
+import { isVisibleDocumentBlock } from "./document-blocks";
 
 export interface ExtractedTable {
   id: string;
@@ -10,7 +11,8 @@ export function groupTableCells(pages: RenderedPage[]): ExtractedTable[] {
   return pages.flatMap((page) => {
     const tables = new Map<string, ExtractedTable>();
     for (const block of [...page.blocks].sort((a, b) => a.order - b.order)) {
-      if (block.kind !== "table_cell") continue;
+      if (block.kind !== "table_cell" || !isVisibleDocumentBlock(block))
+        continue;
       const id = block.table_id ?? block.id;
       let table = tables.get(id);
       if (!table) {

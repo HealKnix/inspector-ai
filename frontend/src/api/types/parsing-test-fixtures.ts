@@ -70,3 +70,109 @@ export const parseResult: ParseResult = {
     ],
   },
 };
+
+export function createRegionalParseResult(): ParseResult {
+  const result = structuredClone(parseResult);
+  const page = result.artifact.pages[0]!;
+  result.artifact.region_schema_version = 1;
+  result.artifact.versions.pdf_region_profile = "paddle-regions-v1";
+  result.artifact.quality = page.quality = "OK";
+  result.artifact.reasons = page.reasons = [];
+  page.regions = [
+    {
+      id: "text-region",
+      kind: "text",
+      bbox: [0.05, 0.05, 0.4, 0.3],
+      raw_class: "text",
+      raw_score: 0.96,
+      method: "native",
+      reasons: [],
+      table_status: "not_applicable",
+    },
+    {
+      id: "graphic-region",
+      kind: "graphic",
+      bbox: [0.05, 0.35, 0.6, 0.9],
+      raw_class: "image",
+      raw_score: 0.75,
+      method: "skipped",
+      reasons: [],
+      table_status: "not_applicable",
+    },
+    {
+      id: "unknown-region",
+      kind: "unknown",
+      bbox: [0.65, 0.05, 0.95, 0.3],
+      raw_class: null,
+      raw_score: null,
+      method: "skipped",
+      reasons: ["LAYOUT_UNCERTAIN"],
+      table_status: "not_applicable",
+    },
+    {
+      id: "table-region",
+      kind: "table",
+      bbox: [0.65, 0.35, 0.95, 0.9],
+      raw_class: "table",
+      raw_score: 0.9,
+      method: "native_table",
+      reasons: [],
+      table_status: "structured",
+    },
+  ];
+  const base = page.blocks[0]!;
+  page.blocks = [
+    {
+      ...base,
+      source: "native",
+      region_id: "text-region",
+      include_in_main: true,
+    },
+    {
+      ...base,
+      id: "graphic-note",
+      order: 1,
+      raw_text: "Размер −250",
+      normalized_text: "Размер −250",
+      source: "native",
+      bbox: [0.1, 0.4, 0.3, 0.45],
+      region_id: "graphic-region",
+      include_in_main: false,
+    },
+    {
+      ...base,
+      id: "unknown-note",
+      order: 2,
+      raw_text: "Неопределённая подпись",
+      normalized_text: "Неопределённая подпись",
+      source: "native",
+      bbox: [0.7, 0.1, 0.9, 0.15],
+      region_id: "unknown-region",
+      include_in_main: false,
+    },
+    {
+      ...base,
+      id: "empty-cell",
+      order: 3,
+      raw_text: "",
+      normalized_text: "",
+      kind: "table_cell",
+      source: "native",
+      table_id: "table-1",
+      row: 0,
+      column: 0,
+      row_span: 1,
+      column_span: 1,
+      bbox: [0.7, 0.4, 0.9, 0.45],
+      region_id: "table-region",
+      include_in_main: true,
+    },
+  ];
+  result.artifact.raw_text = page.blocks
+    .map((block) => block.raw_text)
+    .join("\n");
+  result.artifact.normalized_text = page.blocks
+    .map((block) => block.normalized_text)
+    .join("\n");
+  return result;
+}

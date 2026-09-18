@@ -6,19 +6,38 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import {
+  MemoryRouter,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import {
   downloadOriginal,
   getObject,
   listFiles,
 } from "@/api/endpoints/objects";
-import { getParsingStatus } from "@/api/endpoints/parsing";
+import {
+  getParseResult,
+  getParsingStatus,
+  getRenderedPage,
+} from "@/api/endpoints/parsing";
 import { queryKeys } from "@/api/query-keys";
 import type { ConstructionObject, ObjectFile } from "@/api/types/objects";
+import {
+  createRegionalParseResult,
+  parsingStatus,
+} from "@/api/types/parsing-test-fixtures";
 import { ObjectDetailsPage } from "./ObjectDetailsPage";
 
-vi.mock("@/api/endpoints/parsing", () => ({ getParsingStatus: vi.fn() }));
+vi.mock("@/api/endpoints/parsing", () => ({
+  getParsingStatus: vi.fn(),
+  getParseResult: vi.fn(),
+  getRenderedPage: vi.fn(),
+  retryParsing: vi.fn(),
+}));
 
 vi.mock("@/api/endpoints/objects", () => ({
   getObject: vi.fn(),
@@ -47,7 +66,26 @@ const file: ObjectFile = {
   integrity_error: false,
 };
 function LocationProbe() {
-  return <output data-testid="location">{useLocation().search}</output>;
+  const navigate = useNavigate();
+  return (
+    <>
+      <output data-testid="location">{useLocation().search}</output>
+      <button
+        onClick={() => {
+          void navigate(-1);
+        }}
+      >
+        Назад по истории
+      </button>
+      <button
+        onClick={() => {
+          void navigate(1);
+        }}
+      >
+        Вперёд по истории
+      </button>
+    </>
+  );
 }
 function mount(search = "") {
   const client = new QueryClient({
@@ -87,6 +125,50 @@ beforeEach(() => {
 });
 
 describe("object documents", () => {
+  it("сохраняет режим и выбранную область в URL и восстанавливает их при возврате по истории", async () => {
+    URL.createObjectURL = vi.fn(() => "blob:synthetic-regional-page");
+    URL.revokeObjectURL = vi.fn();
+    vi.mocked(getParseResult).mockResolvedValue(createRegionalParseResult());
+    vi.mocked(getRenderedPage).mockResolvedValue(new Blob(["synthetic"]));
+    vi.mocked(getParsingStatus).mockResolvedValue(parsingStatus);
+    mount(`?upload=receipt-id&file=${file.id}&documentPage=1`);
+    await screen.findByRole("img");
+    fireEvent.click(screen.getByRole("button", { name: "Области" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Область 2: Графическая область" }),
+    );
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      "documentView=regions",
+    );
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      "documentRegion=graphic-region",
+    );
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      "upload=receipt-id",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Весь документ" }));
+    expect(screen.getByLabelText("Полный текст документа")).toHaveTextContent(
+      "Размер −250",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Назад по истории" }));
+    expect(screen.getByRole("button", { name: "Области" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(
+      screen.getByRole("button", { name: "Область 2: Графическая область" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Вперёд по истории" }));
+    expect(
+      screen.getByRole("button", { name: "Весь документ" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Закрыть просмотр документа" }),
+    );
+    expect(screen.getByTestId("location").textContent).toBe(
+      "?upload=receipt-id",
+    );
+  });
   it("показывает оригиналы из API и скачивает файл, скрывая недоступную загрузку", async () => {
     mount();
     const download = await screen.findByRole("button", {

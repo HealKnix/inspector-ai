@@ -1,4 +1,5 @@
 import { ConfigService } from "@nestjs/config";
+import { Ajv } from "ajv";
 import { createHash, randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import { PrivateStorageService } from "../../infrastructure/storage/private-storage.service.js";
@@ -6,11 +7,14 @@ import { ArtifactStorageService } from "./artifact-storage.service.js";
 import {
   validateArtifact,
   validateMessage,
+  type ParseArtifactData,
   type ParseBlock,
+  type ParseRegion,
 } from "./parsing-contract.js";
+import { parseArtifactSchema } from "./parsing-openapi.js";
 
 const hash = "a".repeat(64);
-function fixture() {
+function fixture(): ParseArtifactData {
   return {
     schema_version: 1,
     source_sha256: hash,
@@ -93,6 +97,414 @@ function tableFixture(cells: ParseBlock[]) {
   const input = fixture();
   return { ...input, pages: [{ ...input.pages[0]!, blocks: cells }] };
 }
+
+function regionalFixture(): ParseArtifactData {
+  const input = fixture();
+  input.region_schema_version = 1;
+  input.versions.pdf_region_profile = "paddle-regions-v1";
+  input.pages[0]!.regions = [
+    {
+      id: "p1:r1",
+      kind: "text",
+      bbox: [0, 0, 1, 1],
+      raw_class: "text",
+      raw_score: 0.93,
+      method: "native",
+      reasons: [],
+      table_status: "not_applicable",
+    },
+  ];
+  input.pages[0]!.blocks[0]!.region_id = "p1:r1";
+  input.pages[0]!.blocks[0]!.include_in_main = true;
+  return input;
+}
+
+describe("regional PDF trust boundary", () => {
+  it("preserves complete text, excluded native labels and cross-boundary glyph geometry", () => {
+    const input = regionalFixture();
+    const page = input.pages[0]!;
+    page.regions!.push({
+      id: "p1:r2",
+      kind: "graphic",
+      bbox: [0.6, 0.6, 1, 1],
+      raw_class: "image",
+      raw_score: 0.8,
+      method: "skipped",
+      reasons: ["graphic_preserved"],
+      table_status: "not_applicable",
+    });
+    page.blocks.push({
+      ...page.blocks[0]!,
+      id: "p1:b2",
+      order: 1,
+      region_id: "p1:r2",
+      include_in_main: false,
+      raw_text: "−1,200 ± 0,05",
+      normalized_text: "−1,200 ± 0,05",
+      bbox: [0.5, 0.5, 0.9, 0.9],
+    });
+    input.raw_text += "\n−1,200 ± 0,05";
+    input.normalized_text = input.raw_text;
+    const original = JSON.stringify(input);
+    const result = validateArtifact(input, hash, hash);
+    expect(result).toBe(input);
+    expect(JSON.stringify(result)).toBe(original);
+    expect(result.pages[0]!.blocks[1]!.include_in_main).toBe(false);
+  });
+
+  it("accepts planned graphic-only skip with OK quality and no textual coverage", () => {
+    const input = regionalFixture();
+    input.raw_text = input.normalized_text = "";
+    input.pages[0]!.blocks = [];
+    Object.assign(input.pages[0]!.regions![0]!, {
+      kind: "graphic",
+      method: "skipped",
+      raw_class: "chart",
+      reasons: ["graphic_preserved"],
+    });
+    input.coverage = { total_pages: 1, readable_pages: 0, unreadable_pages: 1 };
+    expect(validateArtifact(input, hash, hash).quality).toBe("OK");
+    input.coverage = { total_pages: 1, readable_pages: 1, unreadable_pages: 0 };
+    expect(() => validateArtifact(input, hash, hash)).toThrow(
+      "parser_invalid_result",
+    );
+  });
+
+  it("accepts uncovered unknown regions with no invented Paddle class or score", () => {
+    const input = regionalFixture();
+    Object.assign(input.pages[0]!.regions![0]!, {
+      kind: "unknown",
+      method: "skipped",
+      raw_class: null,
+      raw_score: null,
+      reasons: ["native_outside_layout"],
+    });
+    input.pages[0]!.blocks[0]!.include_in_main = false;
+    expect(
+      validateArtifact(input, hash, hash).pages[0]!.regions![0]!.raw_class,
+    ).toBeNull();
+  });
+
+  it("accepts partial native text, OCR replacements and excluded invalid native in active areas", () => {
+    const input = regionalFixture();
+    const page = input.pages[0]!;
+    page.regions![0]!.method = "hybrid";
+    page.blocks.push({
+      ...page.blocks[0]!,
+      id: "p1:b2",
+      order: 1,
+      source: "ocr",
+    });
+    expect(() => validateArtifact(input, hash, hash)).not.toThrow();
+    page.regions![0]!.method = "ocr";
+    page.blocks[0]!.include_in_main = false;
+    expect(() => validateArtifact(input, hash, hash)).not.toThrow();
+    page.blocks[0]!.include_in_main = true;
+    expect(() => validateArtifact(input, hash, hash)).toThrow(
+      "parser_invalid_result",
+    );
+  });
+
+  it.each(["native_table", "table_ocr", "hybrid"] as const)(
+    "accepts %s with valid empty cells and preserves unconfirmed text",
+    (method) => {
+      const input = regionalFixture();
+      const page = input.pages[0]!;
+      Object.assign(page.regions![0]!, {
+        kind: "table",
+        raw_class: "table",
+        method,
+        table_status: "structured",
+      });
+      page.blocks[0]!.include_in_main = method !== "table_ocr";
+      page.blocks.push({
+        ...cell(1, 0, 0),
+        region_id: "p1:r1",
+        include_in_main: true,
+        source: method === "native_table" ? "native" : "ocr",
+      });
+      expect(
+        validateArtifact(input, hash, hash).pages[0]!.blocks[1]!.raw_text,
+      ).toBe("");
+      page.blocks.pop();
+      page.regions![0]!.table_status = "unconfirmed";
+      page.regions![0]!.reasons = ["table_structure_unconfirmed"];
+      expect(() => validateArtifact(input, hash, hash)).not.toThrow();
+    },
+  );
+
+  const malformed: [string, (input: ParseArtifactData) => void][] = [
+    [
+      "missing marker for the new profile",
+      (input) => {
+        delete input.region_schema_version;
+      },
+    ],
+    [
+      "missing regions",
+      (input) => {
+        delete input.pages[0]!.regions;
+      },
+    ],
+    [
+      "missing block link",
+      (input) => {
+        delete input.pages[0]!.blocks[0]!.region_id;
+      },
+    ],
+    [
+      "missing main flag",
+      (input) => {
+        delete input.pages[0]!.blocks[0]!.include_in_main;
+      },
+    ],
+    [
+      "foreign region reference",
+      (input) => {
+        input.pages[0]!.blocks[0]!.region_id = "p2:r1";
+      },
+    ],
+    [
+      "duplicate region ID",
+      (input) => {
+        input.pages[0]!.regions!.push({ ...input.pages[0]!.regions![0]! });
+      },
+    ],
+    [
+      "non-finite coordinates",
+      (input) => {
+        input.pages[0]!.regions![0]!.bbox[2] = Infinity;
+      },
+    ],
+    [
+      "inverted coordinates",
+      (input) => {
+        input.pages[0]!.regions![0]!.bbox = [0.5, 0, 0.1, 1];
+      },
+    ],
+    [
+      "out-of-page coordinates",
+      (input) => {
+        input.pages[0]!.regions![0]!.bbox[0] = -0.01;
+      },
+    ],
+    [
+      "non-finite score",
+      (input) => {
+        input.pages[0]!.regions![0]!.raw_score = NaN;
+      },
+    ],
+    [
+      "unbounded class",
+      (input) => {
+        input.pages[0]!.regions![0]!.raw_class = "x".repeat(129);
+      },
+    ],
+    [
+      "native with OCR output",
+      (input) => {
+        input.pages[0]!.blocks[0]!.source = "ocr";
+      },
+    ],
+    [
+      "text treated as table",
+      (input) => {
+        input.pages[0]!.regions![0]!.method = "native_table";
+      },
+    ],
+    [
+      "structured table without cells",
+      (input) => {
+        Object.assign(input.pages[0]!.regions![0]!, {
+          kind: "table",
+          method: "native_table",
+          table_status: "structured",
+        });
+      },
+    ],
+    [
+      "unconfirmed table without explanation",
+      (input) => {
+        Object.assign(input.pages[0]!.regions![0]!, {
+          kind: "table",
+          method: "native_table",
+          table_status: "unconfirmed",
+        });
+      },
+    ],
+    [
+      "empty OCR text",
+      (input) => {
+        input.pages[0]!.regions![0]!.method = "ocr";
+        Object.assign(input.pages[0]!.blocks[0]!, {
+          source: "ocr",
+          raw_text: " \n\t",
+          normalized_text: "",
+        });
+      },
+    ],
+  ];
+  it.each(malformed)(
+    "rejects %s in fresh and stored regional artifacts",
+    (_, mutate) => {
+      const input = regionalFixture();
+      mutate(input);
+      for (const mode of ["strict", "stored"] as const)
+        expect(() => validateArtifact(input, hash, hash, mode)).toThrow(
+          "parser_invalid_result",
+        );
+    },
+  );
+
+  it.each([
+    "id",
+    "kind",
+    "bbox",
+    "raw_class",
+    "raw_score",
+    "method",
+    "reasons",
+    "table_status",
+  ])("requires region field %s", (field) => {
+    const input = regionalFixture();
+    Reflect.deleteProperty(input.pages[0]!.regions![0]!, field);
+    expect(() => validateArtifact(input, hash, hash)).toThrow(
+      "parser_invalid_result",
+    );
+  });
+
+  it("scopes region references to a page and prevents a table spanning regions", () => {
+    const input = regionalFixture();
+    const first = input.pages[0]!;
+    input.pages.push({
+      ...first,
+      page_number: 2,
+      image_key: randomUUID(),
+      regions: [{ ...first.regions![0]!, id: "p2:r1" }],
+      blocks: [{ ...first.blocks[0]!, id: "p2:b1", region_id: "p2:r1" }],
+    });
+    input.coverage = { total_pages: 2, readable_pages: 2, unreadable_pages: 0 };
+    expect(() => validateArtifact(input, hash, hash)).not.toThrow();
+    first.blocks[0]!.region_id = "p2:r1";
+    expect(() => validateArtifact(input, hash, hash)).toThrow();
+
+    const table = regionalFixture();
+    const page = table.pages[0]!;
+    Object.assign(page.regions![0]!, {
+      kind: "table",
+      method: "native_table",
+      table_status: "structured",
+    });
+    page.regions!.push({ ...page.regions![0]!, id: "p1:r2" });
+    page.blocks = [0, 1].map((index) => ({
+      ...cell(index, index, 0),
+      raw_text: "ячейка",
+      normalized_text: "ячейка",
+      source: "native",
+      region_id: `p1:r${index + 1}`,
+      include_in_main: true,
+    }));
+    expect(() => validateArtifact(table, hash, hash)).toThrow();
+  });
+
+  it.each(["graphic", "unknown"] as const)(
+    "rejects OCR and main inclusion in %s",
+    (kind) => {
+      const input = regionalFixture();
+      const region = input.pages[0]!.regions![0]!;
+      Object.assign(region, {
+        kind,
+        method: "skipped",
+        reasons: ["region_skipped"],
+      });
+      const block = input.pages[0]!.blocks[0]!;
+      expect(() => validateArtifact(input, hash, hash)).toThrow();
+      block.include_in_main = false;
+      block.source = "ocr";
+      expect(() => validateArtifact(input, hash, hash)).toThrow();
+      block.source = "native";
+      region.method = "ocr";
+      expect(() => validateArtifact(input, hash, hash)).toThrow();
+    },
+  );
+
+  it("bounds region arrays and rejects unknown schema versions", () => {
+    const input = regionalFixture();
+    input.pages[0]!.regions = Array.from(
+      { length: 10_001 },
+      (_, i): ParseRegion => ({
+        id: `r${i}`,
+        kind: "text",
+        bbox: [0, 0, 1, 1],
+        raw_class: "text",
+        raw_score: 0.9,
+        method: "native",
+        reasons: [],
+        table_status: "not_applicable",
+      }),
+    );
+    expect(() => validateArtifact(input, hash, hash)).toThrow();
+    expect(() =>
+      validateArtifact(
+        { ...regionalFixture(), region_schema_version: 2 },
+        hash,
+        hash,
+      ),
+    ).toThrow();
+  });
+
+  it("keeps genuine legacy PDFs readable but does not accept unversioned partial regions", () => {
+    expect(
+      validateArtifact(fixture(), hash, hash, "stored").region_schema_version,
+    ).toBeUndefined();
+    const input = fixture();
+    expect(() =>
+      validateArtifact(
+        { ...input, pages: [{ ...input.pages[0]!, regions: [] }] },
+        hash,
+        hash,
+        "stored",
+      ),
+    ).toThrow();
+    const structured = fixture();
+    const page = structured.pages[0]!;
+    const currentDocx = {
+      ...structured,
+      versions: {
+        parser: "synthetic-v1",
+        pdf_region_profile: "paddle-regions-v1",
+      },
+      pages: [
+        {
+          ...page,
+          transform: {
+            ...page.transform,
+            structural_mapping: true,
+            font_sha256: hash,
+            layout: "semantic-structure-v1",
+          },
+        },
+      ],
+    };
+    expect(() => validateArtifact(currentDocx, hash, hash)).not.toThrow();
+  });
+
+  it("documents region fields and completeness in the published OpenAPI schema", () => {
+    const validate = new Ajv({ strict: false, validateFormats: false }).compile(
+      parseArtifactSchema,
+    );
+    expect(validate(regionalFixture()), JSON.stringify(validate.errors)).toBe(
+      true,
+    );
+    expect(validate(fixture()), JSON.stringify(validate.errors)).toBe(true);
+    const input = regionalFixture();
+    delete input.pages[0]!.blocks[0]!.region_id;
+    expect(validate(input)).toBe(false);
+    input.pages[0]!.blocks[0]!.region_id = "p1:r1";
+    delete input.pages[0]!.regions;
+    expect(validate(input)).toBe(false);
+  });
+});
 describe("parser trust boundary", () => {
   it("preserves source text and physical page/sheet distinction", () => {
     const value = validateArtifact(fixture(), hash, hash);

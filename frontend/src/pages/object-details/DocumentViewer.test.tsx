@@ -11,6 +11,7 @@ import { useState } from "react";
 
 import { getParseResult, getRenderedPage } from "@/api/endpoints/parsing";
 import {
+  createRegionalParseResult,
   parsedFile,
   parseResult,
   parsingObjectId,
@@ -64,6 +65,197 @@ function mount(sourceHash = "a".repeat(64)) {
 }
 
 describe("document viewer", () => {
+  it.each(["unconfirmed", "unreadable"] as const)(
+    "не дублирует общий статус OCR-таблицы %s и сохраняет конкретное ограничение",
+    async (status) => {
+      const result = createRegionalParseResult();
+      const page = result.artifact.pages[0]!;
+      page.blocks = page.blocks.filter((block) => block.kind !== "table_cell");
+      Object.assign(page.regions![3]!, {
+        method: "table_ocr",
+        table_status: status,
+        reasons: [
+          "TABLE_STRUCTURE_UNAVAILABLE",
+          "TABLE_STRUCTURE_REJECTED",
+          "TABLE_STRUCTURE_UNVERIFIED",
+          "OCR_LOW_CONFIDENCE",
+        ],
+      });
+      vi.mocked(getParseResult).mockResolvedValue(result);
+      const view = mount();
+      await screen.findByRole("img");
+      fireEvent.click(screen.getByRole("button", { name: "Области" }));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Область 4: Таблица" }),
+      );
+      const region = within(
+        screen.getByLabelText("Содержимое выбранной области"),
+      );
+      expect(region.getByText("Распознавание таблицы")).toBeVisible();
+      expect(
+        region.getByText(
+          status === "unconfirmed"
+            ? /Структура таблицы не подтверждена/
+            : /Не удалось прочитать содержимое таблицы/,
+        ),
+      ).toBeVisible();
+      expect(
+        region.getByText("Есть неуверенно распознанные фрагменты"),
+      ).toBeVisible();
+      expect(
+        region.queryByText(/Структуру таблицы восстановить не удалось/),
+      ).not.toBeInTheDocument();
+      expect(
+        region.queryByText(/Структуру таблицы не удалось восстановить надёжно/),
+      ).not.toBeInTheDocument();
+      expect(
+        region.queryByText(/Структура таблиц требует проверки/),
+      ).not.toBeInTheDocument();
+      expect(region.queryByText(/без повторного OCR/)).not.toBeInTheDocument();
+      view.unmount();
+      view.client.clear();
+    },
+  );
+  it("сворачивает общие ограничения регионального результата и показывает причины в выбранной области", async () => {
+    const result = createRegionalParseResult();
+    result.artifact.quality = result.artifact.pages[0]!.quality = "LOW_QUALITY";
+    result.artifact.reasons = result.artifact.pages[0]!.reasons = [
+      "LAYOUT_REGIONS_UNCERTAIN",
+      "OCR_UNVERIFIED",
+    ];
+    result.artifact.pages[0]!.regions![2]!.reasons = ["LAYOUT_LOW_CONFIDENCE"];
+    vi.mocked(getParseResult).mockResolvedValue(result);
+    const view = mount();
+    await screen.findByRole("img");
+    expect(screen.getByText("Часть областей требует проверки")).toBeVisible();
+    for (const warning of screen.getAllByText(
+      "Распознанный текст требует проверки",
+    ))
+      expect(warning).not.toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Области" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Область 3: Неопределённая область" }),
+    );
+    expect(
+      screen.getByText("Недостаточно уверенности в типе области; OCR пропущен"),
+    ).toBeVisible();
+    view.unmount();
+    view.client.clear();
+  });
+  it("показывает области, исключает надписи графики из основных фрагментов и поиска, сохраняя доступ к ним", async () => {
+    vi.mocked(getParseResult).mockResolvedValue(createRegionalParseResult());
+    const view = mount();
+    await screen.findByRole("img");
+    expect(
+      screen.queryByRole("button", { name: "Размер −250" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Фрагмент 2:/ }),
+    ).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole("searchbox"), {
+      target: { value: "−250" },
+    });
+    expect(screen.getByText("Совпадений нет")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Области" }));
+    const overlay = screen.getByRole("button", {
+      name: "Область 2: Графическая область",
+    });
+    expect(overlay.style.left).toBe("5%");
+    expect(overlay.style.top).toBe("35%");
+    fireEvent.click(overlay);
+    expect(overlay).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByText(/Графическая область сохранена для отдельного анализа/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Размер −250")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: /^3. Неопределённая область/ }),
+    );
+    expect(
+      screen.getByText(/Тип области определить не удалось/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Неопределённая подпись")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Область 4: Таблица" }));
+    expect(
+      within(screen.getByLabelText("Содержимое выбранной области")).getByRole(
+        "button",
+        { name: /Пустая ячейка/ },
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Весь документ" }));
+    expect(screen.getByLabelText("Полный текст документа")).toHaveTextContent(
+      "Размер −250",
+    );
+    expect(
+      screen.getByText(/Полный текст включает сохранённые надписи/),
+    ).toBeInTheDocument();
+    view.unmount();
+    view.client.clear();
+  });
+  it("различает отсутствующую, неподтверждённую и непрочитанную таблицу", async () => {
+    const result = createRegionalParseResult();
+    const page = result.artifact.pages[0]!;
+    page.regions![3]!.table_status = "unconfirmed";
+    page.blocks = page.blocks.filter((block) => block.kind !== "table_cell");
+    page.regions!.push({
+      ...page.regions![3]!,
+      id: "unreadable-table",
+      table_status: "unreadable",
+    });
+    vi.mocked(getParseResult).mockResolvedValue(result);
+    const view = mount();
+    await screen.findByRole("img");
+    fireEvent.click(screen.getByRole("button", { name: "Таблицы" }));
+    expect(
+      screen.getByText(/Структура таблицы не подтверждена/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Не удалось прочитать содержимое таблицы/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Табличные области не найдены/),
+    ).not.toBeInTheDocument();
+    view.unmount();
+    view.client.clear();
+    const withoutTables = createRegionalParseResult();
+    withoutTables.artifact.pages[0]!.regions =
+      withoutTables.artifact.pages[0]!.regions!.filter(
+        (region) => region.kind !== "table",
+      );
+    withoutTables.artifact.pages[0]!.blocks =
+      withoutTables.artifact.pages[0]!.blocks.filter(
+        (block) => block.kind !== "table_cell",
+      );
+    vi.mocked(getParseResult).mockResolvedValue(withoutTables);
+    const next = mount();
+    await screen.findByRole("img");
+    fireEvent.click(screen.getByRole("button", { name: "Таблицы" }));
+    expect(
+      screen.getByText(/Табличные области не найдены/),
+    ).toBeInTheDocument();
+    next.unmount();
+    next.client.clear();
+  });
+  it("объясняет отсутствие разметки областей в старом результате", async () => {
+    const view = mount();
+    await screen.findByRole("img");
+    expect(
+      screen.getByText(
+        "Разметка областей для этого результата не выполнялась.",
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Области" }));
+    expect(
+      screen.queryByRole("button", { name: /^Область 1:/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText("Области страницы")).getByText(
+        /Разметка областей/,
+      ),
+    ).toBeInTheDocument();
+    view.unmount();
+    view.client.clear();
+  });
   it("не создаёт фокусируемые фрагменты для пустого OCR, сохраняя пустые ячейки таблиц", async () => {
     const result = structuredClone(parseResult);
     const base = result.artifact.pages[0]!.blocks[0]!;

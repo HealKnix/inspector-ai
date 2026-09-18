@@ -30,6 +30,15 @@ from tables import structure_tables
 
 
 class NoOCR:
+    def layout(self, image):
+        return [{"label": "text", "score": .99, "coordinate": [0, 0, image.width, image.height]}]
+
+    def detect_lines(self, _image):
+        return []
+
+    def recognize_lines(self, _image, _polygons):
+        raise AssertionError("Native or blank page must not invoke recognition")
+
     def recognize(self, _image):
         raise AssertionError("Native or blank page must not invoke OCR")
 
@@ -156,23 +165,34 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(artifact["coverage"], {"total_pages": 1, "readable_pages": 0, "unreadable_pages": 1})
 
     def test_small_raster_omission_is_explicit(self):
+        class HeaderOnly(NoOCR):
+            def layout(self, image):
+                return [{"label": "text", "score": .99, "coordinate": [0, 0, image.width, image.height * .3]}]
         document = pymupdf.open()
         page = document.new_page(width=400, height=400)
         page.insert_text((50, 80), "SYNTHETIC NATIVE")
         payload = io.BytesIO()
         Image.new("RGB", (10, 10), "black").save(payload, "PNG")
         page.insert_image(pymupdf.Rect(200, 200, 205, 205), stream=payload.getvalue())
-        result = parse(self.request(document.tobytes()), self.settings, self.versions, NoOCR(), lambda *_: None)
+        result = parse(self.request(document.tobytes()), self.settings, self.versions, HeaderOnly(), lambda *_: None)
         self.assertEqual(result["quality"], "LOW_QUALITY")
-        self.assertIn("RASTER_SMALL_REGION_UNREADABLE", result["reasons"])
+        self.assertIn("LAYOUT_REGIONS_UNCERTAIN", result["reasons"])
         self.assertEqual(len(result["pages"][0]["transform"]["unprocessed_regions"]), 1)
 
     def test_mixed_pdf_keeps_native_and_maps_ocr_crop_to_same_page(self):
-        class CropOCR:
-            def recognize(self, _image):
+        class CropOCR(NoOCR):
+            def layout(self, image):
+                return [{"label": "text", "score": .99, "coordinate": [0, 0, image.width, image.height * .3]},
+                        {"label": "text", "score": .99, "coordinate": [image.width * .125, image.height * .5, image.width * .875, image.height * .8]}]
+            def detect_lines(self, image):
+                if 2 < image.width / image.height < 3:
+                    return [[[image.width * .1, image.height * .2], [image.width * .9, image.height * .2],
+                             [image.width * .9, image.height * .6], [image.width * .1, image.height * .6]]]
+                return []
+            def recognize_lines(self, _image, _polygons):
                 item = block("SYNTHETIC SCAN", [.1, .2, .9, .6], "ocr")
                 item["confidence"] = .9
-                return [item], 0, 1
+                return [item]
         document = pymupdf.open()
         page = document.new_page(width=400, height=400)
         page.insert_text((50, 80), "SYNTHETIC NATIVE")
@@ -188,25 +208,28 @@ class ParserTests(unittest.TestCase):
         self.assertAlmostEqual(ocr["bbox"][0], .2, places=2)
         self.assertAlmostEqual(ocr["bbox"][1], .56, places=2)
 
-    def test_native_header_does_not_hide_vector_outline_content(self):
-        class VectorOCR:
+    def test_vector_outline_is_preserved_without_whole_page_ocr(self):
+        class VectorOCR(NoOCR):
             calls = 0
-            def recognize(self, _image):
+            def layout(self, image):
+                return [{"label": "text", "score": .99, "coordinate": [0, 0, image.width, image.height * .3]},
+                        {"label": "image", "score": .99, "coordinate": [image.width * .1, image.height * .4, image.width * .4, image.height * .7]}]
+            def recognize_lines(self, _image, _polygons):
                 self.calls += 1
                 item = block("SYNTHETIC VECTOR", [.1, .5, .8, .7], "ocr")
                 item["confidence"] = .9
-                return [item], 0, 1
+                return [item]
         document = pymupdf.open()
         page = document.new_page(width=400, height=400)
         page.insert_text((50, 80), "NATIVE HEADER")
         page.draw_polyline([(70, 230), (90, 180), (110, 230), (100, 208), (80, 208)], width=3)
         reader = VectorOCR()
         result = parse(self.request(document.tobytes()), self.settings, self.versions, reader, lambda *_: None)
-        self.assertEqual(reader.calls, 1)
-        self.assertIn("VECTOR_REGIONS_REQUIRE_REVIEW", result["reasons"])
-        self.assertIn("SYNTHETIC VECTOR", result["raw_text"])
+        self.assertEqual(reader.calls, 0)
+        self.assertNotIn("VECTOR_REGIONS_REQUIRE_REVIEW", result["reasons"])
+        self.assertNotIn("SYNTHETIC VECTOR", result["raw_text"])
         self.assertIn("NATIVE HEADER", result["raw_text"])
-        self.assertEqual(result["pages"][0]["transform"]["ocr_regions"][0]["bbox"], [0, 0, 1, 1])
+        self.assertEqual(result["pages"][0]["transform"]["ocr_regions"], [])
 
     def test_ruled_scan_geometry_retains_cells_and_merged_span(self):
         image = Image.new("RGB", (800, 500), "white")
@@ -348,7 +371,7 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(events[0][2:], ("checkpoint_verifying", {"checkpoint_validated": False, "checkpoint_pages": None, "current_page": None}))
         self.assertEqual(events[1], (1, 3, "resuming", {"checkpoint_validated": True, "checkpoint_pages": 1, "current_page": None}))
         self.assertEqual([e[3]["current_page"] for e in events if e[2] == "rendering"], [1, 3])
-        self.assertEqual([e[0] for e in events if e[2] == "extracting"], [2, 3])
+        self.assertEqual(sorted(set(e[0] for e in events if e[2] == "extracting")), [1, 2, 3])
         self.assertEqual(first["pages"][1]["image_key"], second["pages"][1]["image_key"])
         self.assertNotEqual(first["pages"][0]["image_key"], second["pages"][0]["image_key"])
         self.assertNotEqual(first["pages"][2]["image_key"], second["pages"][2]["image_key"])

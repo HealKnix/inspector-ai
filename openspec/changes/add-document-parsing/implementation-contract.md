@@ -37,6 +37,7 @@ ParseArtifact:
 ```typescript
 {
   schema_version: 1;
+  region_schema_version?: 1; // regional PDF only; absent for legacy/DOCX/XML
   source_sha256: string;
   pipeline_fingerprint: string;
   versions: Record<string, string>;
@@ -55,6 +56,16 @@ ParseArtifact:
     quality: "OK" | "LOW_QUALITY" | "ABSTAIN";
     reasons: string[];
     transform: Record<string, unknown>;
+    regions?: Array<{ // required on every page when region_schema_version=1
+      id: string; // unique across the artifact
+      kind: "text" | "table" | "graphic" | "unknown";
+      bbox: [number, number, number, number]; // same visible [0,1] page space
+      raw_class: string | null;
+      raw_score: number | null; // original Paddle confidence, not accuracy
+      method: "native" | "ocr" | "hybrid" | "native_table" | "table_ocr" | "skipped";
+      reasons: string[];
+      table_status: "not_applicable" | "structured" | "unconfirmed" | "unreadable";
+    }>;
     blocks: Array<{
       id: string;
       order: number;
@@ -70,6 +81,8 @@ ParseArtifact:
       column: number | null;
       row_span: number | null;
       column_span: number | null;
+      region_id?: string; // required in regional PDF, same-page region
+      include_in_main?: boolean; // required in regional PDF; never evidence eligibility
     }>;
   }>;
 }
@@ -127,8 +140,8 @@ These fields do not add business ProcessStatus values or change artifact schema.
 
 Phases: checking_parser, waiting_models, waiting_capacity, starting,
 checkpoint_verifying, resuming, rendering, layout, extracting, ocr,
-publishing, retry_delay. The layout phase is reserved for the conditional
-adaptive route; current production does not claim that route is enabled.
+publishing, retry_delay. The layout phase covers Paddle region detection before
+selective extraction; extracting/ocr then describe work within allowed regions.
 Waiting reasons: models_not_ready, parser_busy, retry_backoff.
 Reset reasons: pipeline_version_changed or saved_pages_unavailable.
 
@@ -149,16 +162,55 @@ Expiry saves models_not_ready_timeout, one terminal event and the manual retry
 action; restarts and redelivery do not extend the deadline. parser_busy retains
 its own capacity policy. The existing PARSING → PENDING rule is unchanged.
 
-### Conditional layout extension
+### Regional PDF extension, owner-authorized after the layout experiment
 
-The [approved regional plan](adaptive-ocr-plan.md) requires an experiment before
-adding page regions, block eligibility or the Areas viewer. The
-[31-image experiment](../../../docs/adaptive-layout-experiment.md) failed the
-table/caption separation conditions. This release therefore adds **no region
-schema** and does not filter native drawing labels from the full text.
-No automatic graphic exclusion or VLM is enabled. Legacy artifacts keep their
-existing meaning; whitespace-only OCR text fragments are omitted only in the
-viewer, while legitimate empty table cells remain visible.
+The [31-image experiment](../../../docs/adaptive-layout-experiment.md) failed
+the table/caption separation conditions. The owner subsequently requested
+implementing the regional route and improving recognition quality later. This
+authorizes the [regional plan](adaptive-ocr-plan.md) despite those measured
+limitations; it does not turn the experiment into a quality pass. VLM remains
+excluded. The region viewer exposes the selected boundaries and explanations.
+
+`region_schema_version: 1` is an additive extension of PAR schema 1, used only
+for PDFs. `versions.pdf_region_profile = "paddle-regions-v1"` identifies the
+processing profile and contributes, with code/configuration, to the complete
+fingerprint. DOCX/XML may carry the globally configured PDF profile in versions
+but retain their existing non-regional result. New-profile PDF results cannot
+omit the marker; markers and incomplete links cannot be bypassed by stored reads.
+Legacy PDFs without that profile and marker remain readable with no invented
+regions. Current cache reuse still requires the exact source hash/fingerprint.
+
+Every regional page has `regions` (including an empty array when applicable).
+Each block has a valid same-page `region_id` and boolean `include_in_main`.
+Region IDs are unique across the artifact; limits are 10,000 regions per page,
+100,000 per artifact, and the existing 64 MiB artifact bound. Coordinates and
+scores are finite; region boxes use the same original visible page space as
+blocks. Whole native glyphs can cross a region edge, so validation does not clip
+or reject a native block merely for exceeding its region box.
+
+Text methods are native/ocr/hybrid. Table methods are native_table/table_ocr/hybrid;
+partly covered tables can retain native text and OCR only missing content.
+Graphic/unknown regions always use skipped with at least one explicit reason;
+their blocks are native text only and `include_in_main=false`. OCR is invalid
+in such regions. Native/native_table methods also forbid OCR blocks. OCR-only
+methods can retain invalid native text for audit with `include_in_main=false`.
+Excluded native duplicates alongside reconstructed cells also remain in the
+full result. `include_in_main=true` is allowed only in text/table regions; it is
+a presentation filter, never approval of a fact for the control matrix.
+
+Non-table regions use table_status=not_applicable. Structured tables require
+actual table_cell blocks, including legitimate empty cells. Unconfirmed or
+unreadable tables retain an explanation and available plain text, without
+invented cells. A table ID cannot span different regions on one page. Regional
+table grids must remain valid in both fresh and stored reads. Whitespace-only
+OCR text blocks are rejected; empty real table cells are preserved.
+
+`raw_text` and `normalized_text` preserve the existing full extraction meaning,
+including retained native labels in graphic/unknown regions and cell alternatives.
+The API never drops excluded blocks or rewrites full text during validation.
+Coverage continues to count pages with nonempty extracted normalized text,
+including excluded native labels. A deliberately skipped graphic-only page may
+have quality OK and zero textual coverage: coverage is not a quality verdict.
 
 The owner-selected OCR pipeline is PP-StructureV3 with mobile1536 detection,
 the Russian eslav recognizer and nine pinned local models. It keeps overall OCR

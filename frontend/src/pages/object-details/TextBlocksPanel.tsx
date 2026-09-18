@@ -2,11 +2,12 @@ import { Button } from "@heroui/react";
 import { useEffect, useRef } from "react";
 
 import type { RenderedPage, TextBlock } from "@/api/types/parsing";
-import { TableBlocksPanel } from "./TableBlocksPanel";
 import { isVisibleDocumentBlock } from "./document-blocks";
 import { textBlockLabel } from "./parsing-labels";
+import { RegionPanel } from "./RegionPanel";
+import { TableBlocksPanel } from "./TableBlocksPanel";
 
-export type TextView = "fragments" | "tables" | "document";
+export type TextView = "fragments" | "tables" | "document" | "regions";
 
 export function TextBlocksPanel({
   blocks,
@@ -19,6 +20,10 @@ export function TextBlocksPanel({
   onMode,
   onSelect,
   onTableSelect,
+  page,
+  selectedRegionId,
+  onRegionSelect,
+  onTableRegionSelect,
 }: {
   blocks: TextBlock[];
   pages: RenderedPage[];
@@ -30,6 +35,10 @@ export function TextBlocksPanel({
   onMode: (mode: "normalized_text" | "raw_text") => void;
   onSelect: (id: string) => void;
   onTableSelect: (page: number, id: string) => void;
+  page: RenderedPage;
+  selectedRegionId: string | null;
+  onRegionSelect: (id: string) => void;
+  onTableRegionSelect: (page: number, id: string) => void;
 }) {
   const visibleBlocks = blocks.filter(isVisibleDocumentBlock);
   const selected = visibleBlocks.find((block) => block.id === selectedId);
@@ -51,6 +60,7 @@ export function TextBlocksPanel({
         {(
           [
             ["fragments", "Фрагменты"],
+            ["regions", "Области"],
             ["tables", "Таблицы"],
             ["document", "Весь документ"],
           ] as const
@@ -70,6 +80,7 @@ export function TextBlocksPanel({
         <Button
           size="sm"
           variant={mode === "normalized_text" ? "secondary" : "ghost"}
+          aria-pressed={mode === "normalized_text"}
           onPress={() => onMode("normalized_text")}
         >
           Нормализованный
@@ -77,21 +88,38 @@ export function TextBlocksPanel({
         <Button
           size="sm"
           variant={mode === "raw_text" ? "secondary" : "ghost"}
+          aria-pressed={mode === "raw_text"}
           onPress={() => onMode("raw_text")}
         >
           Исходный
         </Button>
       </div>
-      <p className="text-copy-muted mb-3 text-xs leading-5">
-        Выберите фрагмент на странице или в тексте. Нормализация упорядочивает
-        пробелы, сохраняя знаки и буквы.
-      </p>
+      {view === "fragments" && (
+        <p className="text-copy-muted mb-3 text-xs leading-5">
+          Выберите фрагмент на странице или в тексте. Нормализация упорядочивает
+          пробелы, сохраняя знаки и буквы.
+        </p>
+      )}
+      {view === "regions" && (
+        <RegionPanel
+          page={page}
+          selectedId={selectedRegionId}
+          mode={mode}
+          onSelect={onRegionSelect}
+          onBlockSelect={onSelect}
+        />
+      )}
       {view === "document" && (
         <div>
           <p className="text-copy-muted mb-3 text-xs leading-5">
             Весь извлечённый текст, включая шапку, подписи и заключение. OCR и
             ячейки таблиц могут повторять одно содержимое; расхождения нужно
             сверять с оригиналом.
+          </p>
+          <p className="text-copy-muted mb-3 text-xs leading-5">
+            Полный текст включает сохранённые надписи из графических и
+            неопределённых областей. Наличие текста не означает, что он признан
+            доказательством для проверки по матрице.
           </p>
           <div
             aria-label="Полный текст документа"
@@ -107,11 +135,14 @@ export function TextBlocksPanel({
           selectedId={selectedId}
           mode={mode}
           onSelect={onTableSelect}
+          onRegionSelect={onTableRegionSelect}
         />
       )}
       {view === "fragments" && visibleBlocks.length === 0 && (
         <p className="text-copy-muted py-6 text-sm">
-          На этой странице нет читаемого текста.
+          {page.regions
+            ? "В основном представлении этой страницы нет текстовых фрагментов. Проверьте области и полный текст."
+            : "На этой странице нет читаемого текста."}
         </p>
       )}
       {view === "fragments" && (
@@ -138,7 +169,7 @@ export function TextBlocksPanel({
             ))}
         </ol>
       )}
-      {selected && (
+      {selected && view === "fragments" && (
         <div className="text-copy-muted border-border mt-4 space-y-2 border-t pt-3 text-xs leading-5">
           <p>
             Источник:{" "}

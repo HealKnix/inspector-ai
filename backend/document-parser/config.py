@@ -33,6 +33,13 @@ PREDICT_OPTIONS = {
     "use_e2e_wired_table_rec_model": False, "use_e2e_wireless_table_rec_model": True,
 }
 
+# Routing policy, not a claim of OCR accuracy. Included in every fingerprint.
+REGION_OPTIONS = {"native_line_coverage": .90, "native_tolerance_pixels": 2,
+                  "native_coverage_measure": "foreground-ink-v1", "foreground_threshold": 180,
+                  "detector_padding_pixels": 16,
+                  "layout_min_score": .50, "conflict_overlap": .15,
+                  "layout_profile": "PP-DocLayout_plus-L-original-v1"}
+
 
 def verify_models(root):
     expected = json.loads((Path(__file__).parent / "model-lock.json").read_text(encoding="utf-8"))
@@ -98,6 +105,8 @@ class Settings:
             "parser": "par-local-1", "normalization": "nfc-horizontal-space-v1",
             "renderer": "pymupdf-pillow-semantic-v1", "table_detector": "pp-structure-v3-guarded-v1",
             "ocr_engine": "PP-StructureV3",
+            "pdf_region_profile": "paddle-regions-v1",
+            "pdf_region_config": hashlib.sha256(json.dumps(REGION_OPTIONS, sort_keys=True).encode()).hexdigest(),
             "ocr_profile": "mobile1536-eslav-cpu-mkldnn-off-v1",
             "ocr_config": hashlib.sha256(json.dumps({"models": MODEL_ROLES, "init": OCR_OPTIONS, "predict": PREDICT_OPTIONS,
                                       "table_textline_orientation": False}, sort_keys=True).encode()).hexdigest(),

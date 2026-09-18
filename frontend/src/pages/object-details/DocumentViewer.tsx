@@ -8,6 +8,19 @@ import { TextBlocksPanel, type TextView } from "./TextBlocksPanel";
 import { isVisibleDocumentBlock } from "./document-blocks";
 import { qualityLabels, qualityReasonLabel } from "./parsing-labels";
 
+export interface DocumentViewState {
+  view: TextView;
+  mode: "normalized_text" | "raw_text";
+  blockId: string | null;
+  regionId: string | null;
+}
+const defaultDocumentViewState: DocumentViewState = {
+  view: "fragments",
+  mode: "normalized_text",
+  blockId: null,
+  regionId: null,
+};
+
 export function DocumentViewer({
   objectId,
   file,
@@ -16,6 +29,8 @@ export function DocumentViewer({
   pageNumber,
   onPage,
   onClose,
+  viewState,
+  onNavigate,
 }: {
   objectId: string;
   file: ParsingFile;
@@ -24,6 +39,8 @@ export function DocumentViewer({
   pageNumber: number;
   onPage: (page: number) => void;
   onClose: () => void;
+  viewState?: DocumentViewState;
+  onNavigate?: (page: number, state: DocumentViewState) => void;
 }) {
   const viewerRef = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -87,6 +104,8 @@ export function DocumentViewer({
           result={result}
           pageNumber={pageNumber}
           onPage={onPage}
+          viewState={viewState}
+          onNavigate={onNavigate}
         />
       )}
     </section>
@@ -99,24 +118,23 @@ function DocumentContent({
   result,
   pageNumber,
   onPage,
+  viewState,
+  onNavigate,
 }: {
   objectId: string;
   file: ParsingFile;
   result: ParseResult;
   pageNumber: number;
   onPage: (page: number) => void;
+  viewState?: DocumentViewState;
+  onNavigate?: (page: number, state: DocumentViewState) => void;
 }) {
   const { artifact } = result;
   const [search, setSearch] = useState("");
-  const [textView, setTextView] = useState<TextView>("fragments");
-  const [mode, setMode] = useState<"normalized_text" | "raw_text">(
-    "normalized_text",
-  );
+  const [localState, setLocalState] = useState(defaultDocumentViewState);
+  const state = viewState ?? localState;
+  const { view: textView, mode } = state;
   const [zoom, setZoom] = useState<number | "fit">("fit");
-  const [selection, setSelection] = useState<{
-    page: number;
-    id: string;
-  } | null>(null);
   const page =
     artifact.pages.find((item) => item.page_number === pageNumber) ??
     artifact.pages[0];
@@ -134,8 +152,14 @@ function DocumentContent({
           .map((block) => ({ page: item.page_number, block })),
       )
     : [];
-  const selectedId =
-    selection?.page === page?.page_number ? selection?.id : null;
+  const selectedId = page?.blocks.some((block) => block.id === state.blockId)
+    ? state.blockId
+    : null;
+  const selectedRegionId = page?.regions?.some(
+    (region) => region.id === state.regionId,
+  )
+    ? state.regionId
+    : null;
   const matchIndex = matches.findIndex(
     (match) =>
       match.page === page?.page_number && match.block.id === selectedId,
@@ -144,9 +168,20 @@ function DocumentContent({
   function selectMatch(index: number) {
     const match = matches[index];
     if (!match) return;
-    onPage(match.page);
-    setTextView("fragments");
-    setSelection({ page: match.page, id: match.block.id });
+    navigate(match.page, {
+      view: "fragments",
+      blockId: match.block.id,
+      regionId: null,
+    });
+  }
+
+  function navigate(nextPage: number, patch: Partial<DocumentViewState>) {
+    const next = { ...state, ...patch };
+    if (onNavigate) onNavigate(nextPage, next);
+    else {
+      setLocalState(next);
+      onPage(nextPage);
+    }
   }
 
   if (!page)
@@ -164,24 +199,59 @@ function DocumentContent({
             artifact.quality === "OK" ? "text-copy-muted" : "text-warning"
           }
         >
-          {qualityLabels[artifact.quality]}
+          {artifact.region_schema_version === 1
+            ? artifact.quality === "OK"
+              ? "Обработка областей завершена"
+              : "Часть областей требует проверки"
+            : qualityLabels[artifact.quality]}
         </p>
         <p className="text-copy-muted">
           Страниц с прочитанным текстом: {artifact.coverage.readable_pages} из{" "}
           {artifact.coverage.total_pages}; без читаемого текста:{" "}
           {artifact.coverage.unreadable_pages}.
         </p>
-        {artifact.reasons.length > 0 && (
-          <ul className="text-copy-muted mt-1 text-xs">
-            {artifact.reasons.map((reason, index) => (
-              <li key={`${index}:${reason}`}>{qualityReasonLabel(reason)}</li>
-            ))}
-          </ul>
-        )}
+        {artifact.region_schema_version === 1 &&
+          artifact.reasons.length > 0 && (
+            <details className="text-copy-muted mt-2 text-xs leading-5">
+              <summary className="cursor-pointer">
+                Ограничения обработки документа
+              </summary>
+              <p className="mt-1">
+                Выберите область, чтобы увидеть причину ограничения и
+                сохранённые данные.
+              </p>
+              <ul>
+                {artifact.reasons.map((reason, index) => (
+                  <li key={`${index}:${reason}`}>
+                    {qualityReasonLabel(reason)}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        {artifact.region_schema_version !== 1 &&
+          artifact.reasons.length > 0 && (
+            <ul className="text-copy-muted mt-1 text-xs">
+              {artifact.reasons.map((reason, index) => (
+                <li key={`${index}:${reason}`}>{qualityReasonLabel(reason)}</li>
+              ))}
+            </ul>
+          )}
         <p className="text-copy-muted mt-1 text-xs">
           Качество относится к распознаванию, а не к соответствию документа
           требованиям.
         </p>
+        {artifact.region_schema_version !== 1 && (
+          <p className="text-copy-muted mt-1 text-xs">
+            Разметка областей для этого результата не выполнялась.
+          </p>
+        )}
+        {artifact.region_schema_version === 1 && (
+          <p className="text-copy-muted mt-1 text-xs">
+            Текст и таблицы обработаны по областям. Графика и неопределённые
+            области сохранены без OCR; их содержимое не считается проверенным.
+          </p>
+        )}
         <p className="text-copy-muted mt-1 text-xs">
           Движок распознавания:{" "}
           {artifact.versions.ocr_engine || "не указан в результате"}
@@ -194,7 +264,9 @@ function DocumentContent({
           size="sm"
           variant="outline"
           isDisabled={page.page_number <= 1}
-          onPress={() => onPage(page.page_number - 1)}
+          onPress={() =>
+            navigate(page.page_number - 1, { blockId: null, regionId: null })
+          }
           aria-label="Предыдущая страница"
         >
           ←
@@ -207,7 +279,9 @@ function DocumentContent({
           size="sm"
           variant="outline"
           isDisabled={page.page_number >= artifact.pages.length}
-          onPress={() => onPage(page.page_number + 1)}
+          onPress={() =>
+            navigate(page.page_number + 1, { blockId: null, regionId: null })
+          }
           aria-label="Следующая страница"
         >
           →
@@ -249,7 +323,7 @@ function DocumentContent({
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Найти текст в документе"
+          placeholder="Найти текст в основных фрагментах"
           className="min-w-40 flex-1"
         />
         {term && (
@@ -282,9 +356,25 @@ function DocumentContent({
           </>
         )}
       </div>
+      {artifact.region_schema_version === 1 && (
+        <p className="text-copy-muted text-xs">
+          Поиск выполняется по основным фрагментам. Исключённые надписи доступны
+          в областях и полном тексте.
+        </p>
+      )}
       <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(260px,360px)]">
         <div className="min-w-0 space-y-3">
-          {page.quality !== "OK" && (
+          {artifact.region_schema_version === 1 && page.reasons.length > 0 && (
+            <details className="text-copy-muted text-xs leading-5">
+              <summary className="cursor-pointer">
+                Ограничения страницы {page.page_number}
+              </summary>
+              {page.reasons.map((reason, index) => (
+                <p key={`${index}:${reason}`}>{qualityReasonLabel(reason)}</p>
+              ))}
+            </details>
+          )}
+          {artifact.region_schema_version !== 1 && page.quality !== "OK" && (
             <div className="text-warning text-xs leading-5">
               <p>{qualityLabels[page.quality]}</p>
               {page.reasons.map((reason, index) => (
@@ -307,9 +397,21 @@ function DocumentContent({
               )
             }
             onSelect={(id) => {
-              setSelection({ page: page.page_number, id });
-              setTextView("fragments");
+              navigate(page.page_number, {
+                blockId: id,
+                view: "fragments",
+                regionId: null,
+              });
             }}
+            showRegions={textView === "regions"}
+            selectedRegionId={selectedRegionId}
+            onRegionSelect={(id) =>
+              navigate(page.page_number, {
+                regionId: id,
+                blockId: null,
+                view: "regions",
+              })
+            }
           />
         </div>
         <TextBlocksPanel
@@ -317,15 +419,32 @@ function DocumentContent({
           pages={artifact.pages}
           fullText={artifact[mode]}
           view={textView}
-          onView={setTextView}
+          onView={(view) => navigate(page.page_number, { view })}
           selectedId={selectedId ?? null}
           mode={mode}
-          onMode={setMode}
-          onSelect={(id) => setSelection({ page: page.page_number, id })}
+          onMode={(mode) => navigate(page.page_number, { mode })}
+          onSelect={(id) =>
+            navigate(page.page_number, {
+              blockId: id,
+              view: "fragments",
+              regionId: null,
+            })
+          }
           onTableSelect={(selectedPage, id) => {
-            onPage(selectedPage);
-            setSelection({ page: selectedPage, id });
+            navigate(selectedPage, { blockId: id, regionId: null });
           }}
+          page={page}
+          selectedRegionId={selectedRegionId}
+          onRegionSelect={(id) =>
+            navigate(page.page_number, { regionId: id, blockId: null })
+          }
+          onTableRegionSelect={(selectedPage, id) =>
+            navigate(selectedPage, {
+              regionId: id,
+              blockId: null,
+              view: "regions",
+            })
+          }
         />
       </div>
     </div>

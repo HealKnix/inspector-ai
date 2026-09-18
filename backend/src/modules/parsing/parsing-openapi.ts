@@ -147,7 +147,90 @@ const block: Schema = {
       description:
         "Число занятых столбцов; column + column_span — безопасное целое в новых результатах",
     },
+    region_id: {
+      type: "string",
+      minLength: 1,
+      maxLength: 256,
+      description:
+        "Обязателен при region_schema_version=1; ссылка на область этой же страницы",
+    },
+    include_in_main: {
+      type: "boolean",
+      description:
+        "Включение в основное представление, не признание доказательством; false сохраняет фрагмент в полном тексте",
+    },
   },
+};
+const region: Schema = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "id",
+    "kind",
+    "bbox",
+    "raw_class",
+    "raw_score",
+    "method",
+    "reasons",
+    "table_status",
+  ],
+  properties: {
+    id: {
+      type: "string",
+      minLength: 1,
+      maxLength: 256,
+      description: "Уникален в пределах артефакта",
+    },
+    kind: { type: "string", enum: ["text", "table", "graphic", "unknown"] },
+    bbox,
+    raw_class: { type: "string", minLength: 1, maxLength: 128, nullable: true },
+    raw_score: {
+      type: "number",
+      minimum: 0,
+      maximum: 1,
+      nullable: true,
+      description: "Исходная оценка Paddle, не измеренная точность",
+    },
+    method: {
+      type: "string",
+      enum: ["native", "ocr", "hybrid", "native_table", "table_ocr", "skipped"],
+    },
+    reasons,
+    table_status: {
+      type: "string",
+      enum: ["not_applicable", "structured", "unconfirmed", "unreadable"],
+    },
+  },
+  oneOf: [
+    {
+      properties: {
+        kind: { type: "string", enum: ["graphic", "unknown"] },
+        method: { type: "string", enum: ["skipped"] },
+        reasons: { ...reasons, minItems: 1 },
+        table_status: { type: "string", enum: ["not_applicable"] },
+      },
+    },
+    {
+      properties: {
+        kind: { type: "string", enum: ["text"] },
+        method: { type: "string", enum: ["native", "ocr", "hybrid"] },
+        table_status: { type: "string", enum: ["not_applicable"] },
+      },
+    },
+    {
+      properties: {
+        kind: { type: "string", enum: ["table"] },
+        method: {
+          type: "string",
+          enum: ["native_table", "table_ocr", "hybrid"],
+        },
+        table_status: {
+          type: "string",
+          enum: ["structured", "unconfirmed", "unreadable"],
+        },
+      },
+    },
+  ],
 };
 export const parseArtifactSchema: Schema = {
   type: "object",
@@ -166,6 +249,12 @@ export const parseArtifactSchema: Schema = {
   ],
   properties: {
     schema_version: { type: "integer", enum: [1] },
+    region_schema_version: {
+      type: "integer",
+      enum: [1],
+      description:
+        "Добавочный контракт регионального PDF. Без поля — исторический результат без разметки областей либо DOCX/XML.",
+    },
     source_sha256: hash,
     pipeline_fingerprint: hash,
     versions: {
@@ -183,8 +272,18 @@ export const parseArtifactSchema: Schema = {
       required: ["total_pages", "readable_pages", "unreadable_pages"],
       properties: {
         total_pages: { type: "integer", minimum: 1 },
-        readable_pages: { type: "integer", minimum: 0 },
-        unreadable_pages: { type: "integer", minimum: 0 },
+        readable_pages: {
+          type: "integer",
+          minimum: 0,
+          description:
+            "Страницы с извлечённым текстом, включая сохранённые native-надписи графики",
+        },
+        unreadable_pages: {
+          type: "integer",
+          minimum: 0,
+          description:
+            "Страницы без извлечённого текста; плановый пропуск графики не означает плохое качество документа",
+        },
       },
     },
     pages: {
@@ -225,8 +324,71 @@ export const parseArtifactSchema: Schema = {
           reasons,
           transform,
           blocks: { type: "array", items: block },
+          regions: {
+            type: "array",
+            maxItems: 10_000,
+            items: region,
+            description:
+              "Обязателен при region_schema_version=1; максимум 100000 областей на артефакт",
+          },
         },
       },
     },
   },
+  oneOf: [
+    {
+      not: { required: ["region_schema_version"] },
+      properties: {
+        pages: {
+          type: "array",
+          items: {
+            type: "object",
+            not: { required: ["regions"] },
+            properties: {
+              blocks: {
+                type: "array",
+                items: {
+                  type: "object",
+                  not: {
+                    anyOf: [
+                      { required: ["region_id"] },
+                      { required: ["include_in_main"] },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    {
+      required: ["region_schema_version"],
+      properties: {
+        versions: {
+          type: "object",
+          required: ["pdf_region_profile"],
+          properties: {
+            pdf_region_profile: { type: "string", enum: ["paddle-regions-v1"] },
+          },
+        },
+        pages: {
+          type: "array",
+          items: {
+            type: "object",
+            required: ["regions"],
+            properties: {
+              blocks: {
+                type: "array",
+                items: {
+                  type: "object",
+                  required: ["region_id", "include_in_main"],
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  ],
 };

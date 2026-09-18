@@ -8,7 +8,7 @@ export const parsingStateLabels: Record<ParsingFile["state"], string> = {
 };
 
 export const qualityLabels = {
-  OK: "Текст извлечён",
+  OK: "Обработка завершена",
   LOW_QUALITY: "Низкое качество распознавания",
   ABSTAIN: "Не удалось уверенно распознать",
 } as const;
@@ -45,6 +45,7 @@ const errorLabels: Record<string, string> = {
   block_limit: "Объём фрагментов превышает допустимый предел.",
   output_size_limit: "Объём результата превышает допустимый предел.",
   resource_limit: "Для обработки документа недостаточно ресурсов.",
+  region_limit: "На странице слишком много областей для одной обработки.",
   stale_run: "Комплект документов изменился.",
 };
 
@@ -55,6 +56,24 @@ export function parsingFailureLabel(code: string | null) {
 }
 
 const reasonLabels: Record<string, string> = {
+  GRAPHIC_PRESERVED:
+    "Графическая область сохранена для отдельного анализа без OCR",
+  OCR_LINE_CROSSES_EXCLUDED_REGION:
+    "Строка пересекает графическую или неопределённую область; OCR этой строки пропущен",
+  LAYOUT_REGIONS_UNCERTAIN:
+    "Тип части областей не определён. Подробности доступны в режиме «Области»",
+  LAYOUT_UNSUPPORTED_CLASS:
+    "Модель отнесла область к неподдерживаемому типу; OCR пропущен",
+  LAYOUT_LOW_CONFIDENCE:
+    "Недостаточно уверенности в типе области; OCR пропущен",
+  LAYOUT_BOUNDARY_CONFLICT: "Границы областей конфликтуют; OCR пропущен",
+  NATIVE_OUTSIDE_LAYOUT:
+    "Текстовый слой найден вне выделенных областей и сохранён без OCR",
+  CONTENT_OUTSIDE_LAYOUT:
+    "Обнаружено содержимое вне выделенных областей; OCR пропущен",
+  TABLE_STRUCTURE_UNAVAILABLE:
+    "Структуру таблицы восстановить не удалось. Доступный текст сохранён",
+  NO_DETECTED_TEXT: "Детектор не нашёл строк текста в области",
   OCR_UNVERIFIED: "Распознанный текст требует проверки",
   OCR_LOW_CONFIDENCE: "Есть неуверенно распознанные фрагменты",
   OCR_DETECTION_WITHOUT_TEXT:

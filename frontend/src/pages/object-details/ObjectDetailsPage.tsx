@@ -7,7 +7,7 @@ import type { ParsingFile } from "@/api/types/parsing";
 import { UploadIcon } from "@/components/UploadIcon";
 import routeNames from "@/routes/routeNames";
 import { DocumentUploader } from "./DocumentUploader";
-import { DocumentViewer } from "./DocumentViewer";
+import { DocumentViewer, type DocumentViewState } from "./DocumentViewer";
 import { FilesTable } from "./FilesTable";
 import { ParsingPanel } from "./ParsingPanel";
 
@@ -37,11 +37,33 @@ export function ObjectDetailsPage() {
     Number.isSafeInteger(requestedDocumentPage) && requestedDocumentPage > 0
       ? requestedDocumentPage
       : 1;
+  const requestedView = params.get("documentView");
+  const viewState: DocumentViewState = {
+    view:
+      requestedView === "regions" ||
+      requestedView === "tables" ||
+      requestedView === "document"
+        ? requestedView
+        : "fragments",
+    mode:
+      params.get("documentText") === "raw_text"
+        ? "raw_text"
+        : "normalized_text",
+    regionId: params.get("documentRegion"),
+    blockId: params.get("documentBlock"),
+  };
 
   function openDocument(file: ParsingFile) {
     setParams((current) => {
       current.set("file", file.file_id);
       current.set("documentPage", "1");
+      for (const key of [
+        "documentView",
+        "documentText",
+        "documentRegion",
+        "documentBlock",
+      ])
+        current.delete(key);
       return current;
     });
   }
@@ -163,6 +185,21 @@ export function ObjectDetailsPage() {
                   sourceFormat={selectedOriginal?.format}
                   sourceHash={selectedOriginal?.sha256}
                   pageNumber={documentPage}
+                  viewState={viewState}
+                  onNavigate={(next, state) =>
+                    setParams((current) => {
+                      current.set("documentPage", String(next));
+                      current.set("documentView", state.view);
+                      current.set("documentText", state.mode);
+                      if (state.regionId)
+                        current.set("documentRegion", state.regionId);
+                      else current.delete("documentRegion");
+                      if (state.blockId)
+                        current.set("documentBlock", state.blockId);
+                      else current.delete("documentBlock");
+                      return current;
+                    })
+                  }
                   onPage={(next) =>
                     setParams(
                       (current) => {
@@ -176,6 +213,13 @@ export function ObjectDetailsPage() {
                     setParams((current) => {
                       current.delete("file");
                       current.delete("documentPage");
+                      for (const key of [
+                        "documentView",
+                        "documentText",
+                        "documentRegion",
+                        "documentBlock",
+                      ])
+                        current.delete(key);
                       return current;
                     })
                   }

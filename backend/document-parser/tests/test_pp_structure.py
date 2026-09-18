@@ -148,6 +148,12 @@ class StructureTests(unittest.TestCase):
                     second = settings.versions()
                 self.assertNotEqual(first["ocr_config"], second["ocr_config"])
                 self.assertNotEqual(fingerprint(first), fingerprint(second))
+                from config import REGION_OPTIONS
+                with patch.dict(REGION_OPTIONS, native_line_coverage=.95):
+                    regional = settings.versions()
+                self.assertNotEqual(first["pdf_region_config"], regional["pdf_region_config"])
+                self.assertNotEqual(fingerprint(first), fingerprint(regional))
+                self.assertEqual(first["pdf_region_profile"], "paddle-regions-v1")
                 self.assertTrue(all(isinstance(v, str) and len(v) <= 256 for v in first.values()))
                 maximum = replace(settings, timeout=3600, max_pages=10000, max_pixels=80000000,
                     max_bytes=1073741824, max_xml_bytes=104857600, max_blocks=1000000, cpu_threads=16,

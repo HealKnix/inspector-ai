@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import type { RenderedPage, TextBlock } from "@/api/types/parsing";
+import { RegionTableStatus } from "./RegionTableStatus";
 import { buildTableGrid, groupTableCells } from "./table-layout";
 
 export function TableBlocksPanel({
@@ -8,13 +9,22 @@ export function TableBlocksPanel({
   selectedId,
   mode,
   onSelect,
+  compact = false,
+  onRegionSelect,
 }: {
   pages: RenderedPage[];
   selectedId: string | null;
   mode: "normalized_text" | "raw_text";
   onSelect: (page: number, id: string) => void;
+  compact?: boolean;
+  onRegionSelect?: (page: number, id: string) => void;
 }) {
   const tables = groupTableCells(pages);
+  const tableRegions = pages.flatMap((page) =>
+    (page.regions ?? [])
+      .filter((region) => region.kind === "table")
+      .map((region) => ({ page: page.page_number, region })),
+  );
   const selectedRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     selectedRef.current?.scrollIntoView?.({
@@ -43,13 +53,37 @@ export function TableBlocksPanel({
       className="max-h-[620px] space-y-5 overflow-auto"
       aria-label="Распознанные таблицы"
     >
-      <p className="text-copy-muted text-xs leading-5">
-        Таблицы со всех страниц. Выберите ячейку, чтобы увидеть её область на
-        странице. Текст вне таблиц доступен во фрагментах и полном тексте.
-      </p>
-      {!tables.length && (
+      {!compact && (
+        <p className="text-copy-muted text-xs leading-5">
+          Таблицы со всех страниц. Выберите ячейку, чтобы увидеть её область на
+          странице. Текст вне таблиц доступен во фрагментах и полном тексте.
+        </p>
+      )}
+      {!compact &&
+        tableRegions
+          .filter(({ region }) => region.table_status !== "structured")
+          .map(({ page, region }) => (
+            <section key={`${page}:${region.id}`} className="space-y-1">
+              <h3 className="text-sm font-medium">
+                Область таблицы · страница {page}
+              </h3>
+              <RegionTableStatus region={region} />
+              {onRegionSelect && (
+                <button
+                  type="button"
+                  onClick={() => onRegionSelect(page, region.id)}
+                  className="text-accent text-sm underline underline-offset-4"
+                >
+                  Открыть область таблицы
+                </button>
+              )}
+            </section>
+          ))}
+      {!tables.length && !tableRegions.length && (
         <p className="text-copy-muted text-sm">
-          Структура таблиц не выделена. Проверьте извлечённый текст и оригинал.
+          {pages.every((page) => page.regions !== undefined)
+            ? "Табличные области не найдены. При сомнении проверьте оригинал."
+            : "Структура таблиц не выделена. Проверьте извлечённый текст и оригинал."}
         </p>
       )}
       {tables.map((table, index) => {
@@ -79,7 +113,7 @@ export function TableBlocksPanel({
                             {block ? (
                               cellButton(block, table.page)
                             ) : (
-                              <span className="sr-only">
+                              <span className="text-copy-muted block p-2 text-xs">
                                 Ячейка не извлечена
                               </span>
                             )}

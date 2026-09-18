@@ -1,26 +1,107 @@
+"""Adaptive PDF extraction: original render → layout → native/selected OCR."""
 import math
 
-from common import ParseError, bbox_pixels, block, finalize_page, normalize, save_page
-from tables import structure_tables
+from common import ParseError, bbox_pixels, block, finalize_page, save_page
+from pdf_regions import (attach_native, layout_regions, native_table_cells, overlap,
+                         residual_regions, uncovered_lines, valid_native)
 
 
-def overlap(a, b):
-    intersection = max(0, min(a[2], b[2]) - max(a[0], b[0])) * max(0, min(a[3], b[3]) - max(a[1], b[1]))
-    area = max(1e-12, (a[2] - a[0]) * (a[3] - a[1]))
-    return intersection / area
+def render_region(page, region, settings):
+    """Render this crop directly from the PDF at the configured DPI once."""
+    import pymupdf
+    from PIL import Image
+    width, height = page.rect.width, page.rect.height
+    a, b, c, d = region["bbox"]
+    rect = pymupdf.Rect(a * width, b * height, c * width, d * height)
+    scale = min(settings.render_dpi / 72, math.sqrt(settings.max_pixels / max(1., rect.get_area())))
+    if scale < settings.render_dpi / 72:
+        region["reasons"].append("RENDER_RESOLUTION_LIMITED")
+    raster = page.get_pixmap(matrix=pymupdf.Matrix(scale, scale), clip=rect, alpha=False, colorspace=pymupdf.csRGB)
+    image = Image.frombytes("RGB", (raster.width, raster.height), raster.samples)
+    # Integer device origin gives the exact translation even with CropBox+Rotate.
+    box = bbox_pixels([raster.x / scale, raster.y / scale,
+                       (raster.x + raster.width) / scale, (raster.y + raster.height) / scale], width, height)
+    return image, box
 
 
-def merge_regions(regions):
-    merged = []
-    for candidate in regions:
-        for index, previous in enumerate(merged):
-            if overlap(candidate, previous) > 0 or overlap(previous, candidate) > 0:
-                merged[index] = [min(candidate[0], previous[0]), min(candidate[1], previous[1]),
-                                 max(candidate[2], previous[2]), max(candidate[3], previous[3])]
-                break
+def local_native(native, crop_box):
+    a, b, c, d = crop_box
+    return [{**item, "bbox": [(item["bbox"][0] - a) / (c - a), (item["bbox"][1] - b) / (d - b),
+                              (item["bbox"][2] - a) / (c - a), (item["bbox"][3] - b) / (d - b)]} for item in native]
+
+
+def map_to_page(item, crop_box, owner):
+    a, b, c, d = crop_box
+    x0, y0, x1, y1 = item["bbox"]
+    item["bbox"] = [max(0., min(1., value)) for value in
+                    (a + x0 * (c - a), b + y0 * (d - b), a + x1 * (c - a), b + y1 * (d - b))]
+    item.update(region_id=owner["id"], include_in_main=True)
+    if item["table_id"]:
+        item["table_id"] = f'{owner["id"]}-{item["table_id"]}'
+    return item
+
+
+def process_region(page, owner, blocks, settings, ocr, progress, excluded):
+    if owner["kind"] in ("graphic", "unknown"):
+        return
+    native = [item for item in blocks if item.get("region_id") == owner["id"] and item["source"] == "native"]
+    usable = [item for item in native if item["_native_valid"]]
+    if len(usable) != len(native):
+        owner["reasons"].append("NATIVE_TEXT_ENCODING")
+    crop, crop_box = render_region(page, owner, settings)
+    local = local_native(usable, crop_box)
+    polygons = ocr.detect_lines(crop)
+    allowed = []
+    for polygon in polygons:
+        xs, ys = zip(*polygon)
+        line_box = bbox_pixels([min(xs), min(ys), max(xs), max(ys)], crop.width, crop.height)
+        located = map_to_page(block("", line_box, "ocr"), crop_box, owner)["bbox"]
+        if any(overlap(located, box) > 0 for box in excluded):
+            owner["reasons"].append("OCR_LINE_CROSSES_EXCLUDED_REGION")
         else:
-            merged.append(candidate)
-    return merged
+            allowed.append(polygon)
+    polygons = allowed
+    missing = uncovered_lines(polygons, local, crop.size, crop)
+    recognized = []
+    if missing:
+        progress("ocr")
+        recognized = ocr.recognize_lines(crop, missing)
+        owner["reasons"].append("OCR_UNVERIFIED")
+        if len(recognized) < len(missing):
+            owner["reasons"].append("OCR_DETECTION_WITHOUT_TEXT")
+        if any(item["confidence"] is not None and item["confidence"] < .8 for item in recognized):
+            owner["reasons"].append("OCR_LOW_CONFIDENCE")
+    elif not polygons and not usable:
+        owner["reasons"].append("NO_DETECTED_TEXT")
+    if owner["kind"] == "text":
+        owner["method"] = "hybrid" if missing and usable else "ocr" if missing or not usable else "native"
+        blocks.extend(map_to_page(item, crop_box, owner) for item in recognized)
+        return
+    cells = []
+    if usable and not missing:
+        owner["method"] = "native_table"
+        cells = native_table_cells(page, owner, usable, page.number + 1)
+        for item in cells:
+            item.update(region_id=owner["id"], include_in_main=True)
+    else:
+        owner["method"] = "hybrid" if usable else "table_ocr"
+        if local or recognized:
+            progress("ocr")
+            candidates, table_reasons = ocr.structure_region(crop, local + recognized)
+            cells = [map_to_page(item, crop_box, owner) for item in candidates if item["kind"] == "table_cell"]
+            owner["reasons"].extend(reason for reason in table_reasons if reason != "OCR_TABLE_TEXT_DIFFERENCE")
+            blocks.extend(map_to_page(item, crop_box, owner) for item in candidates if item["kind"] != "table_cell")
+        blocks.extend(map_to_page(item, crop_box, owner) for item in recognized)
+    if cells:
+        owner["table_status"] = "structured"
+        owner["reasons"].append("TABLE_STRUCTURE_UNVERIFIED")
+        for item in native:
+            if any(overlap(item["bbox"], cell["bbox"]) >= .5 and item["raw_text"] in cell["raw_text"] for cell in cells):
+                item["include_in_main"] = False
+        blocks.extend(cells)
+    else:
+        owner["table_status"] = "unconfirmed" if usable or recognized else "unreadable"
+        owner["reasons"].append("TABLE_STRUCTURE_UNAVAILABLE")
 
 
 def parse_pdf(path, settings, versions, ocr, progress, checkpoint=None):
@@ -36,16 +117,13 @@ def parse_pdf(path, settings, versions, ocr, progress, checkpoint=None):
             raise ParseError("PDF_ENCRYPTED")
         if document.page_count > settings.max_pages:
             raise ParseError("PAGE_LIMIT")
-        # Verify every checkpoint before publishing a resumable count. Counting
-        # only the visited prefix would reset progress even when later pages are
-        # already durable (or conceal a corrupt/missing image in that prefix).
         progress(0, document.page_count, "checkpoint_verifying", {"checkpoint_validated": False,
                  "checkpoint_pages": None, "current_page": None})
         cached_pages = {}
         if checkpoint:
             for number in range(1, document.page_count + 1):
                 cached = checkpoint(number)
-                if cached:
+                if cached and "regions" in cached and all("region_id" in item and "include_in_main" in item for item in cached["blocks"]):
                     cached_pages[number] = cached
         completed = len(cached_pages)
         progress(completed, document.page_count, "resuming" if completed else "extracting",
@@ -54,7 +132,8 @@ def parse_pdf(path, settings, versions, ocr, progress, checkpoint=None):
             if number in cached_pages:
                 pages.append(cached_pages.pop(number))
                 continue
-            progress(completed, document.page_count, "rendering", {"current_page": number})
+            stage = lambda name: progress(completed, document.page_count, name, {"current_page": number})
+            stage("rendering")
             reasons = []
             width, height = page.rect.width, page.rect.height
             if width <= 0 or height <= 0 or not math.isfinite(width * height):
@@ -66,10 +145,22 @@ def parse_pdf(path, settings, versions, ocr, progress, checkpoint=None):
             if raster.width * raster.height > settings.max_pixels + raster.width + raster.height:
                 raise ParseError("RENDER_PIXEL_LIMIT")
             image = Image.frombytes("RGB", (raster.width, raster.height), raster.samples)
+            stage("layout")
+            regions = layout_regions(ocr.layout(image), image, number)
+            stage("extracting")
             blocks = []
             flags = pymupdf.TEXTFLAGS_DICT & ~pymupdf.TEXT_PRESERVE_IMAGES
-            for native in page.get_text("dict", flags=flags)["blocks"]:
-                for line in native.get("lines", []):
+            native_data = page.get_text("dict", flags=flags)["blocks"]
+            strict_data = page.get_text("dict", flags=flags & ~getattr(pymupdf, "TEXT_CID_FOR_UNKNOWN_UNICODE", 0))["blocks"]
+            # Audit text keeps the previous extractor's exact characters,
+            # including CID fallbacks. The strict reading is only a suitability
+            # check: replacing audit characters with U+FFFD would lose data.
+            # Match traversal positions AND geometry; never zip/truncate or
+            # silently attach a neighbouring line's validation result.
+            strict_lines = {(bi, li): line for bi, native in enumerate(strict_data)
+                            for li, line in enumerate(native.get("lines", []))}
+            for block_index, native in enumerate(native_data):
+                for line_index, line in enumerate(native.get("lines", [])):
                     text = "".join(span["text"] for span in line["spans"])
                     if not text.strip():
                         continue
@@ -78,114 +169,33 @@ def parse_pdf(path, settings, versions, ocr, progress, checkpoint=None):
                     if rect.is_empty:
                         continue
                     item = block(text, bbox_pixels(rect, width, height), "native")
+                    strict = strict_lines.get((block_index, line_index))
+                    strict_text = "".join(span["text"] for span in strict["spans"]) if strict else None
+                    item["_native_valid"] = (strict is not None and strict["bbox"] == line["bbox"]
+                                             and strict.get("dir") == line.get("dir") and strict_text == text
+                                             and valid_native(strict_text, strict.get("dir", []), strict["bbox"]))
                     blocks.append(item)
-            if any("\ufffd" in item["raw_text"] for item in blocks):
-                reasons.append("NATIVE_TEXT_ENCODING")
-            regions = []
-            unprocessed_regions = []
-            for info in page.get_image_info():
-                rect = pymupdf.Rect(info["bbox"]) * page.rotation_matrix
-                rect &= page.rect
-                if not rect.is_empty and rect.get_area() / (width * height) >= .002:
-                    regions.append(bbox_pixels(rect, width, height))
-                elif not rect.is_empty:
-                    unprocessed_regions.append({"bbox": bbox_pixels(rect, width, height), "reason": "RASTER_SMALL_REGION_UNREADABLE"})
-            if not blocks or "NATIVE_TEXT_ENCODING" in reasons:
-                regions = [[0, 0, 1, 1]]
-                unprocessed_regions = []
-            # CAD/exported text may be outlines rather than image objects. A
-            # native header must not hide those areas. One masked whole-page
-            # fallback bounds the work regardless of the number of paths.
-            uncovered_vectors = 0
-            if blocks:
-                for drawing in page.get_drawings():
-                    rect = pymupdf.Rect(drawing["rect"]) * page.rotation_matrix
-                    rect &= page.rect
-                    if rect.is_empty or rect.get_area() <= 0:
-                        continue
-                    colors = [color for color in (drawing.get("fill"), drawing.get("color")) if color is not None]
-                    if colors and all(all(channel > .95 for channel in color) for color in colors):
-                        continue
-                    candidate = bbox_pixels(rect, width, height)
-                    if not any(overlap(candidate, native["bbox"]) >= .95 for native in blocks):
-                        uncovered_vectors += 1
-                if uncovered_vectors:
-                    reasons.append("VECTOR_REGIONS_REQUIRE_REVIEW")
-                    regions, unprocessed_regions = [[0, 0, 1, 1]], []
-            if unprocessed_regions:
-                reasons.append("RASTER_SMALL_REGION_UNREADABLE")
-            regions = merge_regions(regions)
-            ocr_regions = []
-            # A broken native text layer is retained for audit, but cannot suppress OCR.
-            native_blocks = [item for item in blocks if "\ufffd" not in item["raw_text"]]
-            for region in regions:
-                x0, y0 = int(region[0] * image.width), int(region[1] * image.height)
-                x1, y1 = min(image.width, math.ceil(region[2] * image.width)), min(image.height, math.ceil(region[3] * image.height))
-                if x1 <= x0 or y1 <= y0:
-                    continue
-                progress(completed, document.page_count, "ocr", {"current_page": number})
-                crop = image.crop((x0, y0, x1, y1))
-                # Mask legible native text in this image region so a scanned attachment
-                # receives OCR without re-recognizing an entire searchable text layer.
-                from PIL import ImageDraw
-                mask = ImageDraw.Draw(crop)
-                for native in native_blocks:
-                    a, b, c, d = native["bbox"]
-                    mask.rectangle((a * image.width - x0 - 2, b * image.height - y0 - 2,
-                                    c * image.width - x0 + 2, d * image.height - y0 + 2), fill="white")
-                import numpy as np
-                pixels = np.array(crop.convert("L"))
-                if (pixels < 180).mean() < .0002:
-                    continue
-                recognized, rotation, detected = ocr.recognize(crop)
-                ocr_regions.append({"bbox": region, "rotation": rotation, "detected_regions": detected,
-                                    "orientation_model_score": getattr(ocr, "orientation_score", None)})
-                reasons.extend(["OCR_UNVERIFIED", "RASTER_REGIONS_REQUIRE_REVIEW"])
-                reasons.extend(getattr(ocr, "reasons", []))
-                if getattr(ocr, "orientation_ambiguous", False):
-                    reasons.append("OCR_ORIENTATION_AMBIGUOUS")
-                if getattr(ocr, "detected_without_text", detected > len(recognized)):
-                    reasons.append("OCR_DETECTION_WITHOUT_TEXT")
-                for item in recognized:
-                    if item["table_id"]:
-                        item["table_id"] = f'r{len(ocr_regions)}-{item["table_id"]}'
-                    if item["structural_path"]:
-                        item["structural_path"] = f'region[{len(ocr_regions)}]/{item["structural_path"]}'
-                    a, b, c, d = item["bbox"]
-                    item["bbox"] = bbox_pixels((x0 + a * crop.width, y0 + b * crop.height,
-                                                x0 + c * crop.width, y0 + d * crop.height), image.width, image.height)
-                    if item["kind"] == "table_cell" and not item["normalized_text"]:
-                        # The crop masked a genuine native text layer. Populate
-                        # only empty recognized cells from those exact characters.
-                        contents = [part for part in native_blocks if overlap(part["bbox"], item["bbox"]) >= .8]
-                        if contents:
-                            item["raw_text"] = "\n".join(part["raw_text"] for part in contents)
-                            item["normalized_text"] = normalize(item["raw_text"])
-                            item["source"] = "native"
-                    # Preserve native text when both methods saw the same location.
-                    if item["kind"] == "text" and any(overlap(item["bbox"], native["bbox"]) >= .65 for native in native_blocks):
-                        continue
-                    if item["confidence"] is not None and item["confidence"] < .8:
-                        reasons.append("OCR_LOW_CONFIDENCE")
-                    blocks.append(item)
+            attach_native(blocks, regions, number)
+            residual_regions(image, regions, number)
+            excluded = [owner["bbox"] for owner in regions if owner["kind"] in ("graphic", "unknown")]
+            for owner in regions:
+                process_region(page, owner, blocks, settings, ocr, stage, excluded)
+                owner["reasons"] = sorted(set(owner["reasons"]))
+                if owner["kind"] in ("text", "table"):
+                    reasons.extend(owner["reasons"])
+            if any(owner["kind"] == "unknown" for owner in regions):
+                reasons.append("LAYOUT_REGIONS_UNCERTAIN")
+            blocks = [item for item in blocks if item["kind"] == "table_cell" or item["normalized_text"]]
+            for item in blocks:
+                item.pop("_native_valid", None)
             if len(blocks) > settings.max_blocks:
                 raise ParseError("BLOCK_LIMIT")
-            # PP-Structure already supplied guarded OCR tables. Reapplying ruled
-            # geometry here would turn a rejected drawing frame back into cells.
-            found_tables = False
-            if not ocr_regions:
-                blocks, found_tables = structure_tables(blocks, image, number)
-            if found_tables:
-                reasons.append("TABLE_GEOMETRY_UNVERIFIED")
             readable = any(item["normalized_text"] for item in blocks)
-            if not readable:
+            planned_graphic = bool(regions) and all(owner["kind"] == "graphic" for owner in regions)
+            if not readable and not planned_graphic:
                 reasons.append("NO_READABLE_TEXT")
             key, sha = save_page(image, settings.storage / "derived")
-            # PyMuPDF 1.27's transformation_matrix loses the CropBox translation
-            # while /Rotate is nonzero. Read the PDF→native matrix with rotation
-            # temporarily cleared, then compose the exact original rotation.
-            rotation = page.rotation
-            native_rotation = page.rotation_matrix
+            rotation, native_rotation = page.rotation, page.rotation_matrix
             try:
                 page.set_rotation(0)
                 pdf_to_native = page.transformation_matrix
@@ -195,8 +205,8 @@ def parse_pdf(path, settings, versions, ocr, progress, checkpoint=None):
             normalized_transform = transform * pymupdf.Matrix(1 / width, 1 / height)
             result = finalize_page({"page_number": number, "sheet_label": page.get_label() or None,
                 "width": image.width, "height": image.height, "image_key": key, "image_sha256": sha,
-                "quality": ("LOW_QUALITY" if reasons else "OK") if readable else "ABSTAIN",
-                "reasons": reasons, "blocks": blocks,
+                "quality": ("LOW_QUALITY" if reasons else "OK") if readable or planned_graphic else "ABSTAIN",
+                "reasons": reasons, "blocks": blocks, "regions": regions,
                 "transform": {"renderer": versions["renderer"], "coordinate_space": "visible-page-normalized",
                     "media_box": list(page.mediabox), "crop_box": list(page.cropbox), "rotation": page.rotation,
                     "visible_width_points": width, "visible_height_points": height,
@@ -204,8 +214,11 @@ def parse_pdf(path, settings, versions, ocr, progress, checkpoint=None):
                     "matrix_coordinate_space": "visible-page-points",
                     "pdf_to_normalized": list(normalized_transform), "normalized_to_pdf": list(~normalized_transform),
                     "native_to_visible": list(page.rotation_matrix), "visible_to_native": list(page.derotation_matrix),
-                    "render_width": image.width, "render_height": image.height, "ocr_regions": ocr_regions,
-                    "unprocessed_regions": unprocessed_regions, "uncovered_vector_paths": uncovered_vectors}})
+                    "render_width": image.width, "render_height": image.height,
+                    "ocr_regions": [{"bbox": owner["bbox"], "region_id": owner["id"], "rotation": 0}
+                                    for owner in regions if owner["method"] in ("ocr", "table_ocr", "hybrid")],
+                    "unprocessed_regions": [{"bbox": owner["bbox"], "reason": "GRAPHIC_PRESERVED" if owner["kind"] == "graphic" else "LAYOUT_REGIONS_UNCERTAIN"}
+                                            for owner in regions if owner["kind"] in ("graphic", "unknown")]}})
             pages.append(result)
             if checkpoint:
                 checkpoint(number, result)

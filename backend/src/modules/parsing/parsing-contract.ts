@@ -4,6 +4,17 @@ export const HASH = /^[0-9a-f]{64}$/;
 export const MAX_ARTIFACT_BYTES = 64 * 1024 * 1024;
 export type Quality = "OK" | "LOW_QUALITY" | "ABSTAIN";
 export type ArtifactValidationMode = "strict" | "stored";
+export interface ParseRegion {
+  id: string;
+  kind: "text" | "table" | "graphic" | "unknown";
+  bbox: [number, number, number, number];
+  raw_class: string | null;
+  raw_score: number | null;
+  method:
+    "native" | "ocr" | "hybrid" | "native_table" | "table_ocr" | "skipped";
+  reasons: string[];
+  table_status: "not_applicable" | "structured" | "unconfirmed" | "unreadable";
+}
 export interface ParseBlock {
   id: string;
   order: number;
@@ -19,6 +30,8 @@ export interface ParseBlock {
   column: number | null;
   row_span: number | null;
   column_span: number | null;
+  region_id?: string;
+  include_in_main?: boolean;
 }
 export interface ParsePage {
   page_number: number;
@@ -31,9 +44,11 @@ export interface ParsePage {
   reasons: string[];
   transform: Record<string, unknown>;
   blocks: ParseBlock[];
+  regions?: ParseRegion[];
 }
 export interface ParseArtifactData {
   schema_version: 1;
+  region_schema_version?: 1;
   source_sha256: string;
   pipeline_fingerprint: string;
   versions: Record<string, string>;
@@ -72,7 +87,7 @@ function integer(value: unknown, min = 0): value is number {
 function quality(value: unknown): value is Quality {
   return value === "OK" || value === "LOW_QUALITY" || value === "ABSTAIN";
 }
-function reasons(value: unknown) {
+function reasons(value: unknown): value is string[] {
   return (
     Array.isArray(value) &&
     value.length <= 100 &&
@@ -96,6 +111,100 @@ function box(value: unknown): value is number[] {
 }
 function vector(value: unknown, size: number): value is number[] {
   return Array.isArray(value) && value.length === size && value.every(finite);
+}
+
+function validateRegion(value: unknown): ParseRegion {
+  check(record(value));
+  const fields = new Set([
+    "id",
+    "kind",
+    "bbox",
+    "raw_class",
+    "raw_score",
+    "method",
+    "reasons",
+    "table_status",
+  ]);
+  check(Object.keys(value).every((key) => fields.has(key)));
+  check(
+    typeof value.id === "string" &&
+      value.id.length > 0 &&
+      value.id.length <= 256,
+  );
+  check(box(value.bbox) && reasons(value.reasons));
+  check(
+    value.raw_class === null ||
+      (typeof value.raw_class === "string" &&
+        value.raw_class.length > 0 &&
+        value.raw_class.length <= 128),
+  );
+  check(
+    value.raw_score === null ||
+      (finite(value.raw_score) && value.raw_score >= 0 && value.raw_score <= 1),
+  );
+  if (value.kind === "graphic" || value.kind === "unknown") {
+    check(
+      value.method === "skipped" &&
+        value.table_status === "not_applicable" &&
+        value.reasons.length > 0,
+    );
+  } else if (value.kind === "text") {
+    check(
+      ["native", "ocr", "hybrid"].includes(String(value.method)) &&
+        value.table_status === "not_applicable",
+    );
+  } else {
+    check(value.kind === "table");
+    check(
+      ["native_table", "table_ocr", "hybrid"].includes(String(value.method)),
+    );
+    check(
+      ["structured", "unconfirmed", "unreadable"].includes(
+        String(value.table_status),
+      ),
+    );
+    check(value.table_status === "structured" || value.reasons.length > 0);
+  }
+  return value as unknown as ParseRegion;
+}
+
+function validateRegionBlock(
+  block: Record<string, unknown>,
+  regions: Map<string, ParseRegion>,
+) {
+  check(
+    typeof block.region_id === "string" &&
+      typeof block.include_in_main === "boolean",
+  );
+  const region = regions.get(block.region_id);
+  check(region);
+  // Region boundaries need not contain whole glyphs; intersecting native runs
+  // retain their original geometry rather than being clipped to the layout box.
+  check(block.source === "native" || block.source === "ocr");
+  if (region.method === "skipped") {
+    check(
+      block.source === "native" &&
+        block.include_in_main === false &&
+        block.kind === "text",
+    );
+  } else if (region.method === "native" || region.method === "native_table") {
+    check(block.source === "native");
+  } else if (region.method === "ocr" || region.method === "table_ocr") {
+    // Invalid native Unicode is retained for audit alongside replacement OCR.
+    check(block.source !== "native" || block.include_in_main === false);
+  }
+  if (block.kind === "table_cell") {
+    check(region.kind === "table" && region.table_status === "structured");
+  }
+  if (block.source === "ocr" && block.kind === "text") {
+    check(
+      typeof block.raw_text === "string" && block.raw_text.trim().length > 0,
+    );
+    check(
+      typeof block.normalized_text === "string" &&
+        block.normalized_text.trim().length > 0,
+    );
+  }
 }
 
 interface GridCell {
@@ -156,6 +265,7 @@ export function validateArtifact(
   check(record(value));
   const allowed = new Set([
     "schema_version",
+    "region_schema_version",
     "source_sha256",
     "pipeline_fingerprint",
     "versions",
@@ -172,6 +282,11 @@ export function validateArtifact(
       HASH.test(sourceHash) &&
       HASH.test(fingerprint),
   );
+  check(
+    value.region_schema_version === undefined ||
+      value.region_schema_version === 1,
+  );
+  const regional = value.region_schema_version === 1;
   check(
     value.source_sha256 === sourceHash &&
       value.pipeline_fingerprint === fingerprint,
@@ -212,8 +327,10 @@ export function validateArtifact(
       value.pages.length,
   );
   const ids = new Set<string>();
+  const regionIds = new Set<string>();
   const imageKeys = new Set<string>();
   let blockCount = 0;
+  let readablePages = 0;
   for (const [index, page] of value.pages.entries()) {
     check(record(page) && page.page_number === index + 1);
     check(
@@ -246,6 +363,24 @@ export function validateArtifact(
         page.transform.coordinate_space === "visible-page-normalized",
     );
     const transform = page.transform;
+    const pdfPage = transform.structural_mapping !== true;
+    if (regional)
+      check(
+        pdfPage && value.versions.pdf_region_profile === "paddle-regions-v1",
+      );
+    if (pdfPage && value.versions.pdf_region_profile === "paddle-regions-v1")
+      check(regional);
+    const pageRegions = new Map<string, ParseRegion>();
+    if (regional) {
+      check(Array.isArray(page.regions) && page.regions.length <= 10_000);
+      for (const item of page.regions) {
+        const region = validateRegion(item);
+        check(!regionIds.has(region.id));
+        regionIds.add(region.id);
+        check(regionIds.size <= 100_000);
+        pageRegions.set(region.id, region);
+      }
+    } else check(page.regions === undefined);
     check(
       typeof transform.renderer === "string" &&
         transform.renderer.length > 0 &&
@@ -316,6 +451,8 @@ export function validateArtifact(
     check(blockCount <= 1_000_000);
     let previousOrder = -1;
     const tables = new Map<string, GridCell[]>();
+    const regionTableCells = new Set<string>();
+    const tableRegions = new Map<string, string>();
     for (const block of page.blocks) {
       check(
         record(block) &&
@@ -342,6 +479,14 @@ export function validateArtifact(
           block.source === "ocr" ||
           block.source === "structured",
       );
+      if (regional) {
+        validateRegionBlock(block, pageRegions);
+        if (block.kind === "table_cell")
+          regionTableCells.add(block.region_id as string);
+      } else
+        check(
+          block.region_id === undefined && block.include_in_main === undefined,
+        );
       check(
         block.structural_path === null ||
           (typeof block.structural_path === "string" &&
@@ -372,10 +517,18 @@ export function validateArtifact(
             integer(block.row_span, 1) &&
             integer(block.column_span, 1),
         );
+        if (regional) {
+          const regionId = block.region_id as string;
+          check(
+            !tableRegions.has(block.table_id) ||
+              tableRegions.get(block.table_id) === regionId,
+          );
+          tableRegions.set(block.table_id, regionId);
+        }
         // Earlier immutable DOCX artifacts used the same grid position for
         // several paragraph fragments. They remain readable, but must never
         // enter a new publication through a parser response or cache reuse.
-        if (mode === "strict") {
+        if (mode === "strict" || regional) {
           const rowEnd = block.row + block.row_span;
           const columnEnd = block.column + block.column_span;
           check(integer(rowEnd, 1) && integer(columnEnd, 1));
@@ -390,8 +543,23 @@ export function validateArtifact(
         }
       }
     }
+    for (const region of pageRegions.values()) {
+      if (region.table_status === "structured")
+        check(regionTableCells.has(region.id));
+    }
+    if (
+      page.blocks.some(
+        (block: Record<string, unknown>) =>
+          typeof block.normalized_text === "string" &&
+          block.normalized_text.length > 0,
+      )
+    )
+      readablePages++;
     for (const cells of tables.values()) validateTableGrid(cells);
   }
+  // Coverage describes extracted text, not whether planned graphic skipping is
+  // an error. A regional graphic-only page may be OK with zero readable pages.
+  if (regional) check(value.coverage.readable_pages === readablePages);
   return value as unknown as ParseArtifactData;
 }
 

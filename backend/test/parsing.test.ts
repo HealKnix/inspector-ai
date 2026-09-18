@@ -17,6 +17,7 @@ import { AuthService } from "../src/modules/auth/auth.service.js";
 import { canonicalJson } from "../src/modules/documents/canonical-json.js";
 import {
   ParsingError,
+  type ParseArtifactData,
   type ParsingMessage,
 } from "../src/modules/parsing/parsing-contract.js";
 import { ParsingJobsService } from "../src/modules/parsing/parsing-jobs.service.js";
@@ -55,6 +56,8 @@ let parserMode:
   | "parse_not_ready"
   | "admitted_failure"
   | "missing_image"
+  | "regions"
+  | "invalid_region"
   | "disconnect" = "ok";
 let holdResponse: (() => Promise<void>) | undefined;
 
@@ -70,6 +73,7 @@ function digest(data: Buffer | string) {
 }
 async function seed(
   content = Buffer.from(`<synthetic id="${randomUUID()}"/>`),
+  format: "XML" | "PDF" = "XML",
 ) {
   const object = await prisma.constructionObject.create({
     data: { name: "Синтетический объект PAR", createdBy: inspector.id },
@@ -115,8 +119,8 @@ async function seed(
       objectId: object.id,
       processId: process.id,
       runId,
-      originalName: "synthetic.xml",
-      format: "XML",
+      originalName: `synthetic.${format.toLowerCase()}`,
+      format,
       size: content.length,
       sha256: digest(content),
       storageKey,
@@ -239,7 +243,11 @@ beforeAll(async () => {
         request_id: string;
       };
       lastParsedRequest = body.request_id;
-      expect(body.format).toBe("xml");
+      expect(body.format).toBe(
+        parserMode === "regions" || parserMode === "invalid_region"
+          ? "pdf"
+          : "xml",
+      );
       parseCalls++;
       if (holdResponse) await holdResponse();
       if (parserMode === "busy") {
@@ -277,59 +285,116 @@ beforeAll(async () => {
       const imageKey = randomUUID();
       if (parserMode !== "missing_image")
         await writeFile(resolve(root, "derived", imageKey), png);
-      res.end(
-        JSON.stringify({
-          schema_version: 1,
-          source_sha256:
-            parserMode === "invalid" ? "f".repeat(64) : body.source_sha256,
-          pipeline_fingerprint: fingerprint,
-          versions: { parser: "synthetic-v1" },
-          raw_text: "Синтетический текст №1",
-          normalized_text: "Синтетический текст №1",
-          quality: "OK",
-          reasons: [],
-          coverage: { total_pages: 1, readable_pages: 1, unreadable_pages: 0 },
-          pages: [
-            {
-              page_number: 1,
-              sheet_label: null,
-              width: 1,
-              height: 1,
-              image_key: imageKey,
-              image_sha256: digest(png),
-              quality: "OK",
-              reasons: [],
-              transform: {
-                renderer: "synthetic",
-                coordinate_space: "visible-page-normalized",
-                structural_mapping: true,
-                font_sha256: fingerprint,
-                layout: "synthetic",
-                render_width: 1,
-                render_height: 1,
-              },
-              blocks: [
-                {
-                  id: "p1:b0",
-                  order: 0,
-                  kind: "text",
-                  raw_text: "Синтетический текст №1",
-                  normalized_text: "Синтетический текст №1",
-                  bbox: [0, 0, 1, 1],
-                  confidence: null,
-                  source: "structured",
-                  structural_path: "/synthetic",
-                  table_id: null,
-                  row: null,
-                  column: null,
-                  row_span: null,
-                  column_span: null,
-                },
-              ],
+      const artifact: ParseArtifactData = {
+        schema_version: 1,
+        source_sha256:
+          parserMode === "invalid" ? "f".repeat(64) : body.source_sha256,
+        pipeline_fingerprint: fingerprint,
+        versions: { parser: "synthetic-v1" },
+        raw_text: "Синтетический текст №1",
+        normalized_text: "Синтетический текст №1",
+        quality: "OK",
+        reasons: [],
+        coverage: { total_pages: 1, readable_pages: 1, unreadable_pages: 0 },
+        pages: [
+          {
+            page_number: 1,
+            sheet_label: null,
+            width: 1,
+            height: 1,
+            image_key: imageKey,
+            image_sha256: digest(png),
+            quality: "OK",
+            reasons: [],
+            transform: {
+              renderer: "synthetic",
+              coordinate_space: "visible-page-normalized",
+              structural_mapping: true,
+              font_sha256: fingerprint,
+              layout: "synthetic",
+              render_width: 1,
+              render_height: 1,
             },
-          ],
-        }),
-      );
+            blocks: [
+              {
+                id: "p1:b0",
+                order: 0,
+                kind: "text",
+                raw_text: "Синтетический текст №1",
+                normalized_text: "Синтетический текст №1",
+                bbox: [0, 0, 1, 1],
+                confidence: null,
+                source: "structured",
+                structural_path: "/synthetic",
+                table_id: null,
+                row: null,
+                column: null,
+                row_span: null,
+                column_span: null,
+              },
+            ],
+          },
+        ],
+      };
+      if (parserMode === "regions" || parserMode === "invalid_region") {
+        artifact.region_schema_version = 1;
+        artifact.versions.pdf_region_profile = "paddle-regions-v1";
+        const page = artifact.pages[0]!;
+        page.transform = {
+          renderer: "synthetic-pdf",
+          coordinate_space: "visible-page-normalized",
+          render_width: 1,
+          render_height: 1,
+          media_box: [0, 0, 1, 1],
+          crop_box: [0, 0, 1, 1],
+          rotation: 0,
+          pdf_to_visible: [1, 0, 0, 1, 0, 0],
+          visible_to_pdf: [1, 0, 0, 1, 0, 0],
+        };
+        page.regions = [
+          {
+            id: "p1:r1",
+            kind: "text",
+            bbox: [0, 0, 0.5, 1],
+            raw_class: "text",
+            raw_score: 0.9,
+            method: "native",
+            reasons: [],
+            table_status: "not_applicable",
+          },
+          {
+            id: "p1:r2",
+            kind: "graphic",
+            bbox: [0.5, 0, 1, 1],
+            raw_class: "image",
+            raw_score: 0.8,
+            method: "skipped",
+            reasons: ["graphic_preserved"],
+            table_status: "not_applicable",
+          },
+        ];
+        Object.assign(page.blocks[0]!, {
+          source: "native",
+          structural_path: null,
+          region_id: "p1:r1",
+          include_in_main: true,
+          bbox: [0, 0, 0.5, 1],
+        });
+        page.blocks.push({
+          ...page.blocks[0]!,
+          id: "p1:b1",
+          order: 1,
+          source: parserMode === "invalid_region" ? "ocr" : "native",
+          region_id: "p1:r2",
+          include_in_main: false,
+          raw_text: "−1,200",
+          normalized_text: "−1,200",
+          bbox: [0.5, 0, 1, 1],
+        });
+        artifact.raw_text += "\n−1,200";
+        artifact.normalized_text = artifact.raw_text;
+      }
+      res.end(JSON.stringify(artifact));
     })().catch(() => {
       res.statusCode = 500;
       res.end("{}");
@@ -384,6 +449,66 @@ afterAll(async () => {
 });
 
 describe("PAR durable execution and access (real PG/broker/storage, parser fault fixture)", () => {
+  it("publishes regional PDF data unchanged, retains excluded native text and rejects OCR in skipped regions", async () => {
+    // Synthetic transport fixture only: actual Paddle quality is tested locally
+    // against the control corpus, not inferred from this queue/API regression.
+    parserMode = "regions";
+    try {
+      const content = Buffer.from(`synthetic-regional-pdf-${randomUUID()}`);
+      const item = await seed(content, "PDF");
+      await run(item);
+      const response = await get(prefix(item)).expect(200);
+      const body = response.body as {
+        artifact: ParseArtifactData;
+        artifact_id: string;
+      };
+      expect(body.artifact.region_schema_version).toBe(1);
+      expect(body.artifact.pages[0]!.regions).toHaveLength(2);
+      expect(body.artifact.pages[0]!.blocks[1]).toMatchObject({
+        region_id: "p1:r2",
+        include_in_main: false,
+        source: "native",
+        raw_text: "−1,200",
+      });
+      expect(body.artifact.raw_text).toBe("Синтетический текст №1\n−1,200");
+      await get(
+        prefix(item) + "/pages/1?artifact_id=" + body.artifact_id,
+      ).expect(200);
+      const calls = parseCalls;
+      const cached = await seed(content, "PDF");
+      await run(cached);
+      expect(parseCalls).toBe(calls);
+      const cachedBody = (await get(prefix(cached)).expect(200)).body as {
+        artifact: ParseArtifactData;
+      };
+      expect(cachedBody.artifact).toEqual(body.artifact);
+
+      parserMode = "invalid_region";
+      const invalid = await seed(
+        Buffer.from(`synthetic-invalid-pdf-${randomUUID()}`),
+        "PDF",
+      );
+      await run(invalid);
+      expect(
+        await prisma.parsingTask.findUniqueOrThrow({
+          where: { id: (await message(invalid)).task_id },
+        }),
+      ).toMatchObject({
+        state: "failed",
+        errorCode: "parser_invalid_result",
+        attempts: 1,
+      });
+      await get(prefix(invalid)).expect(409);
+      expect(
+        await prisma.parseArtifact.count({
+          where: { taskId: (await message(invalid)).task_id },
+        }),
+      ).toBe(0);
+    } finally {
+      parserMode = "ok";
+    }
+  });
+
   it("backfills legacy Runs once, publishes through duplicate Rabbit delivery, and survives Redis loss", async () => {
     const item = await seed();
     await jobs.recover();
