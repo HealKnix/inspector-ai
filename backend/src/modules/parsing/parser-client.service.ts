@@ -7,6 +7,14 @@ import {
   record,
 } from "./parsing-contract.js";
 
+export function isParserNotAdmitted(error: unknown): error is ParsingError {
+  return (
+    error instanceof ParsingError &&
+    error.retryable &&
+    (error.code === "parser_busy" || error.code === "models_not_ready")
+  );
+}
+
 @Injectable()
 export class ParserClientService {
   readonly timeoutMs: number;
@@ -39,6 +47,13 @@ export class ParserClientService {
       });
       const body: unknown = await response.json();
       if (
+        response.status === 503 &&
+        record(body) &&
+        body.code === "models_not_ready" &&
+        body.retryable === true
+      )
+        throw new ParsingError("models_not_ready", true);
+      if (
         !response.ok ||
         !record(body) ||
         body.status !== "ok" ||
@@ -47,7 +62,8 @@ export class ParserClientService {
       )
         throw new Error();
       return body.pipeline_fingerprint;
-    } catch {
+    } catch (error) {
+      if (isParserNotAdmitted(error)) throw error;
       throw new ParsingError("parser_unavailable", true);
     }
   }
@@ -85,8 +101,15 @@ export class ParserClientService {
           typeof error.code === "string" &&
           /^[a-z0-9_]{1,80}$/.test(error.code) &&
           typeof error.retryable === "boolean"
-        )
+        ) {
+          // Only the explicit 503 readiness response proves non-admission.
+          if (error.code === "models_not_ready" && response.status !== 503)
+            throw new ParsingError(
+              "parser_unavailable",
+              response.status >= 500,
+            );
           throw new ParsingError(error.code, error.retryable);
+        }
         throw new ParsingError("parser_unavailable", response.status >= 500);
       }
       if (!response.body)
@@ -119,11 +142,8 @@ export class ParserClientService {
     } catch (error) {
       // A transport failure may arrive after Python accepted the request. Cancel
       // its UUID even when fetch failed without aborting our own deadline signal.
-      // Busy is an explicit non-admission and must never cancel another request.
-      if (
-        requestStarted &&
-        !(error instanceof ParsingError && error.code === "parser_busy")
-      )
+      // Capacity/readiness refusals never admitted this request.
+      if (requestStarted && !isParserNotAdmitted(error))
         await this.cancel(input.request_id);
       if (error instanceof ParsingError) throw error;
       throw new ParsingError(

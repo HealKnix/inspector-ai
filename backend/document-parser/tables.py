@@ -78,7 +78,7 @@ def structure_tables(blocks, image, page_number):
                     consumed.add(index)
                     matched.append(item)
             matched.sort(key=lambda item: (item["bbox"][1], item["bbox"][0]))
-            source = "ocr" if any(item["source"] == "ocr" for item in matched) else "native"
+            source = "ocr" if any(item["source"] == "ocr" for item in blocks) else "native"
             item = block("\n".join(item["raw_text"] for item in matched), cell["bbox"], source,
                          table_id=f"p{page_number}-t{table_index + 1}",
                          **{k: v for k, v in cell.items() if k != "bbox"})

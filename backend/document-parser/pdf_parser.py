@@ -1,6 +1,6 @@
 import math
 
-from common import ParseError, bbox_pixels, block, finalize_page, save_page
+from common import ParseError, bbox_pixels, block, finalize_page, normalize, save_page
 from tables import structure_tables
 
 
@@ -129,24 +129,41 @@ def parse_pdf(path, settings, versions, ocr, progress, checkpoint=None):
                 recognized, rotation, detected = ocr.recognize(crop)
                 ocr_regions.append({"bbox": region, "rotation": rotation, "detected_regions": detected,
                                     "orientation_model_score": getattr(ocr, "orientation_score", None)})
-                reasons.extend(["OCR_UNVERIFIED", "RASTER_REGIONS_REQUIRE_REVIEW", "BORDERLESS_TABLES_UNSUPPORTED"])
+                reasons.extend(["OCR_UNVERIFIED", "RASTER_REGIONS_REQUIRE_REVIEW"])
+                reasons.extend(getattr(ocr, "reasons", []))
                 if getattr(ocr, "orientation_ambiguous", False):
                     reasons.append("OCR_ORIENTATION_AMBIGUOUS")
-                if detected > len(recognized):
+                if getattr(ocr, "detected_without_text", detected > len(recognized)):
                     reasons.append("OCR_DETECTION_WITHOUT_TEXT")
                 for item in recognized:
+                    if item["table_id"]:
+                        item["table_id"] = f'r{len(ocr_regions)}-{item["table_id"]}'
+                    if item["structural_path"]:
+                        item["structural_path"] = f'region[{len(ocr_regions)}]/{item["structural_path"]}'
                     a, b, c, d = item["bbox"]
                     item["bbox"] = bbox_pixels((x0 + a * crop.width, y0 + b * crop.height,
                                                 x0 + c * crop.width, y0 + d * crop.height), image.width, image.height)
+                    if item["kind"] == "table_cell" and not item["normalized_text"]:
+                        # The crop masked a genuine native text layer. Populate
+                        # only empty recognized cells from those exact characters.
+                        contents = [part for part in native_blocks if overlap(part["bbox"], item["bbox"]) >= .8]
+                        if contents:
+                            item["raw_text"] = "\n".join(part["raw_text"] for part in contents)
+                            item["normalized_text"] = normalize(item["raw_text"])
+                            item["source"] = "native"
                     # Preserve native text when both methods saw the same location.
-                    if any(overlap(item["bbox"], native["bbox"]) >= .65 for native in native_blocks):
+                    if item["kind"] == "text" and any(overlap(item["bbox"], native["bbox"]) >= .65 for native in native_blocks):
                         continue
-                    if item["confidence"] < .8:
+                    if item["confidence"] is not None and item["confidence"] < .8:
                         reasons.append("OCR_LOW_CONFIDENCE")
                     blocks.append(item)
             if len(blocks) > settings.max_blocks:
                 raise ParseError("BLOCK_LIMIT")
-            blocks, found_tables = structure_tables(blocks, image, number)
+            # PP-Structure already supplied guarded OCR tables. Reapplying ruled
+            # geometry here would turn a rejected drawing frame back into cells.
+            found_tables = False
+            if not ocr_regions:
+                blocks, found_tables = structure_tables(blocks, image, number)
             if found_tables:
                 reasons.append("TABLE_GEOMETRY_UNVERIFIED")
             readable = any(item["normalized_text"] for item in blocks)

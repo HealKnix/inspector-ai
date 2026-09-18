@@ -15,6 +15,25 @@ from ppstructure_probe import ASSETS, SafeTable, REPO, digest, execute_bounded, 
 
 
 class ProbeBoundaryTests(unittest.TestCase):
+    def test_frozen_baseline_keeps_original_orientation_and_plain_ocr_api(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from legacy_ocr import LocalOCR
+        from PIL import Image
+        class Orientation:
+            def predict(self, _image):
+                return [SimpleNamespace(json={"res": {"label_names": ["270", "90", "0", "180"], "scores": [.9, .05, .03, .02]}})]
+        class PlainOCR:
+            def predict(self, _image):
+                return [SimpleNamespace(json={"res": {"rec_texts": ["−40"], "rec_scores": [.9],
+                    "rec_polys": [[[40, 10], [60, 10], [60, 30], [40, 30]]], "dt_polys": [[1]]}})]
+        reader = LocalOCR.__new__(LocalOCR)
+        reader.orientation, reader.engine = Orientation(), PlainOCR()
+        blocks, angle, detected = reader.recognize(Image.new("RGB", (100, 200), "white"))
+        self.assertEqual((angle, detected), (270, 1))
+        self.assertEqual(blocks[0]["raw_text"], "−40")
+        self.assertEqual(blocks[0]["bbox"], [.1, .7, .3, .8])
+        self.assertEqual(blocks[0]["kind"], "text")
+
     def test_table_preview_whitelist_preserves_empty_cells_unicode_and_spans(self):
         table = SafeTable()
         table.feed('<table style="background:url(https://example.invalid)"><tr>'

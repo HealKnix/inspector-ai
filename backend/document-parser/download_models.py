@@ -14,18 +14,19 @@ def main():
     os.environ["PADDLE_PDX_CACHE_HOME"] = str(cache)
     os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
     os.environ.pop("HF_HUB_OFFLINE", None)
-    from paddleocr import PaddleOCR, DocImgOrientationClassification
-    PaddleOCR(text_detection_model_name=MODELS[0], text_recognition_model_name=MODELS[1],
-              use_doc_orientation_classify=False, use_doc_unwarping=False,
-              use_textline_orientation=False, device="cpu", enable_mkldnn=False, cpu_threads=2)
-    DocImgOrientationClassification(model_name=MODELS[2], device="cpu", enable_mkldnn=False, cpu_threads=2)
+    from paddlex.inference.utils.official_models import official_models
     manifest = {}
     for model in MODELS:
         (target / model).mkdir(parents=True, exist_ok=True)
+        if all((target / model / name).is_file() for name in MODEL_FILES):
+            source_root = target / model
+        else:
+            source_root = Path(official_models[model])
         for name in MODEL_FILES:
-            source = cache / "official_models" / model / name
+            source = source_root / name
             destination = target / model / name
-            shutil.copyfile(source, destination)
+            if source.resolve() != destination.resolve():
+                shutil.copyfile(source, destination)
             manifest[f"{model}/{name}"] = hashlib.sha256(destination.read_bytes()).hexdigest()
     verify_models(target)
     (target / "manifest.json").write_text(json.dumps(manifest, sort_keys=True, indent=2) + "\n", encoding="utf-8")

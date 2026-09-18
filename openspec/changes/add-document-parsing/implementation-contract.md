@@ -116,6 +116,16 @@ All paths below are under /api/v1. Existing object access and session checks app
 
 ## Durability and deployment
 
+The owner-selected OCR pipeline is PP-StructureV3 with mobile1536 detection,
+the Russian eslav recognizer and nine pinned local models. It keeps overall OCR
+lines alongside plain table-cell data; independent readings may differ and repeat.
+Table HTML is never served as executable markup. Grid/geometry validation may
+reject structure while preserving text and explicit quality reasons. Table OCR
+alternatives without inverse-mapped line polygons use the enclosing-table locator.
+Stored legacy artifacts remain readable; new results and cache candidates pass
+strict validation. The published versions include the actual OCR engine/profile
+and configuration digest; the full configuration contributes to the fingerprint.
+
 Keep the existing Run-level Job/outbox event as the idempotent fan-out parent.
 Add per-file execution records rather than destroying historical jobs/receipts.
 Backfill pending current Runs so files uploaded before PAR installation are picked

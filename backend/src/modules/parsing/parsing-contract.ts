@@ -3,6 +3,7 @@ export const UUID =
 export const HASH = /^[0-9a-f]{64}$/;
 export const MAX_ARTIFACT_BYTES = 64 * 1024 * 1024;
 export type Quality = "OK" | "LOW_QUALITY" | "ABSTAIN";
+export type ArtifactValidationMode = "strict" | "stored";
 export interface ParseBlock {
   id: string;
   order: number;
@@ -96,12 +97,60 @@ function vector(value: unknown, size: number): value is number[] {
   return Array.isArray(value) && value.length === size && value.every(finite);
 }
 
+interface GridCell {
+  row: number;
+  rowEnd: number;
+  column: number;
+  columnEnd: number;
+}
+
+function validateTableGrid(cells: GridCell[]) {
+  if (cells.length < 2) return;
+  const columns = [
+    ...new Set(cells.flatMap((cell) => [cell.column, cell.columnEnd])),
+  ].sort((left, right) => left - right);
+  const indices = new Map(columns.map((column, index) => [column, index]));
+  const starts = new Int32Array(columns.length + 1);
+  const ends = new Int32Array(columns.length + 1);
+  const add = (tree: Int32Array, index: number, delta: number) => {
+    for (
+      let cursor = index + 1;
+      cursor < tree.length;
+      cursor += cursor & -cursor
+    )
+      tree[cursor] = tree[cursor]! + delta;
+  };
+  const before = (tree: Int32Array, index: number) => {
+    let count = 0;
+    for (let cursor = index; cursor > 0; cursor -= cursor & -cursor)
+      count += tree[cursor]!;
+    return count;
+  };
+  const events = cells.flatMap((cell) => [
+    { row: cell.row, delta: 1, cell },
+    { row: cell.rowEnd, delta: -1, cell },
+  ]);
+  // Half-open logical rectangles may touch. Remove ending cells first, then
+  // count active column intervals in O(log n), without expanding large spans.
+  events.sort(
+    (left, right) => left.row - right.row || left.delta - right.delta,
+  );
+  for (const { delta, cell } of events) {
+    const start = indices.get(cell.column)!;
+    const end = indices.get(cell.columnEnd)!;
+    if (delta === 1) check(before(starts, end) === before(ends, start + 1));
+    add(starts, start, delta);
+    add(ends, end, delta);
+  }
+}
+
 // The parser is an untrusted boundary. An image handle never becomes a path and
 // a result cannot supply its own domain object, run or task identity.
 export function validateArtifact(
   value: unknown,
   sourceHash: string,
   fingerprint: string,
+  mode: ArtifactValidationMode = "strict",
 ): ParseArtifactData {
   check(record(value));
   const allowed = new Set([
@@ -265,6 +314,7 @@ export function validateArtifact(
     blockCount += page.blocks.length;
     check(blockCount <= 1_000_000);
     let previousOrder = -1;
+    const tables = new Map<string, GridCell[]>();
     for (const block of page.blocks) {
       check(
         record(block) &&
@@ -313,15 +363,33 @@ export function validateArtifact(
           block[key] === null ||
             integer(block[key], key.endsWith("span") ? 1 : 0),
         );
-      if (block.kind === "table_cell")
+      if (block.kind === "table_cell") {
         check(
-          block.table_id !== null &&
-            block.row !== null &&
-            block.column !== null &&
-            block.row_span !== null &&
-            block.column_span !== null,
+          typeof block.table_id === "string" &&
+            integer(block.row) &&
+            integer(block.column) &&
+            integer(block.row_span, 1) &&
+            integer(block.column_span, 1),
         );
+        // Earlier immutable DOCX artifacts used the same grid position for
+        // several paragraph fragments. They remain readable, but must never
+        // enter a new publication through a parser response or cache reuse.
+        if (mode === "strict") {
+          const rowEnd = block.row + block.row_span;
+          const columnEnd = block.column + block.column_span;
+          check(integer(rowEnd, 1) && integer(columnEnd, 1));
+          const cells = tables.get(block.table_id) ?? [];
+          cells.push({
+            row: block.row,
+            rowEnd,
+            column: block.column,
+            columnEnd,
+          });
+          tables.set(block.table_id, cells);
+        }
+      }
     }
+    for (const cells of tables.values()) validateTableGrid(cells);
   }
   return value as unknown as ParseArtifactData;
 }

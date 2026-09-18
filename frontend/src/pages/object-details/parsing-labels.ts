@@ -58,6 +58,8 @@ const reasonLabels: Record<string, string> = {
   OCR_DETECTION_WITHOUT_TEXT:
     "Найдены области текста, которые не удалось прочитать",
   OCR_ORIENTATION_AMBIGUOUS: "Ориентация текста определена неоднозначно",
+  OCR_GEOMETRY_UNAVAILABLE:
+    "Текст сохранён, но его точное положение не определено; выделена вся область распознавания",
   RASTER_REGIONS_REQUIRE_REVIEW: "Области изображения требуют проверки",
   VECTOR_REGIONS_REQUIRE_REVIEW: "Векторные области документа требуют проверки",
   RASTER_SMALL_REGION_UNREADABLE:
@@ -66,6 +68,11 @@ const reasonLabels: Record<string, string> = {
   NO_READABLE_TEXT: "Читаемый текст не найден",
   RENDER_RESOLUTION_LIMITED: "Разрешение отображения ограничено",
   TABLE_GEOMETRY_UNVERIFIED: "Расположение ячеек таблицы требует проверки",
+  TABLE_STRUCTURE_UNVERIFIED: "Структура таблиц требует проверки по оригиналу",
+  TABLE_STRUCTURE_REJECTED:
+    "Структуру таблицы не удалось восстановить надёжно; распознанный текст сохранён",
+  OCR_TABLE_TEXT_DIFFERENCE:
+    "Текст ячеек отличается от общего распознавания; сравните оба варианта с оригиналом",
   BORDERLESS_TABLES_UNSUPPORTED:
     "Таблицы без границ могут быть распознаны не полностью",
   DOCX_SEMANTIC_RENDER:
@@ -93,6 +100,23 @@ const reasonLabels: Record<string, string> = {
   unsupported_layout: "Разметка поддерживается не полностью",
 };
 
+export function textBlockLabel(block: {
+  kind: string;
+  source: string;
+  structural_path: string | null;
+}) {
+  if (block.kind === "table_cell") return "Ячейка таблицы";
+  if (block.source !== "ocr") return null;
+  if (block.structural_path?.includes("/recognition-text"))
+    return "Вариант текста области таблицы · OCR";
+  if (block.structural_path?.includes("/unstructured"))
+    return "Текст таблицы без структуры · OCR";
+  return "Текст страницы · OCR";
+}
+
 export function qualityReasonLabel(reason: string) {
-  return reasonLabels[reason] ?? `Причина: ${reason}`;
+  return (
+    reasonLabels[reason] ??
+    `Обработчик отметил дополнительное ограничение: ${reason}`
+  );
 }

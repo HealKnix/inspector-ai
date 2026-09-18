@@ -67,8 +67,26 @@ def save_page(image, directory):
 
 
 def finalize_page(page):
+    tables = {}
     for index, item in enumerate(page["blocks"]):
         item["order"] = index
         item["id"] = f'p{page["page_number"]}-b{index + 1}'
+        if item["table_id"]:
+            # DOCX paragraphs and page continuations may share a source cell.
+            # Rendered fragments remain independently addressable without
+            # overlapping logical grid positions inside a displayed table.
+            source_id = item["table_id"]
+            if source_id not in tables:
+                tables[source_id] = (len(tables) + 1, [])
+            table_number, groups = tables[source_id]
+            rect = (item["row"], item["column"], item["row"] + item["row_span"], item["column"] + item["column_span"])
+            for group_number, occupied in enumerate(groups):
+                if not any(rect[0] < other[2] and other[0] < rect[2] and rect[1] < other[3] and other[1] < rect[3] for other in occupied):
+                    break
+            else:
+                group_number = len(groups)
+                groups.append([])
+            groups[group_number].append(rect)
+            item["table_id"] = f'p{page["page_number"]}-t{table_number}-part{group_number + 1}'
     page["reasons"] = sorted(set(page["reasons"]))
     return page

@@ -226,7 +226,6 @@ def docx_media(data, settings):
 
 def render_docx_media(media, reasons, settings, versions, ocr, progress, offset):
     from PIL import Image
-    from tables import structure_tables
     pages = []
     for index, item in enumerate(media, offset + 1):
         if index > settings.max_pages:
@@ -238,18 +237,15 @@ def render_docx_media(media, reasons, settings, versions, ocr, progress, offset)
         except OSError as error:
             raise ParseError("INVALID_DOCX_MEDIA") from error
         blocks, rotation, detected = ocr.recognize(image)
-        blocks, found_tables = structure_tables(blocks, image, index)
         for fragment in blocks:
-            fragment["structural_path"] = item["path"]
-        page_reasons = reasons + ["DOCX_EMBEDDED_IMAGE_RENDER", "OCR_UNVERIFIED", "RASTER_REGIONS_REQUIRE_REVIEW", "BORDERLESS_TABLES_UNSUPPORTED"]
+            fragment["structural_path"] = item["path"] + ("#" + fragment["structural_path"] if fragment["structural_path"] else "")
+        page_reasons = reasons + ["DOCX_EMBEDDED_IMAGE_RENDER", "OCR_UNVERIFIED", "RASTER_REGIONS_REQUIRE_REVIEW"] + getattr(ocr, "reasons", [])
         if any(fragment["confidence"] is not None and fragment["confidence"] < .8 for fragment in blocks):
             page_reasons.append("OCR_LOW_CONFIDENCE")
-        if detected > len(blocks):
+        if getattr(ocr, "detected_without_text", detected > len(blocks)):
             page_reasons.append("OCR_DETECTION_WITHOUT_TEXT")
         if getattr(ocr, "orientation_ambiguous", False):
             page_reasons.append("OCR_ORIENTATION_AMBIGUOUS")
-        if found_tables:
-            page_reasons.append("TABLE_GEOMETRY_UNVERIFIED")
         readable = any(fragment["normalized_text"] for fragment in blocks)
         if not readable:
             page_reasons.append("NO_READABLE_TEXT")

@@ -47,22 +47,15 @@ class Result:
         self.json = {"res": value}
 
 
-class OrientationStub:
-    def __init__(self, scores):
-        self.scores = scores
-
-    def predict(self, _image):
-        return [Result({"label_names": ["270", "90", "0", "180"], "scores": self.scores})]
-
-
 class OCRStub:
     def __init__(self):
         self.calls = 0
 
-    def predict(self, _image):
+    def predict(self, _image, **_kwargs):
         self.calls += 1
-        return [Result({"rec_texts": ["SYNTHETIC"], "rec_scores": [.9],
-                        "rec_polys": [[[40, 10], [60, 10], [60, 30], [40, 30]]], "dt_polys": [[1]]})]
+        return [Result({"width": 200, "height": 100, "doc_preprocessor_res": {"angle": 270},
+                        "overall_ocr_res": {"rec_texts": ["SYNTHETIC"], "rec_scores": [.9],
+                        "rec_polys": [[[40, 10], [60, 10], [60, 30], [40, 30]]], "dt_polys": [[1]]}})]
 
 
 def busy_worker(connection, _settings, _versions):
@@ -338,17 +331,15 @@ class ParserTests(unittest.TestCase):
         second = parse(request, self.settings, self.versions, NoOCR(), lambda *_: None)
         self.assertNotEqual(first["pages"][0]["image_key"], second["pages"][0]["image_key"])
 
-    def test_orientation_classifier_bounds_full_ocr_passes_and_maps_back(self):
-        for scores, expected_passes in (([.9, .05, .03, .02], 1), ([.45, .4, .1, .05], 2)):
-            reader = LocalOCR.__new__(LocalOCR)
-            reader.orientation = OrientationStub(scores)
-            reader.engine = OCRStub()
-            blocks, angle, count = reader.recognize(Image.new("RGB", (100, 200), "white"))
-            self.assertEqual(reader.engine.calls, expected_passes)
-            self.assertEqual(angle, 270)
-            self.assertEqual(count, 1)
-            self.assertEqual(blocks[0]["bbox"], [.1, .7, .3, .8])
-            self.assertEqual(reader.orientation_ambiguous, expected_passes == 2)
+    def test_pp_structure_wrapper_maps_page_orientation_back(self):
+        reader = LocalOCR.__new__(LocalOCR)
+        reader.engine = OCRStub()
+        blocks, angle, count = reader.recognize(Image.new("RGB", (100, 200), "white"))
+        self.assertEqual(reader.engine.calls, 1)
+        self.assertEqual(angle, 270)
+        self.assertEqual(count, 1)
+        self.assertEqual(blocks[0]["bbox"], [.1, .7, .3, .8])
+        self.assertIn("OCR_UNVERIFIED", reader.reasons)
 
     def test_hash_and_handles_are_checked(self):
         request = self.request(b"<root/>", "xml")

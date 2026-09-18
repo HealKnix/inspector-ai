@@ -246,7 +246,7 @@ def worker(args):
         "mode": args.mode, "python": platform.python_version(), "platform": platform.platform(),
         "packages": dict(sorted(packages.items())), "script_sha256": hashlib.sha256(source_code).hexdigest(),
         "models_sha256": assets, "input_sha256": digest(source), "input_dimensions": dimensions,
-        "config": config if args.mode == "ppstructure" else {"implementation": "production LocalOCR", "det_limit": 1536},
+        "config": config if args.mode == "ppstructure" else {"implementation": "frozen three-model PaddleOCR baseline", "det_limit": 1536},
         "network_policy": "Python socket connect/connect_ex/create_connection denied; audit hook denies network resolution/connect; local models; HF offline",
         "resources": {**affinity, "max_input_bytes": 64 * 1024 * 1024, "max_input_pixels": 32_000_000,
                       "rss_limit": None}, "status": "initializing",
@@ -270,11 +270,13 @@ def worker(args):
             engine.export_paddlex_config_to_yaml(str(output / "resolved-pipeline.yaml"))
         else:
             sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-            from ocr import LocalOCR
+            from legacy_ocr import LocalOCR
             from types import SimpleNamespace
             engine = LocalOCR(SimpleNamespace(models=root / "models", cpu_threads=2))
-            metadata["baseline_sources_sha256"] = {name: digest(Path(__file__).resolve().parents[1] / name)
-                                                   for name in ("ocr.py", "config.py", "common.py")}
+            metadata["baseline_sources_sha256"] = {
+                "legacy_ocr.py": digest(Path(__file__).with_name("legacy_ocr.py")),
+                "common.py": digest(Path(__file__).resolve().parents[1] / "common.py"),
+            }
         metadata["initialization_seconds"] = time.perf_counter() - started
         metadata["status"] = "predicting"
         write_json(output / "run.json", metadata)
@@ -397,7 +399,7 @@ def main():
         command.add_argument("--timeout", type=bounded_int(10, 1800), default=1200)
     args = parser.parse_args()
     if getattr(args, "mode", None) == "baseline" and (args.server_detector or args.det_limit != 1536):
-        parser.error("Baseline uses unchanged production LocalOCR (mobile detector, limit 1536)")
+        parser.error("Baseline uses frozen three-model OCR (mobile detector, limit 1536)")
     {"bootstrap": bootstrap, "run": run, "worker": worker}[args.command](args)
 
 

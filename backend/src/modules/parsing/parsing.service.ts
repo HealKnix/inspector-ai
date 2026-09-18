@@ -134,6 +134,7 @@ export class ParsingService {
         metadata.artifactSha256,
         file.sha256,
         metadata.pipelineFingerprint,
+        "stored",
       );
       await this.published(userId, objectId, fileId, metadata.id);
       return {
@@ -166,6 +167,7 @@ export class ParsingService {
         metadata.artifactSha256,
         file.sha256,
         metadata.pipelineFingerprint,
+        "stored",
       );
       const page = artifact.pages.find(
         (item) => item.page_number === pageNumber,

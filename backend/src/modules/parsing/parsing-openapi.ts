@@ -15,7 +15,12 @@ const reasons: Schema = {
   items: { type: "string", maxLength: 128 },
 };
 const nullableText: Schema = { type: "string", nullable: true };
-const nullableIndex: Schema = { type: "integer", minimum: 0, nullable: true };
+const nullableIndex: Schema = {
+  type: "integer",
+  minimum: 0,
+  maximum: Number.MAX_SAFE_INTEGER,
+  nullable: true,
+};
 const bbox: Schema = {
   type: "array",
   minItems: 4,
@@ -123,11 +128,25 @@ const block: Schema = {
     },
     source: { type: "string", enum: ["native", "ocr", "structured"] },
     structural_path: nullableText,
-    table_id: nullableText,
-    row: nullableIndex,
-    column: nullableIndex,
-    row_span: { type: "integer", minimum: 1, nullable: true },
-    column_span: { type: "integer", minimum: 1, nullable: true },
+    table_id: {
+      ...nullableText,
+      description:
+        "Идентификатор таблицы в пределах страницы. Новые ячейки одной таблицы не пересекаются в логической сетке; исторические DOCX могут содержать несколько фрагментов одной позиции.",
+    },
+    row: { ...nullableIndex, description: "Индекс строки с нуля" },
+    column: { ...nullableIndex, description: "Индекс столбца с нуля" },
+    row_span: {
+      ...nullableIndex,
+      minimum: 1,
+      description:
+        "Число занятых строк; row + row_span — безопасное целое в новых результатах",
+    },
+    column_span: {
+      ...nullableIndex,
+      minimum: 1,
+      description:
+        "Число занятых столбцов; column + column_span — безопасное целое в новых результатах",
+    },
   },
 };
 export const parseArtifactSchema: Schema = {

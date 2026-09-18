@@ -45,7 +45,8 @@ let parseCalls = 0;
 let cancelCalls = 0;
 const cancelledRequests: string[] = [];
 let lastParsedRequest = "";
-let parserMode: "ok" | "timeout" | "invalid" | "busy" | "disconnect" = "ok";
+let parserMode:
+  "ok" | "timeout" | "invalid" | "busy" | "not_ready" | "disconnect" = "ok";
 let holdResponse: (() => Promise<void>) | undefined;
 
 async function account(role: "INSPECTOR" | "ADMINISTRATOR") {
@@ -182,6 +183,13 @@ beforeAll(async () => {
     void (async () => {
       res.setHeader("Content-Type", "application/json");
       if (req.url === "/health") {
+        if (parserMode === "not_ready") {
+          res.writeHead(503);
+          res.end(
+            JSON.stringify({ code: "models_not_ready", retryable: true }),
+          );
+          return;
+        }
         res.end(
           JSON.stringify({
             status: "ok",
@@ -500,82 +508,88 @@ describe("PAR durable execution and access (real PG/broker/storage, parser fault
     await get(prefix(item)).expect(409);
   });
 
-  it("waits for parser capacity without spending document attempts, then processes every waiting file", async () => {
-    const items = [await seed(), await seed()];
-    for (const item of items) await jobs.fanout(item.parent);
-    const payloads = await Promise.all(items.map(message));
-    const cancelledBefore = cancelCalls;
-    parserMode = "busy";
-    try {
-      for (let count = 0; count < 5; count++)
-        for (const payload of payloads) {
-          await prisma.parsingTask.update({
-            where: { id: payload.task_id },
-            data: { availableAt: new Date(0) },
-          });
-          const before = Date.now();
-          await jobs.execute(payload);
-          const deferred = await prisma.parsingTask.findUniqueOrThrow({
-            where: { id: payload.task_id },
-          });
-          expect(deferred).toMatchObject({
-            state: "queued",
-            attempts: 0,
-            capacityDeferrals: count + 1,
-            errorCode: "parser_busy",
-            leaseToken: null,
-            leaseUntil: null,
-          });
-          expect(deferred.availableAt.getTime()).toBeGreaterThanOrEqual(
-            before + Math.min(60_000, 5000 * 2 ** count),
-          );
-          const calls = parseCalls;
-          await jobs.execute(payload);
-          expect(parseCalls).toBe(calls); // Redelivery before backoff cannot hot-loop.
-          expect(
-            (
-              await prisma.process.findUniqueOrThrow({
-                where: { id: payload.process_id },
-              })
-            ).status,
-          ).toBe("PARSING");
-        }
-    } finally {
-      parserMode = "ok";
-    }
-    expect(cancelCalls).toBe(cancelledBefore); // Busy never cancels an unrelated owner.
-    for (const payload of payloads) {
-      await prisma.parsingTask.update({
-        where: { id: payload.task_id },
-        data: { availableAt: new Date(0) },
-      });
-      await jobs.execute(payload);
-      expect(
-        await prisma.parsingTask.findUniqueOrThrow({
+  it.each(["busy", "not_ready"] as const)(
+    "waits for parser %s without spending document attempts, then processes every waiting file",
+    async (refusal) => {
+      const items = [await seed(), await seed()];
+      for (const item of items) await jobs.fanout(item.parent);
+      const payloads = await Promise.all(items.map(message));
+      const cancelledBefore = cancelCalls;
+      const parseCallsBefore = parseCalls;
+      parserMode = refusal;
+      try {
+        for (let count = 0; count < 5; count++)
+          for (const payload of payloads) {
+            await prisma.parsingTask.update({
+              where: { id: payload.task_id },
+              data: { availableAt: new Date(0) },
+            });
+            const before = Date.now();
+            await jobs.execute(payload);
+            const deferred = await prisma.parsingTask.findUniqueOrThrow({
+              where: { id: payload.task_id },
+            });
+            expect(deferred).toMatchObject({
+              state: "queued",
+              attempts: 0,
+              capacityDeferrals: count + 1,
+              errorCode:
+                refusal === "busy" ? "parser_busy" : "models_not_ready",
+              leaseToken: null,
+              leaseUntil: null,
+            });
+            expect(deferred.availableAt.getTime()).toBeGreaterThanOrEqual(
+              before + Math.min(60_000, 5000 * 2 ** count),
+            );
+            const calls = parseCalls;
+            await jobs.execute(payload);
+            expect(parseCalls).toBe(calls); // Redelivery before backoff cannot hot-loop.
+            expect(
+              (
+                await prisma.process.findUniqueOrThrow({
+                  where: { id: payload.process_id },
+                })
+              ).status,
+            ).toBe("PARSING");
+          }
+      } finally {
+        parserMode = "ok";
+      }
+      expect(cancelCalls).toBe(cancelledBefore); // Non-admission never cancels another owner.
+      if (refusal === "not_ready") expect(parseCalls).toBe(parseCallsBefore);
+      for (const payload of payloads) {
+        await prisma.parsingTask.update({
           where: { id: payload.task_id },
-        }),
-      ).toMatchObject({
-        state: "succeeded",
-        attempts: 1,
-        capacityDeferrals: 5,
-      });
-      expect(
-        await prisma.outbox.count({
-          where: {
-            eventType: "parsing.failed",
-            payload: { path: ["task_id"], equals: payload.task_id },
-          },
-        }),
-      ).toBe(0);
-      expect(
-        (
-          await prisma.process.findUniqueOrThrow({
-            where: { id: payload.process_id },
-          })
-        ).status,
-      ).toBe("PENDING");
-    }
-  });
+          data: { availableAt: new Date(0) },
+        });
+        await jobs.execute(payload);
+        expect(
+          await prisma.parsingTask.findUniqueOrThrow({
+            where: { id: payload.task_id },
+          }),
+        ).toMatchObject({
+          state: "succeeded",
+          attempts: 1,
+          capacityDeferrals: 5,
+        });
+        expect(
+          await prisma.outbox.count({
+            where: {
+              eventType: "parsing.failed",
+              payload: { path: ["task_id"], equals: payload.task_id },
+            },
+          }),
+        ).toBe(0);
+        expect(
+          (
+            await prisma.process.findUniqueOrThrow({
+              where: { id: payload.process_id },
+            })
+          ).status,
+        ).toBe("PENDING");
+      }
+    },
+  );
 
   it("cancels the accepted request UUID after an ambiguous socket failure without a deadline abort", async () => {
     const item = await seed();

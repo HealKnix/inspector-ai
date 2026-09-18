@@ -9,6 +9,7 @@ import {
   MAX_ARTIFACT_BYTES,
   ParsingError,
   validateArtifact,
+  type ArtifactValidationMode,
   type ParseArtifactData,
 } from "./parsing-contract.js";
 
@@ -38,6 +39,7 @@ export class ArtifactStorageService {
     digest: string,
     sourceHash: string,
     fingerprint: string,
+    mode: ArtifactValidationMode = "strict",
   ) {
     const bytes = await this.readBytes(storageKey);
     if (createHash("sha256").update(bytes).digest("hex") !== digest)
@@ -46,6 +48,7 @@ export class ArtifactStorageService {
       JSON.parse(bytes.toString("utf8")) as unknown,
       sourceHash,
       fingerprint,
+      mode,
     );
   }
 

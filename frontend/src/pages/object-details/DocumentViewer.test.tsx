@@ -5,7 +5,9 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
+import { useState } from "react";
 
 import { getParseResult, getRenderedPage } from "@/api/endpoints/parsing";
 import {
@@ -36,23 +38,176 @@ function mount(sourceHash = "a".repeat(64)) {
     defaultOptions: { queries: { retry: false } },
   });
   const onPage = vi.fn();
-  const view = render(
-    <QueryClientProvider client={client}>
+  function StatefulViewer() {
+    const [page, setPage] = useState(1);
+    return (
       <DocumentViewer
         objectId={parsingObjectId}
         file={parsedFile}
         sourceFormat="XML"
         sourceHash={sourceHash}
-        pageNumber={1}
-        onPage={onPage}
+        pageNumber={page}
+        onPage={(next) => {
+          onPage(next);
+          setPage(next);
+        }}
         onClose={vi.fn()}
       />
+    );
+  }
+  const view = render(
+    <QueryClientProvider client={client}>
+      <StatefulViewer />
     </QueryClientProvider>,
   );
   return { ...view, client, onPage };
 }
 
 describe("document viewer", () => {
+  it("сохраняет весь текст, безопасно показывает объединённые ячейки и переходит к оригиналу на другой странице", async () => {
+    const result = structuredClone(parseResult);
+    const first = result.artifact.pages[0]!;
+    const base = first.blocks[0]!;
+    const markup = '<img src=x onerror="alert(1)">';
+    first.blocks = [
+      {
+        ...base,
+        id: "header",
+        normalized_text: "Шапка документа",
+        source: "ocr",
+        structural_path: "ocr/overall/line[0]",
+      },
+      {
+        ...base,
+        id: "merged",
+        order: 1,
+        kind: "table_cell",
+        table_id: "table",
+        row: 0,
+        column: 0,
+        row_span: 2,
+        column_span: 2,
+        raw_text: markup,
+        normalized_text: markup,
+      },
+    ];
+    const second = {
+      ...structuredClone(first),
+      page_number: 2,
+      blocks: [
+        {
+          ...first.blocks[1]!,
+          id: "total",
+          row_span: 1,
+          column_span: 1,
+          raw_text: "Итого  12",
+          normalized_text: "Итого 12",
+        },
+      ],
+    };
+    result.artifact.pages.push(second);
+    result.artifact.coverage = {
+      total_pages: 2,
+      readable_pages: 2,
+      unreadable_pages: 0,
+    };
+    result.artifact.versions = {
+      ocr_engine: "PP-StructureV3",
+      paddleocr: "3.7.0",
+    };
+    result.artifact.reasons = [
+      "OCR_TABLE_TEXT_DIFFERENCE",
+      "NEW_PROCESSOR_LIMIT",
+    ];
+    result.artifact.normalized_text =
+      "Шапка документа\nИтого 12\nЗаключение инженера";
+    result.artifact.raw_text =
+      "Шапка  документа\nИтого  12\nЗаключение  инженера";
+    vi.mocked(getParseResult).mockResolvedValue(result);
+    const view = mount();
+    await screen.findByRole("img");
+    expect(
+      screen.getByText(
+        /Движок распознавания: PP-StructureV3 · PaddleOCR 3.7.0/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Текст ячеек отличается от общего распознавания/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/дополнительное ограничение: NEW_PROCESSOR_LIMIT/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Текст страницы · OCR")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Весь документ" }));
+    expect(screen.getByLabelText("Полный текст документа").textContent).toBe(
+      result.artifact.normalized_text,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Исходный" }));
+    expect(screen.getByLabelText("Полный текст документа").textContent).toBe(
+      result.artifact.raw_text,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Таблицы" }));
+    const table = screen.getByRole("table", { name: "Таблица 1 · страница 1" });
+    const merged = within(table).getByRole("cell");
+    expect(merged).toHaveAttribute("rowspan", "2");
+    expect(merged).toHaveAttribute("colspan", "2");
+    expect(merged.textContent).toBe(markup);
+    expect(table.querySelector("img")).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Страница 2, строка 1, столбец 1: Итого 12",
+      }),
+    );
+    expect(view.onPage).toHaveBeenCalledWith(2);
+    await screen.findByRole("img", {
+      name: "Страница 2 документа synthetic.xml",
+    });
+    expect(
+      screen.getByRole("button", { name: "Фрагмент 2: Итого 12" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    view.unmount();
+    view.client.clear();
+  });
+  it("сохраняет ячейки старой противоречивой сетки списком и показывает фактический старый движок", async () => {
+    const result = structuredClone(parseResult);
+    const base = result.artifact.pages[0]!.blocks[0]!;
+    result.artifact.versions.ocr_engine = "PaddleOCR";
+    result.artifact.pages[0]!.blocks = [
+      "Первый фрагмент",
+      "Второй фрагмент",
+    ].map((text, index) => ({
+      ...base,
+      id: `legacy-${index}`,
+      kind: "table_cell",
+      normalized_text: text,
+      table_id: "legacy",
+      row: 0,
+      column: 0,
+      row_span: 1,
+      column_span: 1,
+    }));
+    vi.mocked(getParseResult).mockResolvedValue(result);
+    const view = mount();
+    await screen.findByRole("img");
+    expect(
+      screen.getByText("Движок распознавания: PaddleOCR"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Таблицы" }));
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Все извлечённые ячейки сохранены ниже списком/),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /строка 1, столбец 1: Второй фрагмент/,
+      }),
+    );
+    expect(
+      screen.getByRole("button", { name: "Фрагмент 1: Второй фрагмент" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    view.unmount();
+    view.client.clear();
+  });
   it("показывает выбранный фрагмент после загрузки PNG и при изменении масштаба", async () => {
     const previous = Object.getOwnPropertyDescriptor(
       Element.prototype,

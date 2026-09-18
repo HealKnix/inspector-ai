@@ -28,27 +28,40 @@ export const parsingStatusSchema = z.object({
   items: z.array(parsingFileSchema),
 });
 
-export const textBlockSchema = z.object({
-  id: z.string(),
-  order: count,
-  kind: z.enum(["text", "table_cell"]),
-  raw_text: z.string(),
-  normalized_text: z.string(),
-  bbox: z
-    .tuple([coordinate, coordinate, coordinate, coordinate])
-    .refine(
-      ([x0, y0, x1, y1]) => x1 > x0 && y1 > y0,
-      "Invalid visible-page rectangle",
-    ),
-  confidence: z.number().min(0).max(1).nullable(),
-  source: z.enum(["native", "ocr", "structured"]),
-  structural_path: z.string().nullable(),
-  table_id: z.string().nullable(),
-  row: count.nullable(),
-  column: count.nullable(),
-  row_span: z.number().int().positive().nullable(),
-  column_span: z.number().int().positive().nullable(),
-});
+export const textBlockSchema = z
+  .object({
+    id: z.string(),
+    order: count,
+    kind: z.enum(["text", "table_cell"]),
+    raw_text: z.string(),
+    normalized_text: z.string(),
+    bbox: z
+      .tuple([coordinate, coordinate, coordinate, coordinate])
+      .refine(
+        ([x0, y0, x1, y1]) => x1 > x0 && y1 > y0,
+        "Invalid visible-page rectangle",
+      ),
+    confidence: z.number().min(0).max(1).nullable(),
+    source: z.enum(["native", "ocr", "structured"]),
+    structural_path: z.string().nullable(),
+    table_id: z.string().nullable(),
+    row: count.nullable(),
+    column: count.nullable(),
+    row_span: z.number().int().positive().nullable(),
+    column_span: z.number().int().positive().nullable(),
+  })
+  .refine(
+    (block) =>
+      block.kind !== "table_cell" ||
+      (Boolean(block.table_id) &&
+        block.row !== null &&
+        block.column !== null &&
+        block.row_span !== null &&
+        block.column_span !== null &&
+        Number.isSafeInteger(block.row + block.row_span) &&
+        Number.isSafeInteger(block.column + block.column_span)),
+    "Incomplete or unsafe table coordinates",
+  );
 
 export const renderedPageSchema = z
   .object({

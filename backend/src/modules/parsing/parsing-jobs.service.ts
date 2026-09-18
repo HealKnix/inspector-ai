@@ -6,12 +6,15 @@ import { PrivateStorageService } from "../../infrastructure/storage/private-stor
 import { canonicalJson } from "../documents/canonical-json.js";
 import { ObjectAccessService } from "../objects/object-access.service.js";
 import { ArtifactStorageService } from "./artifact-storage.service.js";
-import { ParserClientService } from "./parser-client.service.js";
+import {
+  isParserNotAdmitted,
+  ParserClientService,
+} from "./parser-client.service.js";
 import { ParsingCacheService } from "./parsing-cache.service.js";
 import {
   ParsingError,
-  UUID,
   record,
+  UUID,
   validateArtifact,
   type ParseArtifactData,
   type ParsingMessage,
@@ -343,8 +346,8 @@ export class ParsingJobsService {
       const fence = await this.fenced(tx, task, expired);
       if (!fence) return false;
       const code = fence.isCurrent ? error.code : "stale_run";
-      if (fence.isCurrent && error.code === "parser_busy" && !expired) {
-        // /parse refused admission: no document work began. Broker redelivery
+      if (fence.isCurrent && isParserNotAdmitted(error) && !expired) {
+        // Health or /parse refused admission: no document work began. Redelivery
         // cannot repeat this decrement because the lease is cleared atomically.
         const deferred = await tx.parsingTask.update({
           where: { id: task.id },
@@ -352,7 +355,7 @@ export class ParsingJobsService {
             state: "queued",
             attempts: { decrement: 1 },
             capacityDeferrals: { increment: 1 },
-            errorCode: "parser_busy",
+            errorCode: error.code,
             leaseToken: null,
             leaseUntil: null,
             completedAt: null,
@@ -563,10 +566,9 @@ export class ParsingJobsService {
       await this.finishFailure(task, outcome);
       this.logger.warn(
         JSON.stringify({
-          event:
-            outcome.code === "parser_busy"
-              ? "parsing.capacity.deferred"
-              : "parsing.attempt.failed",
+          event: isParserNotAdmitted(outcome)
+            ? "parsing.capacity.deferred"
+            : "parsing.attempt.failed",
           task_id: task.id,
           run_id: task.runId,
           attempt: task.attempts,

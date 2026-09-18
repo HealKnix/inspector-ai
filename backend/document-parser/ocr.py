@@ -1,70 +1,43 @@
-"""Local orientation classification + OCR; original viewer pixels stay unchanged."""
+"""Reusable offline PP-StructureV3; displayed source pixels remain unchanged."""
 import os
 
-from common import bbox_pixels, block
-from config import MODELS
+from config import MODEL_ROLES, OCR_OPTIONS, PREDICT_OPTIONS
+from pp_structure import convert_result, unrotate_point
 
 
 class LocalOCR:
     def __init__(self, settings):
         os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
         os.environ["HF_HUB_OFFLINE"] = "1"
-        os.environ["OMP_NUM_THREADS"] = str(settings.cpu_threads)
-        os.environ["OPENBLAS_NUM_THREADS"] = str(settings.cpu_threads)
-        os.environ["MKL_NUM_THREADS"] = str(settings.cpu_threads)
+        for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+            os.environ[name] = str(settings.cpu_threads)
         import cv2
         cv2.setNumThreads(settings.cpu_threads)
-        from paddleocr import PaddleOCR, DocImgOrientationClassification
-        self.orientation = DocImgOrientationClassification(
-            model_name=MODELS[2], model_dir=str(settings.models / MODELS[2]), topk=4,
-            device="cpu", cpu_threads=settings.cpu_threads, enable_mkldnn=False)
-        self.engine = PaddleOCR(
-            text_detection_model_name=MODELS[0], text_detection_model_dir=str(settings.models / MODELS[0]),
-            text_recognition_model_name=MODELS[1], text_recognition_model_dir=str(settings.models / MODELS[1]),
-            use_doc_orientation_classify=False, use_doc_unwarping=False, use_textline_orientation=False,
-            device="cpu", cpu_threads=settings.cpu_threads, enable_mkldnn=False,
-            text_det_limit_type="max", text_det_limit_side_len=1536,
-            text_recognition_batch_size=1, text_rec_score_thresh=0.0,
-        )
+        from paddleocr import PPStructureV3
+        from paddlex.inference import load_pipeline_config
+        from paddlex.inference.utils.official_models import official_models
+
+        def no_downloads(*_args, **_kwargs):
+            raise RuntimeError("Offline parser requires explicit local model paths")
+        official_models.get_model_path = no_downloads
+        config = load_pipeline_config("PP-StructureV3")
+        # Public flag does not affect the lazy table OCR in PaddleOCR 3.7.
+        table_ocr = config["SubPipelines"]["TableRecognition"]["SubPipelines"]["GeneralOCR"]
+        table_ocr["use_textline_orientation"] = False
+        models = {f"{role}_model_{suffix}": model if suffix == "name" else str(settings.models / model)
+                  for role, model in MODEL_ROLES.items() for suffix in ("name", "dir")}
+        self.engine = PPStructureV3(**models, **OCR_OPTIONS, paddlex_config=config,
+                                   device="cpu", cpu_threads=settings.cpu_threads, enable_mkldnn=False)
+        self.reasons = []
+        self.orientation_score = None
+        self.orientation_ambiguous = False
 
     def recognize(self, image):
         import numpy as np
-        original = np.array(image.convert("RGB"))[:, :, ::-1]
-        orientation = list(self.orientation.predict(np.ascontiguousarray(original)))[0].json
-        orientation = orientation.get("res", orientation)
-        labels, scores = orientation["label_names"], orientation["scores"]
-        self.orientation_score = float(scores[0])
-        self.orientation_ambiguous = self.orientation_score < .75 or self.orientation_score - float(scores[1]) < .25
-        # These are bounded execution heuristics, not accuracy claims. Uncertain
-        # orientation compares two candidates while the page remains LOW_QUALITY.
-        orientations = [int(label) // 90 for label in labels[:2 if self.orientation_ambiguous else 1]]
-        candidates = []
-        for turns in orientations:
-            # np.rot90 is counterclockwise; polygon coordinates are inverted below.
-            pixels = np.ascontiguousarray(np.rot90(original, turns))
-            result = list(self.engine.predict(pixels))[0]
-            data = result.json
-            data = data.get("res", data)
-            texts = data["rec_texts"]
-            scores = data["rec_scores"]
-            score = sum(min(len(text), 80) * float(conf) ** 3 for text, conf in zip(texts, scores))
-            candidates.append((score, turns, data))
-        _, turns, data = max(candidates, key=lambda item: item[0])
-        blocks = []
-        for text, score, polygon in zip(data["rec_texts"], data["rec_scores"], data["rec_polys"]):
-            points = [unrotate_point(float(x), float(y), turns, image.width, image.height) for x, y in polygon]
-            xs, ys = zip(*points)
-            item = block(text, bbox_pixels((min(xs), min(ys), max(xs), max(ys)), image.width, image.height), "ocr")
-            item["confidence"] = max(0.0, min(1.0, float(score)))
-            blocks.append(item)
-        return blocks, turns * 90, len(data.get("dt_polys", []))
-
-
-def unrotate_point(x, y, turns, width, height):
-    if turns == 1:
-        return width - y, x
-    if turns == 2:
-        return width - x, height - y
-    if turns == 3:
-        return y, height - x
-    return x, y
+        pixels = np.ascontiguousarray(np.array(image.convert("RGB"))[:, :, ::-1])
+        result = list(self.engine.predict(pixels, **PREDICT_OPTIONS))[0]
+        data = result.json
+        data = data.get("res", data)
+        blocks, angle, detected, self.reasons = convert_result(data, image.width, image.height)
+        self.detected_without_text = detected > sum(bool(text.strip()) for text in data["overall_ocr_res"].get("rec_texts", []))
+        return blocks, angle, detected

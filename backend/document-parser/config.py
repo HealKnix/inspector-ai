@@ -7,8 +7,31 @@ from dataclasses import dataclass
 from importlib.metadata import version
 from pathlib import Path
 
-MODELS = ("PP-OCRv5_mobile_det", "eslav_PP-OCRv5_mobile_rec", "PP-LCNet_x1_0_doc_ori")
+MODEL_ROLES = {
+    "text_detection": "PP-OCRv5_mobile_det", "text_recognition": "eslav_PP-OCRv5_mobile_rec",
+    "doc_orientation_classify": "PP-LCNet_x1_0_doc_ori", "layout_detection": "PP-DocLayout_plus-L",
+    "table_classification": "PP-LCNet_x1_0_table_cls",
+    "wired_table_structure_recognition": "SLANeXt_wired", "wireless_table_structure_recognition": "SLANet_plus",
+    "wired_table_cells_detection": "RT-DETR-L_wired_table_cell_det",
+    "wireless_table_cells_detection": "RT-DETR-L_wireless_table_cell_det",
+    "table_orientation_classify": "PP-LCNet_x1_0_doc_ori",
+}
+MODELS = tuple(dict.fromkeys(MODEL_ROLES.values()))
 MODEL_FILES = ("inference.json", "inference.pdiparams", "inference.yml")
+OCR_OPTIONS = {
+    "use_doc_orientation_classify": True, "use_doc_unwarping": False,
+    "use_textline_orientation": False, "use_table_recognition": True,
+    "use_formula_recognition": False, "use_chart_recognition": False,
+    "use_seal_recognition": False, "use_region_detection": False,
+    "text_det_limit_type": "max", "text_det_limit_side_len": 1536,
+    "text_recognition_batch_size": 1, "text_rec_score_thresh": 0.0,
+    "format_block_content": False, "markdown_ignore_labels": [],
+}
+PREDICT_OPTIONS = {
+    "use_wired_table_cells_trans_to_html": False, "use_wireless_table_cells_trans_to_html": False,
+    "use_table_orientation_classify": True, "use_ocr_results_with_table_cells": True,
+    "use_e2e_wired_table_rec_model": False, "use_e2e_wireless_table_rec_model": True,
+}
 
 
 def verify_models(root):
@@ -73,13 +96,18 @@ class Settings:
         sources = {p.name: digest_file(p) for p in sorted(Path(__file__).parent.glob("*.py"))}
         return {
             "parser": "par-local-1", "normalization": "nfc-horizontal-space-v1",
-            "renderer": "pymupdf-pillow-semantic-v1", "table_detector": "ruled-geometry-v1",
+            "renderer": "pymupdf-pillow-semantic-v1", "table_detector": "pp-structure-v3-guarded-v1",
+            "ocr_engine": "PP-StructureV3",
+            "ocr_profile": "mobile1536-eslav-cpu-mkldnn-off-v1",
+            "ocr_config": hashlib.sha256(json.dumps({"models": MODEL_ROLES, "init": OCR_OPTIONS, "predict": PREDICT_OPTIONS,
+                                      "table_textline_orientation": False}, sort_keys=True).encode()).hexdigest(),
             "python": platform.python_version(),
             **{p: version(p) for p in ("pymupdf", "paddleocr", "paddlepaddle", "paddlex", "pillow", "numpy", "opencv-contrib-python")},
             "models_sha256": hashlib.sha256(json.dumps(assets, sort_keys=True).encode()).hexdigest(),
             "font_sha256": digest_file(self.font),
             "source_sha256": hashlib.sha256(json.dumps(sources, sort_keys=True).encode()).hexdigest(),
-            "config": json.dumps({k: v for k, v in self.__dict__.items() if not isinstance(v, Path)}, sort_keys=True),
+            "dependency_lock_sha256": digest_file(Path(__file__).parent / "requirements.lock.txt"),
+            "config": json.dumps({k: v for k, v in self.__dict__.items() if not isinstance(v, Path)}, sort_keys=True, separators=(",", ":")),
         }
 
 

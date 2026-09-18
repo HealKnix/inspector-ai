@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { parsingErrorMessage, useParseResult } from "@/api/hooks/use-parsing";
 import type { ParseResult, ParsingFile } from "@/api/types/parsing";
 import { RenderedDocumentPage } from "./RenderedDocumentPage";
-import { TextBlocksPanel } from "./TextBlocksPanel";
+import { TextBlocksPanel, type TextView } from "./TextBlocksPanel";
 import { qualityLabels, qualityReasonLabel } from "./parsing-labels";
 
 export function DocumentViewer({
@@ -107,6 +107,7 @@ function DocumentContent({
 }) {
   const { artifact } = result;
   const [search, setSearch] = useState("");
+  const [textView, setTextView] = useState<TextView>("fragments");
   const [mode, setMode] = useState<"normalized_text" | "raw_text">(
     "normalized_text",
   );
@@ -142,6 +143,7 @@ function DocumentContent({
     const match = matches[index];
     if (!match) return;
     onPage(match.page);
+    setTextView("fragments");
     setSelection({ page: match.page, id: match.block.id });
   }
 
@@ -177,6 +179,12 @@ function DocumentContent({
         <p className="text-copy-muted mt-1 text-xs">
           Качество относится к распознаванию, а не к соответствию документа
           требованиям.
+        </p>
+        <p className="text-copy-muted mt-1 text-xs">
+          Движок распознавания:{" "}
+          {artifact.versions.ocr_engine || "не указан в результате"}
+          {artifact.versions.paddleocr &&
+            ` · PaddleOCR ${artifact.versions.paddleocr}`}
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -296,15 +304,26 @@ function DocumentContent({
                   .map((match) => match.block.id),
               )
             }
-            onSelect={(id) => setSelection({ page: page.page_number, id })}
+            onSelect={(id) => {
+              setSelection({ page: page.page_number, id });
+              setTextView("fragments");
+            }}
           />
         </div>
         <TextBlocksPanel
           blocks={page.blocks}
+          pages={artifact.pages}
+          fullText={artifact[mode]}
+          view={textView}
+          onView={setTextView}
           selectedId={selectedId ?? null}
           mode={mode}
           onMode={setMode}
           onSelect={(id) => setSelection({ page: page.page_number, id })}
+          onTableSelect={(selectedPage, id) => {
+            onPage(selectedPage);
+            setSelection({ page: selectedPage, id });
+          }}
         />
       </div>
     </div>

@@ -82,8 +82,10 @@ YAML, and supervisor wall time. Preview HTML preserves only table/tr/td/th and
 bounded positive row/column spans; arbitrary model-produced markup is never used
 as executable preview content. Raw predicted HTML remains inert inside JSON.
 
-The baseline mode invokes the unchanged production `LocalOCR` class and records
-its source hashes. It measures OCR only, not PDF rendering or production table
+The baseline mode invokes the frozen pre-PP-Structure `LocalOCR` in `legacy_ocr.py`
+and records its source hashes. Production now uses PP-StructureV3; importing its
+current adapter would invalidate the historical comparison. Baseline measures
+OCR only, not PDF rendering or production table
 geometry heuristics. Previously stored production artifacts can be compared for
 structure, but their Docker timings are not interchangeable with these Windows
 timings. Initialization and first-page prediction are reported separately. Each
