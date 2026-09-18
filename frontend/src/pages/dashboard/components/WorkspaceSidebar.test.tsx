@@ -84,7 +84,7 @@ function LocationProbe() {
   return <output data-testid="location">{useLocation().pathname}</output>;
 }
 
-function renderSidebar(initialEntry = routeNames.APP) {
+function renderSidebar(initialEntry: string = routeNames.APP) {
   render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <WorkspaceSidebar isLoggingOut={false} onLogout={vi.fn()} user={user} />
@@ -94,6 +94,18 @@ function renderSidebar(initialEntry = routeNames.APP) {
 }
 
 describe("WorkspaceSidebar", () => {
+  it("выделяет раздел объектов в карточке и возвращает к списку", () => {
+    installMatchMedia();
+    renderSidebar(routeNames.objectDetails("synthetic-id"));
+    const objectsButton = screen.getByRole("button", { name: "Объекты" });
+    expect(objectsButton).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(objectsButton);
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      routeNames.OBJECTS,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Проверки" }));
+    expect(objectsButton).toHaveAttribute("aria-pressed", "false");
+  });
   beforeEach(() => {
     window.localStorage.clear();
     document.documentElement.classList.remove("light", "dark");

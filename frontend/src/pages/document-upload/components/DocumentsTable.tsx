@@ -16,7 +16,7 @@ import type {
   UploadDocumentFilter,
 } from "@/pages/document-upload/types";
 
-import { UploadIcon } from "./UploadIcon";
+import { UploadIcon } from "@/components/UploadIcon";
 
 interface DocumentsTableProps {
   documents: readonly UploadDocument[];

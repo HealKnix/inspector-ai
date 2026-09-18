@@ -1,0 +1,68 @@
+# Overlay for the disposable ingestion test stack, never the application database.
+services:
+  redis:
+    image: redis:7.4.2-alpine
+    ports: ["127.0.0.1:26379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+  parser-models:
+    profiles: [tools]
+    build:
+      context: .
+      dockerfile: backend/document-parser/Dockerfile
+    image: inspector-document-parser:local
+    command: ["python", "download_models.py"]
+    environment:
+      PARSER_MODEL_ROOT: /models
+    volumes: ["parsing-test-models:/models"]
+  parser:
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    build:
+      context: .
+      dockerfile: backend/document-parser/Dockerfile
+    image: inspector-document-parser:local
+    environment:
+      PARSER_TOKEN: synthetic-parsing-test-token-at-least-32-characters
+      PARSER_MODEL_ROOT: /models
+      PARSER_FILE_TIMEOUT_SECONDS: 600
+      PARSER_CPU_THREADS: 2
+      STORAGE_ROOT: /data
+      HOME: /tmp
+    volumes:
+      - ./.test-output/storage/originals:/data/originals:ro
+      - ./.test-output/storage/derived:/data/derived
+      - parsing-test-models:/models:ro
+    networks: [isolated]
+    read_only: true
+    tmpfs: ["/tmp:size=512m,nosuid"]
+    mem_limit: 4g
+    cpus: 2
+    pids_limit: 256
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os,urllib.request; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8090/health',headers={'Authorization':'Bearer '+os.environ['PARSER_TOKEN']}),timeout=5)",
+        ]
+      interval: 10s
+      timeout: 8s
+      start_period: 60s
+      retries: 30
+  parser-proxy:
+    image: nginx:1.28.0-alpine
+    ports: ["127.0.0.1:28090:80"]
+    volumes:
+      ["./backend/test/parser-proxy.conf:/etc/nginx/conf.d/default.conf:ro"]
+    networks: [default, isolated]
+    depends_on:
+      parser:
+        condition: service_healthy
+volumes:
+  parsing-test-models:

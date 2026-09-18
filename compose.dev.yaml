@@ -1,0 +1,31 @@
+# Host API development only; the production validator has no published port.
+services:
+  redis:
+    ports: ["127.0.0.1:6379:6379"]
+  parser:
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    volumes:
+      - ./backend/var/documents/originals:/data/originals:ro
+      - ./backend/var/documents/derived:/data/derived
+      - parser-models:/models:ro
+  parser-proxy:
+    image: nginx:1.28.0-alpine
+    ports: ["127.0.0.1:8090:80"]
+    volumes:
+      ["./backend/test/parser-proxy.conf:/etc/nginx/conf.d/default.conf:ro"]
+    networks: [default, parsing]
+    depends_on:
+      parser:
+        condition: service_healthy
+  clamav:
+    ports: ["127.0.0.1:3310:3310"]
+  validator:
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    volumes: ["./backend/var/documents/quarantine:/data/quarantine:ro"]
+  validator-proxy:
+    image: nginx:1.28.0-alpine
+    ports: ["127.0.0.1:8081:80"]
+    volumes:
+      ["./backend/test/validator-proxy.conf:/etc/nginx/conf.d/default.conf:ro"]
+    networks: [default, validation]
+    depends_on: [validator]

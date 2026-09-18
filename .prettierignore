@@ -3,7 +3,13 @@ dist
 coverage
 .agents
 .heroui-docs
+frontend/.heroui-docs
+.test-output
+.playwright-cli
+output
 AGENTS.md
 backend/src/generated
 frontend/src/assets/images
 bun.lock
+# Preserved historical proposal hashes are checked by openspec/verify-planning.mjs.
+openspec/superseded/

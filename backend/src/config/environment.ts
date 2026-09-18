@@ -157,5 +157,18 @@ export function validateEnvironment(
     NODE_ENV: readNodeEnvironment(config.NODE_ENV),
     PORT: readPort(config.PORT),
     TRUST_PROXY_HOPS: readProxyHops(config.TRUST_PROXY_HOPS),
+    STORAGE_ROOT:
+      typeof config.STORAGE_ROOT === "string" && config.STORAGE_ROOT.trim()
+        ? config.STORAGE_ROOT
+        : "./var/documents",
+    CLAMAV_HOST:
+      typeof config.CLAMAV_HOST === "string" && config.CLAMAV_HOST.trim()
+        ? config.CLAMAV_HOST
+        : "127.0.0.1",
+    CLAMAV_PORT: readPort(config.CLAMAV_PORT ?? 3310),
+    FILE_VALIDATOR_URL: readFrontendUrl(
+      config.FILE_VALIDATOR_URL ?? "http://127.0.0.1:8081",
+    ),
+    RABBITMQ_URL: config.RABBITMQ_URL ?? "amqp://guest:guest@127.0.0.1:5672",
   };
 }

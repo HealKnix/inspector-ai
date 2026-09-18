@@ -1,6 +1,6 @@
 import { Button, Popover } from "@heroui/react";
 
-import { UploadIcon } from "./UploadIcon";
+import { UploadIcon } from "@/components/UploadIcon";
 
 function HowItWorksPopover() {
   return (

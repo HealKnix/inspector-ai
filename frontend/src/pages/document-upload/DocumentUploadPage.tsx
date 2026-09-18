@@ -13,12 +13,12 @@ import type {
   UploadDocumentFilter,
 } from "@/pages/document-upload/types";
 
+import { FileDropzone } from "@/components/file-dropzone/FileDropzone";
+import { UploadIcon } from "@/components/UploadIcon";
 import { CompletenessPanel } from "./components/CompletenessPanel";
 import { DocumentsTable } from "./components/DocumentsTable";
-import { FileDropzone } from "./components/FileDropzone";
 import { MetadataAssistant } from "./components/MetadataAssistant";
 import { UploadHeader } from "./components/UploadHeader";
-import { UploadIcon } from "./components/UploadIcon";
 import { UploadSteps } from "./components/UploadSteps";
 import { UploadSummary } from "./components/UploadSummary";
 

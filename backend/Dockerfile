@@ -34,6 +34,8 @@ COPY --from=production-dependencies /app/backend/node_modules ./backend/node_mod
 COPY --from=build /app/backend/dist ./backend/dist
 COPY backend/package.json ./backend/package.json
 
+RUN mkdir -p /data/originals /data/quarantine /data/derived && chown -R bun:bun /data && chmod 700 /data /data/originals /data/quarantine /data/derived
+
 USER bun
 EXPOSE 3000
 CMD ["bun", "backend/dist/main.js"]

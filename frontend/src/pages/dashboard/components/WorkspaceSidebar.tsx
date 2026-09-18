@@ -39,6 +39,7 @@ const fallbackAvatars = [
 type NavigationItemId =
   | "create"
   | "checks"
+  | "objects"
   | "search"
   | "documents"
   | "more"
@@ -55,6 +56,7 @@ interface NavigationItem {
 const primaryItems: readonly NavigationItem[] = [
   { icon: "plus", id: "create", label: "Создать" },
   { icon: "lightning", id: "checks", label: "Проверки" },
+  { icon: "folder", id: "objects", label: "Объекты" },
   { icon: "search", id: "search", label: "Поиск" },
   { icon: "calendar", id: "documents", label: "Документы" },
   { icon: "more", id: "more", label: "Ещё" },
@@ -249,15 +251,24 @@ function SidebarContent({
   const routeActiveItem: NavigationItemId | null =
     location.pathname === routeNames.DOCUMENT_UPLOAD
       ? "create"
-      : location.pathname === routeNames.APP
-        ? "checks"
-        : null;
+      : location.pathname === routeNames.OBJECTS ||
+          location.pathname.startsWith(`${routeNames.OBJECTS}/`)
+        ? "objects"
+        : location.pathname === routeNames.APP
+          ? "checks"
+          : null;
   const activeItem =
     selectedStubItem?.pathname === location.pathname
       ? selectedStubItem.item
       : routeActiveItem;
 
   const handleActiveItemChange = (item: NavigationItemId) => {
+    if (item === "objects") {
+      setSelectedStubItem(null);
+      void navigate(routeNames.OBJECTS);
+      onNavigate?.();
+      return;
+    }
     if (item === "create") {
       setSelectedStubItem(null);
       void navigate(routeNames.DOCUMENT_UPLOAD);

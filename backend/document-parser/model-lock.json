@@ -1,0 +1,11 @@
+{
+  "PP-LCNet_x1_0_doc_ori/inference.json": "3580978602f309c3554508dd85d4fe09b73a7e0d80d7f9e63258f5b72c390c69",
+  "PP-LCNet_x1_0_doc_ori/inference.pdiparams": "e8d6e7c5d264507e40e58a655779059d616b20d7441ea22047d829eb3931989c",
+  "PP-LCNet_x1_0_doc_ori/inference.yml": "9e195eb729a8173588cd0e8a852c8b373aa606e79e77b4ac7d8346f5426caf26",
+  "PP-OCRv5_mobile_det/inference.json": "05feef1acb00aa4cd7362b15f7f501fc4f99d7b1fa73c1c871e0c7b1504b0f5c",
+  "PP-OCRv5_mobile_det/inference.pdiparams": "afa1820cb16c1fd0dad589d0f8b389139061c1ef6d68019685fd07be997dda5b",
+  "PP-OCRv5_mobile_det/inference.yml": "98069072e1b6b37d727fd9d9f11725faa46d6ea0de012f2ed26caea011c37699",
+  "eslav_PP-OCRv5_mobile_rec/inference.json": "3fb6e2e658f5139ff16e35260de8f0577f106a9505c902e1dfc1f4f1d03cc9cb",
+  "eslav_PP-OCRv5_mobile_rec/inference.pdiparams": "f11057b05d8517868bca505271278973d706600d9dcc184cbcf5c4512091c32b",
+  "eslav_PP-OCRv5_mobile_rec/inference.yml": "025039bac23eb4a308efcefa4d58eab3af440767815c6ba6938468bf6353ee5a"
+}

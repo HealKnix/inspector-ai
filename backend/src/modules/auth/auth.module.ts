@@ -21,5 +21,13 @@ import { PasswordService } from "./password.service.js";
     PasswordService,
     RolesGuard,
   ],
+  exports: [
+    JwtAuthGuard,
+    AuthService,
+    PasswordService,
+    JwtModule,
+    UsersModule,
+    AuthSessionsService,
+  ],
 })
 export class AuthModule {}

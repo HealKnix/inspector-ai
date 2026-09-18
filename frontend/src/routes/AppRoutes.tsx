@@ -25,6 +25,16 @@ const DocumentUploadPage = lazy(() =>
     default: module.DocumentUploadPage,
   })),
 );
+const ObjectsPage = lazy(() =>
+  import("@/pages/objects/ObjectsPage").then((module) => ({
+    default: module.ObjectsPage,
+  })),
+);
+const ObjectDetailsPage = lazy(() =>
+  import("@/pages/object-details/ObjectDetailsPage").then((module) => ({
+    default: module.ObjectDetailsPage,
+  })),
+);
 
 export function AppRoutes() {
   const currentUserQuery = useCurrentUser();
@@ -97,6 +107,11 @@ export function AppRoutes() {
             <Route
               element={<DocumentUploadPage />}
               path={routeNames.DOCUMENT_UPLOAD}
+            />
+            <Route element={<ObjectsPage />} path={routeNames.OBJECTS} />
+            <Route
+              element={<ObjectDetailsPage />}
+              path={routeNames.OBJECT_DETAILS}
             />
           </Route>
         </Route>

@@ -14,6 +14,10 @@ export default tseslint.config(
       "**/node_modules/**",
       ".agents/**",
       ".heroui-docs/**",
+      "frontend/.heroui-docs/**",
+      ".test-output/**",
+      ".playwright-cli/**",
+      "output/**",
       "backend/src/generated/**",
     ],
   },
@@ -50,7 +54,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["backend/**/*.ts", "*.config.{js,mjs,ts}"],
+    files: ["backend/**/*.{ts,mjs}", "*.config.{js,mjs,ts}"],
     languageOptions: {
       globals: globals.node,
     },

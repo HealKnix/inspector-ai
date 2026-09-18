@@ -1,4 +1,7 @@
 export type UploadIconName =
+  | "plus"
+  | "arrow-left"
+  | "download"
   | "check"
   | "chevron-right"
   | "file"
@@ -23,6 +26,12 @@ interface UploadIconProps {
 
 function IconPaths({ name }: Pick<UploadIconProps, "name">) {
   switch (name) {
+    case "plus":
+      return <path d="M12 5v14M5 12h14" />;
+    case "arrow-left":
+      return <path d="M20 12H4m6-6-6 6 6 6" />;
+    case "download":
+      return <path d="M12 3v12m-5-5 5 5 5-5M5 16v4h14v-4" />;
     case "check":
       return <path d="m5 12 4 4L19 6" />;
     case "chevron-right":

@@ -1,0 +1,181 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+
+import {
+  downloadOriginal,
+  getObject,
+  listFiles,
+} from "@/api/endpoints/objects";
+import { getParsingStatus } from "@/api/endpoints/parsing";
+import { queryKeys } from "@/api/query-keys";
+import type { ConstructionObject, ObjectFile } from "@/api/types/objects";
+import { ObjectDetailsPage } from "./ObjectDetailsPage";
+
+vi.mock("@/api/endpoints/parsing", () => ({ getParsingStatus: vi.fn() }));
+
+vi.mock("@/api/endpoints/objects", () => ({
+  getObject: vi.fn(),
+  listFiles: vi.fn(),
+  downloadOriginal: vi.fn(),
+}));
+
+const object: ConstructionObject = {
+  id: "11111111-1111-4111-8111-111111111111",
+  name: "Синтетический объект",
+  created_by: "synthetic",
+  created_at: "2026-09-17T00:00:00.000Z",
+  updated_at: "2026-09-17T00:00:00.000Z",
+  allowed_actions: [],
+};
+const file: ObjectFile = {
+  id: "22222222-2222-4222-8222-222222222222",
+  object_id: object.id,
+  process_id: "33333333-3333-4333-8333-333333333333",
+  run_id: "44444444-4444-4444-8444-444444444444",
+  original_name: "synthetic.xml",
+  size: 2000,
+  format: "XML",
+  sha256: "a".repeat(64),
+  created_at: "2026-09-17T00:00:00.000Z",
+  integrity_error: false,
+};
+function LocationProbe() {
+  return <output data-testid="location">{useLocation().search}</output>;
+}
+function mount(search = "") {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[`/app/objects/${object.id}${search}`]}>
+        <Routes>
+          <Route
+            path="/app/objects/:objectId"
+            element={<ObjectDetailsPage />}
+          />
+        </Routes>
+        <LocationProbe />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+  return client;
+}
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(getObject).mockResolvedValue(object);
+  vi.mocked(listFiles).mockResolvedValue({
+    items: [file],
+    total: 1,
+    page: 1,
+    limit: 20,
+  });
+  vi.mocked(downloadOriginal).mockResolvedValue(undefined);
+  vi.mocked(getParsingStatus).mockResolvedValue({
+    schema_version: 1,
+    active: false,
+    poll_after_ms: 2000,
+    items: [],
+  });
+});
+
+describe("object documents", () => {
+  it("показывает оригиналы из API и скачивает файл, скрывая недоступную загрузку", async () => {
+    mount();
+    const download = await screen.findByRole("button", {
+      name: "Скачать оригинал: synthetic.xml",
+    });
+    expect(screen.getByRole("link", { name: "Все объекты" })).toHaveAttribute(
+      "href",
+      "/app/objects",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Загрузить документы" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(download);
+    await waitFor(() =>
+      expect(downloadOriginal).toHaveBeenCalledWith(
+        object.id,
+        file.id,
+        file.original_name,
+      ),
+    );
+  });
+  it("не позволяет скачать повреждённый оригинал", async () => {
+    vi.mocked(listFiles).mockResolvedValue({
+      items: [{ ...file, integrity_error: true }],
+      total: 1,
+      page: 1,
+      limit: 20,
+    });
+    mount();
+    expect(
+      await screen.findByText("Нарушена целостность оригинала"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Скачать оригинал: synthetic.xml" }),
+    ).toBeDisabled();
+  });
+  it("сохраняет ссылку на приём при переходе между страницами файлов", async () => {
+    vi.mocked(listFiles).mockResolvedValue({
+      items: [file],
+      total: 21,
+      page: 1,
+      limit: 20,
+    });
+    mount("?upload=receipt-id");
+    fireEvent.click(await screen.findByRole("button", { name: "Далее" }));
+    await waitFor(() =>
+      expect(listFiles).toHaveBeenCalledWith(
+        object.id,
+        2,
+        expect.any(AbortSignal),
+      ),
+    );
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      "upload=receipt-id",
+    );
+    expect(screen.getByTestId("location")).toHaveTextContent("page=2");
+    expect(await screen.findByText("Всего 21")).toBeInTheDocument();
+  });
+  it("не показывает старые файлы как актуальные после ошибки обновления", async () => {
+    const client = mount();
+    expect(await screen.findByText("synthetic.xml")).toBeInTheDocument();
+    vi.mocked(listFiles).mockRejectedValue(
+      new Error("Не удалось загрузить оригиналы"),
+    );
+    await act(() =>
+      client.invalidateQueries({
+        queryKey: queryKeys.objects.files(object.id, 1),
+      }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не удалось загрузить оригиналы",
+    );
+    expect(screen.queryByText("synthetic.xml")).not.toBeInTheDocument();
+    expect(screen.queryByText("Всего 1")).not.toBeInTheDocument();
+  });
+  it("скрывает кешированные документы после отзыва доступа к объекту", async () => {
+    const client = mount();
+    expect(await screen.findByText("synthetic.xml")).toBeInTheDocument();
+    vi.mocked(getObject).mockRejectedValue(new Error("Нет доступа к объекту"));
+    await act(() =>
+      client.invalidateQueries({
+        queryKey: queryKeys.objects.detail(object.id),
+        exact: true,
+      }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Нет доступа к объекту",
+    );
+    expect(screen.queryByText("synthetic.xml")).not.toBeInTheDocument();
+    expect(screen.queryByText(object.name)).not.toBeInTheDocument();
+  });
+});

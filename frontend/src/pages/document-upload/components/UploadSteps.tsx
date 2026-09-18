@@ -1,4 +1,4 @@
-import { UploadIcon } from "./UploadIcon";
+import { UploadIcon } from "@/components/UploadIcon";
 
 const steps = [
   { label: "Файлы", description: "Загрузка документов" },

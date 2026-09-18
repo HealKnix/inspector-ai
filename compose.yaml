@@ -32,13 +32,33 @@ services:
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
 
+  redis:
+    image: redis:7.4.2-alpine
+    command:
+      [
+        "redis-server",
+        "--maxmemory",
+        "256mb",
+        "--maxmemory-policy",
+        "allkeys-lru",
+        "--save",
+        "",
+        "--appendonly",
+        "no",
+      ]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
   migrate:
     build:
       context: .
       dockerfile: backend/Dockerfile
       target: migrate
     environment:
-      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-postgres}"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-postgres}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,7 +70,7 @@ services:
       dockerfile: backend/Dockerfile
       target: runtime
     environment:
-      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-postgres}"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-postgres}"
       FRONTEND_URL: http://localhost:8080
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in the root .env file}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set in the root .env file}
@@ -59,6 +79,20 @@ services:
       NODE_ENV: production
       PORT: 3000
       TRUST_PROXY_HOPS: 1
+      STORAGE_ROOT: /data
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
+      FILE_VALIDATOR_URL: http://validator:8081
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      PARSER_URL: http://parser:8090
+      PARSER_TOKEN: ${PARSER_TOKEN:?PARSER_TOKEN must be set in the root .env file}
+      PARSER_FILE_TIMEOUT_SECONDS: ${PARSER_FILE_TIMEOUT_SECONDS:-600}
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - document-originals:/data/originals
+      - document-quarantine:/data/quarantine
+      - document-derived:/data/derived
+    networks: [default, validation, parsing]
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -86,6 +120,159 @@ services:
     ports:
       - 8080:80
 
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: runtime
+    command: ["bun", "backend/dist/worker.js"]
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-postgres}"
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set}
+      STORAGE_ROOT: /data
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    volumes:
+      - document-originals:/data/originals
+      - document-quarantine:/data/quarantine
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "fetch('http://127.0.0.1:3001').then(r=>{if(!r.ok)process.exit(1)})",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  clamav:
+    build:
+      context: .
+      dockerfile: backend/antivirus/Dockerfile
+    volumes: ["clamav-data:/var/lib/clamav"]
+
+  parser-models:
+    profiles: [tools]
+    build:
+      context: .
+      dockerfile: backend/document-parser/Dockerfile
+    image: inspector-document-parser:local
+    command: ["python", "download_models.py"]
+    environment:
+      PARSER_MODEL_ROOT: /models
+    volumes: ["parser-models:/models"]
+
+  parser:
+    build:
+      context: .
+      dockerfile: backend/document-parser/Dockerfile
+    image: inspector-document-parser:local
+    environment:
+      PARSER_TOKEN: ${PARSER_TOKEN:?PARSER_TOKEN must be set}
+      PARSER_MODEL_ROOT: /models
+      PARSER_FILE_TIMEOUT_SECONDS: ${PARSER_FILE_TIMEOUT_SECONDS:-600}
+      PARSER_CPU_THREADS: ${PARSER_CPU_THREADS:-2}
+      STORAGE_ROOT: /data
+      HOME: /tmp
+    volumes:
+      - document-originals:/data/originals:ro
+      - document-derived:/data/derived
+      - parser-models:/models:ro
+    networks: [parsing]
+    read_only: true
+    tmpfs: ["/tmp:size=512m,nosuid"]
+    mem_limit: 4g
+    cpus: 2
+    pids_limit: 256
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os,urllib.request; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8090/health',headers={'Authorization':'Bearer '+os.environ['PARSER_TOKEN']}),timeout=5)",
+        ]
+      interval: 20s
+      timeout: 10s
+      start_period: 60s
+      retries: 15
+
+  parsing-worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: runtime
+    command: ["bun", "backend/dist/parsing-worker.js"]
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-postgres}"
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set}
+      STORAGE_ROOT: /data
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      REDIS_URL: redis://redis:6379
+      PARSER_URL: http://parser:8090
+      PARSER_TOKEN: ${PARSER_TOKEN:?PARSER_TOKEN must be set}
+      PARSER_FILE_TIMEOUT_SECONDS: ${PARSER_FILE_TIMEOUT_SECONDS:-600}
+      PARSING_WORKER_HEALTH_PORT: 3002
+    volumes:
+      - document-originals:/data/originals:ro
+      - document-derived:/data/derived
+    networks: [default, parsing]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+      parser:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "fetch('http://127.0.0.1:3002').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+  validator:
+    build:
+      context: .
+      dockerfile: backend/file-validator/Dockerfile
+    volumes: ["document-quarantine:/data/quarantine:ro"]
+    networks: [validation]
+    read_only: true
+    tmpfs: ["/tmp:size=64m,noexec,nosuid"]
+    mem_limit: 512m
+    cpus: 1
+    pids_limit: 32
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
 volumes:
   postgres-data:
   rabbitmq-data:
+  document-originals:
+  document-derived:
+  document-quarantine:
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: "size=1073741824,uid=1000,gid=1000,mode=0700"
+  clamav-data:
+  parser-models:
+
+networks:
+  validation:
+    internal: true
+  parsing:
+    internal: true
