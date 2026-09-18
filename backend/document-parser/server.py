@@ -19,6 +19,13 @@ def deny_network(*_args, **_kwargs):
     raise OSError("Document parser network access is disabled")
 
 
+def error_response(error):
+    body = {"code": error.code.lower(), "retryable": error.retryable}
+    if error.admission is not None:
+        body.update(error.admission)
+    return body
+
+
 def worker_main(connection, settings, versions):
     # Defense in depth: deployment also uses an internal network. The worker never
     # needs a socket; the parent owns HTTP and the offline model files are explicit.
@@ -32,8 +39,9 @@ def worker_main(connection, settings, versions):
         while True:
             request = connection.recv()
 
-            def progress(completed, total, stage):
-                connection.send({"type": "progress", "pages_completed": completed, "pages_total": total, "stage": stage})
+            def progress(completed, total, stage, details=None):
+                connection.send({"type": "progress", "pages_completed": completed, "pages_total": total,
+                                 "stage": stage, **(details or {})})
 
             try:
                 result = parse(request, settings, versions, ocr, progress)
@@ -93,14 +101,16 @@ class Supervisor:
 
     def health(self):
         with self.lock:
-            if not self.active and not self.ready:
+            if not self.active and (not self.ready or not self.process.is_alive()):
                 try:
                     if self.connection.poll():
                         event = self.connection.recv()
                         self.ready = event.get("type") == "ready"
                 except (EOFError, OSError):
                     self.ready = False
-                if not self.process.is_alive() or time.monotonic() - self.booted > 180:
+                # A queued ready event wins over the startup deadline. Also
+                # restart an idle child that died after previously becoming ready.
+                if not self.process.is_alive() or (not self.ready and time.monotonic() - self.booted > 180):
                     self.stop()
                     self.start()
             if not self.ready or not self.process.is_alive():
@@ -134,7 +144,9 @@ class Supervisor:
             if self.active:
                 raise ParseError("PARSER_BUSY", retryable=True, status=503)
             self.active, self.cancelled = request_id, False
-            self.progress[request_id] = {"pages_completed": 0, "pages_total": None, "stage": "starting"}
+            self.progress[request_id] = {"request_id": request_id, "pipeline_fingerprint": fingerprint(self.versions),
+                "pages_completed": 0, "pages_total": None, "stage": "starting", "checkpoint_validated": False,
+                "checkpoint_pages": None, "current_page": None}
             while len(self.progress) > 1024:
                 self.progress.popitem(last=False)
             try:
@@ -145,6 +157,7 @@ class Supervisor:
                 self.start()
                 raise ParseError("PARSER_WORKER_EXIT", retryable=True, status=503) from None
         deadline = time.monotonic() + self.settings.timeout
+        admission = {"admitted": True, "request_id": request_id, "pipeline_fingerprint": fingerprint(self.versions)}
         restart = False
         try:
             while True:
@@ -163,14 +176,22 @@ class Supervisor:
                 event = self.connection.recv()
                 if event["type"] == "progress":
                     with self.lock:
-                        self.progress[request_id] = {key: event[key] for key in ("pages_completed", "pages_total", "stage")}
+                        for key in ("pages_completed", "pages_total", "stage", "checkpoint_validated", "checkpoint_pages", "current_page"):
+                            if key in event:
+                                self.progress[request_id][key] = event[key]
                 elif event["type"] == "result":
                     return event["artifact"]
                 elif event["type"] == "error":
                     raise ParseError(event["code"], event["retryable"], event["status"])
+        except ParseError as error:
+            # Fast failures may precede the backend's first progress poll. This
+            # proof belongs only to this request, after health/busy/send gates.
+            error.admission = admission
+            raise
         except (EOFError, BrokenPipeError, OSError) as error:
             restart = True
-            raise ParseError("PARSER_CANCELLED" if self.cancelled else "PARSER_WORKER_EXIT", retryable=True, status=503) from error
+            raise ParseError("PARSER_CANCELLED" if self.cancelled else "PARSER_WORKER_EXIT", retryable=True,
+                             status=503, admission=admission) from error
         finally:
             with self.lock:
                 if restart:
@@ -234,7 +255,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             self.reply(200, self.dispatch())
         except ParseError as error:
-            self.reply(error.status, {"code": error.code.lower(), "retryable": error.retryable})
+            self.reply(error.status, error_response(error))
         except (ValueError, TypeError, UnicodeDecodeError):
             self.reply(400, {"code": "invalid_request", "retryable": False})
         except Exception:

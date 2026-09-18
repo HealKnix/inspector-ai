@@ -12,6 +12,8 @@ import time
 import unittest
 import uuid
 import zipfile
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -22,7 +24,7 @@ from common import ParseError, block, normalize
 from config import Settings
 from ocr import LocalOCR, unrotate_point
 from pipeline import parse, validate_request
-from server import Supervisor
+from server import Supervisor, error_response
 from structured import docx_items, xml_items
 from tables import structure_tables
 
@@ -330,6 +332,116 @@ class ParserTests(unittest.TestCase):
         path.write_text(json.dumps(checkpoint), encoding="utf-8")
         second = parse(request, self.settings, self.versions, NoOCR(), lambda *_: None)
         self.assertNotEqual(first["pages"][0]["image_key"], second["pages"][0]["image_key"])
+
+    def test_resume_verifies_all_pages_and_reports_holes_before_processing(self):
+        document = pymupdf.open()
+        for number in range(3):
+            document.new_page().insert_text((50, 100), f"SYNTHETIC PAGE {number + 1}")
+        request = self.request(document.tobytes())
+        first = parse(request, self.settings, self.versions, NoOCR(), lambda *_: None)
+        # Missing page 1 and corrupt image 3 must not hide the usable page 2.
+        checkpoint_root = next((self.settings.storage / "derived" / ".parser-checkpoints").rglob("1.json")).parent
+        (checkpoint_root / "1.json").unlink()
+        (self.settings.storage / "derived" / first["pages"][2]["image_key"]).write_bytes(b"corrupt synthetic image")
+        events = []
+        second = parse(request, self.settings, self.versions, NoOCR(), lambda *event: events.append(event))
+        self.assertEqual(events[0][2:], ("checkpoint_verifying", {"checkpoint_validated": False, "checkpoint_pages": None, "current_page": None}))
+        self.assertEqual(events[1], (1, 3, "resuming", {"checkpoint_validated": True, "checkpoint_pages": 1, "current_page": None}))
+        self.assertEqual([e[3]["current_page"] for e in events if e[2] == "rendering"], [1, 3])
+        self.assertEqual([e[0] for e in events if e[2] == "extracting"], [2, 3])
+        self.assertEqual(first["pages"][1]["image_key"], second["pages"][1]["image_key"])
+        self.assertNotEqual(first["pages"][0]["image_key"], second["pages"][0]["image_key"])
+        self.assertNotEqual(first["pages"][2]["image_key"], second["pages"][2]["image_key"])
+
+    def test_checkpoint_for_wrong_page_is_not_counted_even_with_valid_digest(self):
+        document = pymupdf.open()
+        document.new_page().insert_text((50, 100), "SYNTHETIC CHECKPOINT")
+        request = self.request(document.tobytes())
+        first = parse(request, self.settings, self.versions, NoOCR(), lambda *_: None)
+        path = next((self.settings.storage / "derived" / ".parser-checkpoints").rglob("1.json"))
+        cached = json.loads(path.read_text())
+        cached["page"]["page_number"] = 2
+        serialized = json.dumps(cached["page"], ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        cached["metadata_sha256"] = hashlib.sha256(serialized.encode()).hexdigest()
+        path.write_text(json.dumps(cached))
+        events = []
+        second = parse(request, self.settings, self.versions, NoOCR(), lambda *event: events.append(event))
+        self.assertEqual(events[1][0], 0)
+        self.assertEqual(events[1][3]["checkpoint_pages"], 0)
+        self.assertNotEqual(first["pages"][0]["image_key"], second["pages"][0]["image_key"])
+
+    def test_health_keeps_late_ready_worker_and_recovers_previously_ready_dead_child(self):
+        supervisor = Supervisor.__new__(Supervisor)
+        supervisor.lock = threading.Lock()
+        supervisor.active, supervisor.ready, supervisor.booted = None, False, 0
+        supervisor.versions = self.versions
+        supervisor.process = Mock()
+        supervisor.process.is_alive.return_value = True
+        supervisor.connection = Mock()
+        supervisor.connection.poll.return_value = True
+        supervisor.connection.recv.return_value = {"type": "ready"}
+        supervisor.start, supervisor.stop = Mock(), Mock()
+        with patch("server.time.monotonic", return_value=181):
+            self.assertEqual(supervisor.health()["status"], "ok")
+        supervisor.stop.assert_not_called()
+        supervisor.start.assert_not_called()
+        supervisor.process.is_alive.return_value = False
+        with self.assertRaisesRegex(ParseError, "MODELS_NOT_READY"):
+            supervisor.health()
+        supervisor.stop.assert_called_once()
+        supervisor.start.assert_called_once()
+
+    def test_progress_keeps_request_identity_and_verified_checkpoint_details(self):
+        from collections import OrderedDict
+        supervisor = Supervisor.__new__(Supervisor)
+        supervisor.lock, supervisor.progress = threading.Lock(), OrderedDict()
+        supervisor.versions, supervisor.settings = self.versions, self.settings
+        supervisor.active, supervisor.cancelled = None, False
+        supervisor.health = Mock()
+        supervisor.connection = Mock()
+        supervisor.connection.poll.return_value = True
+        supervisor.connection.recv.side_effect = [
+            {"type": "progress", "pages_completed": 2, "pages_total": 3, "stage": "resuming",
+             "checkpoint_validated": True, "checkpoint_pages": 2, "current_page": None},
+            {"type": "progress", "pages_completed": 2, "pages_total": 3, "stage": "ocr", "current_page": 3},
+            {"type": "result", "artifact": {"synthetic": True}},
+        ]
+        request_id = str(uuid.uuid4())
+        self.assertEqual(supervisor.run({"request_id": request_id}), {"synthetic": True})
+        value = supervisor.get_progress(request_id)
+        self.assertEqual(value["request_id"], request_id)
+        self.assertEqual(value["checkpoint_pages"], 2)
+        self.assertTrue(value["checkpoint_validated"])
+        self.assertEqual(value["current_page"], 3)
+        self.assertEqual(len(value["pipeline_fingerprint"]), 64)
+
+    def test_only_errors_after_admission_contain_matching_proof(self):
+        from collections import OrderedDict
+        supervisor = Supervisor.__new__(Supervisor)
+        supervisor.lock, supervisor.progress = threading.Lock(), OrderedDict()
+        supervisor.versions, supervisor.settings = self.versions, self.settings
+        supervisor.active, supervisor.cancelled = None, False
+        supervisor.health = Mock()
+        supervisor.connection = Mock()
+        supervisor.connection.poll.return_value = True
+        supervisor.connection.recv.return_value = {"type": "error", "code": "PARSER_FAILURE", "retryable": True, "status": 503}
+        request_id = str(uuid.uuid4())
+        with self.assertRaises(ParseError) as caught:
+            supervisor.run({"request_id": request_id})
+        response = error_response(caught.exception)
+        self.assertTrue(response["admitted"])
+        self.assertEqual(response["request_id"], request_id)
+        self.assertEqual(response["pipeline_fingerprint"], supervisor.get_progress(request_id)["pipeline_fingerprint"])
+        supervisor.health.side_effect = ParseError("MODELS_NOT_READY", True, 503)
+        with self.assertRaises(ParseError) as caught:
+            supervisor.run({"request_id": str(uuid.uuid4())})
+        self.assertEqual(error_response(caught.exception), {"code": "models_not_ready", "retryable": True})
+        supervisor.health.side_effect = None
+        supervisor.active = "another-request"
+        with self.assertRaises(ParseError) as caught:
+            supervisor.run({"request_id": str(uuid.uuid4())})
+        self.assertEqual(error_response(caught.exception), {"code": "parser_busy", "retryable": True})
+        self.assertNotIn("admitted", error_response(ParseError("UNAUTHORIZED", status=401)))
 
     def test_pp_structure_wrapper_maps_page_orientation_back(self):
         reader = LocalOCR.__new__(LocalOCR)

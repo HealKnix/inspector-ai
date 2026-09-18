@@ -20,6 +20,7 @@ import {
   type ParsingMessage,
 } from "../src/modules/parsing/parsing-contract.js";
 import { ParsingJobsService } from "../src/modules/parsing/parsing-jobs.service.js";
+import type { ParserProgress } from "../src/modules/parsing/parsing-progress.js";
 
 // These integration tests use real PostgreSQL, RabbitMQ, storage and HTTP. The
 // parser HTTP fixture isolates queue/durability faults; it is not OCR evidence.
@@ -46,7 +47,15 @@ let cancelCalls = 0;
 const cancelledRequests: string[] = [];
 let lastParsedRequest = "";
 let parserMode:
-  "ok" | "timeout" | "invalid" | "busy" | "not_ready" | "disconnect" = "ok";
+  | "ok"
+  | "timeout"
+  | "invalid"
+  | "busy"
+  | "not_ready"
+  | "parse_not_ready"
+  | "admitted_failure"
+  | "missing_image"
+  | "disconnect" = "ok";
 let holdResponse: (() => Promise<void>) | undefined;
 
 async function account(role: "INSPECTOR" | "ADMINISTRATOR") {
@@ -212,7 +221,13 @@ beforeAll(async () => {
       if (req.url?.startsWith("/cancel/")) {
         cancelCalls++;
         cancelledRequests.push(req.url.slice("/cancel/".length));
-        res.end("{}");
+        res.end(
+          JSON.stringify({
+            cancelled:
+              parserMode === "disconnect" &&
+              req.url.endsWith(lastParsedRequest),
+          }),
+        );
         return;
       }
       expect(req.headers.authorization).toBe("Bearer " + "p".repeat(32));
@@ -232,6 +247,24 @@ beforeAll(async () => {
         res.end(JSON.stringify({ code: "parser_busy", retryable: true }));
         return;
       }
+      if (parserMode === "parse_not_ready") {
+        res.writeHead(503);
+        res.end(JSON.stringify({ code: "models_not_ready", retryable: true }));
+        return;
+      }
+      if (parserMode === "admitted_failure") {
+        res.writeHead(503);
+        res.end(
+          JSON.stringify({
+            code: "parser_failure",
+            retryable: true,
+            admitted: true,
+            request_id: body.request_id,
+            pipeline_fingerprint: fingerprint,
+          }),
+        );
+        return;
+      }
       if (parserMode === "disconnect") {
         res.destroy();
         return;
@@ -242,7 +275,8 @@ beforeAll(async () => {
         return;
       }
       const imageKey = randomUUID();
-      await writeFile(resolve(root, "derived", imageKey), png);
+      if (parserMode !== "missing_image")
+        await writeFile(resolve(root, "derived", imageKey), png);
       res.end(
         JSON.stringify({
           schema_version: 1,
@@ -591,17 +625,445 @@ describe("PAR durable execution and access (real PG/broker/storage, parser fault
     },
   );
 
+  it("preserves last confirmed progress through timeout and model warmup, then accepts a verified checkpoint decrease", async () => {
+    const item = await seed();
+    await jobs.fanout(item.parent);
+    const payload = await message(item);
+    const first = await jobs.claim(payload);
+    if (!first) throw new Error("Expected initial claim");
+    first.pipelineFingerprint = fingerprint;
+    await prisma.parsingTask.update({
+      where: { id: first.id },
+      data: { pipelineFingerprint: fingerprint },
+    });
+    const progress: ParserProgress = {
+      request_id: first.leaseToken,
+      pipeline_fingerprint: fingerprint,
+      stage: "extracting",
+      pages_completed: 8,
+      pages_total: 20,
+      checkpoint_validated: true,
+      checkpoint_pages: 6,
+      current_page: 9,
+    };
+    expect(await jobs.reportProgress(first, progress)).toBe(true);
+    const confirmed = await prisma.parsingTask.findUniqueOrThrow({
+      where: { id: first.id },
+    });
+    expect(await jobs.reportProgress(first, progress)).toBe(true);
+    expect(
+      (await prisma.parsingTask.findUniqueOrThrow({ where: { id: first.id } }))
+        .progressUpdatedAt,
+    ).toEqual(confirmed.progressUpdatedAt);
+    await jobs.finishFailure(first, new ParsingError("parser_timeout", true));
+    expect(
+      await jobs.reportProgress(first, { ...progress, pages_completed: 9 }),
+    ).toBe(false);
+    await prisma.parsingTask.update({
+      where: { id: first.id },
+      data: { availableAt: new Date(0) },
+    });
+    parserMode = "not_ready";
+    try {
+      await jobs.execute(payload);
+    } finally {
+      parserMode = "ok";
+    }
+    const waiting = await prisma.parsingTask.findUniqueOrThrow({
+      where: { id: first.id },
+    });
+    expect(waiting).toMatchObject({
+      state: "queued",
+      attempts: 1,
+      phase: "waiting_models",
+      waitingReason: "models_not_ready",
+      pagesCompleted: 8,
+      pagesTotal: 20,
+      checkpointPages: 6,
+      checkpointValidated: false,
+      progressUpdatedAt: confirmed.progressUpdatedAt,
+      previousAttemptError: "parser_timeout",
+    });
+    expect(
+      waiting.modelsReadyDeadline!.getTime() - waiting.availableAt.getTime(),
+    ).toBeGreaterThan(290_000);
+    const listing = await get(
+      `/api/v1/objects/${item.objectId}/parsing`,
+    ).expect(200);
+    expect((listing.body as { items: unknown[] }).items[0]).toMatchObject({
+      phase: "waiting_models",
+      waiting_reason: "models_not_ready",
+      pages_completed: 8,
+      pages_total: 20,
+      checkpoint_pages: 6,
+      checkpoint_validated: false,
+      previous_attempt_error: "parser_timeout",
+      retry_at: waiting.availableAt.toISOString(),
+      progress_updated_at: confirmed.progressUpdatedAt!.toISOString(),
+    });
+    await prisma.parsingTask.update({
+      where: { id: first.id },
+      data: { availableAt: new Date(0) },
+    });
+    const resumed = await jobs.claim(payload);
+    if (!resumed) throw new Error("Expected retry claim");
+    expect(
+      await prisma.parsingTask.findUniqueOrThrow({ where: { id: first.id } }),
+    ).toMatchObject({
+      phase: "checking_parser",
+      pagesCompleted: 8,
+      pagesTotal: 20,
+    });
+    expect(
+      await jobs.reportProgress(resumed, {
+        ...progress,
+        request_id: resumed.leaseToken,
+        stage: "checkpoint_verifying",
+        pages_completed: 0,
+        checkpoint_validated: false,
+        checkpoint_pages: null,
+        current_page: null,
+      }),
+    ).toBe(true);
+    expect(
+      await prisma.parsingTask.findUniqueOrThrow({ where: { id: first.id } }),
+    ).toMatchObject({
+      phase: "checkpoint_verifying",
+      pagesCompleted: 8,
+      progressUpdatedAt: confirmed.progressUpdatedAt,
+      modelsReadyDeadline: null,
+    });
+    expect(
+      await jobs.reportProgress(resumed, {
+        ...progress,
+        request_id: resumed.leaseToken,
+        stage: "resuming",
+        pages_completed: 3,
+        checkpoint_pages: 3,
+        current_page: 2,
+      }),
+    ).toBe(true);
+    expect(
+      await prisma.parsingTask.findUniqueOrThrow({ where: { id: first.id } }),
+    ).toMatchObject({
+      phase: "resuming",
+      pagesCompleted: 3,
+      pagesTotal: 20,
+      checkpointPages: 3,
+      checkpointValidated: true,
+      currentPage: 2,
+      progressResetReason: "saved_pages_unavailable",
+    });
+    await prisma.parsingTask.update({
+      where: { id: first.id },
+      data: { leaseUntil: new Date(0) },
+    });
+    expect(
+      await jobs.reportProgress(resumed, {
+        ...progress,
+        request_id: resumed.leaseToken,
+        pages_completed: 19,
+      }),
+    ).toBe(false);
+    await jobs.finishFailure(
+      resumed,
+      new ParsingError("worker_lease_expired", true),
+      true,
+    );
+  });
+
+  it("expires continuous model readiness waiting after restart/recovery without spending OCR attempts and permits manual retry", async () => {
+    const item = await seed();
+    await jobs.fanout(item.parent);
+    const payload = await message(item);
+    try {
+      parserMode = "not_ready";
+      await jobs.execute(payload);
+      const first = await prisma.parsingTask.findUniqueOrThrow({
+        where: { id: payload.task_id },
+      });
+      const deadline = first.modelsReadyDeadline;
+      expect(deadline).not.toBeNull();
+      await prisma.parsingTask.update({
+        where: { id: payload.task_id },
+        data: { availableAt: new Date(0) },
+      });
+      parserMode = "parse_not_ready"; // A healthy /health does not prove CPU admission.
+      await jobs.execute(payload);
+      expect(
+        await prisma.parsingTask.findUniqueOrThrow({
+          where: { id: payload.task_id },
+        }),
+      ).toMatchObject({
+        attempts: 0,
+        capacityDeferrals: 2,
+        modelsReadyDeadline: deadline,
+        phase: "waiting_models",
+      });
+    } finally {
+      parserMode = "ok";
+    }
+    // Simulate a persisted deadline passing while no new broker delivery arrives.
+    await prisma.parsingTask.update({
+      where: { id: payload.task_id },
+      data: {
+        modelsReadyDeadline: new Date(0),
+        availableAt: new Date(Date.now() + 60_000),
+      },
+    });
+    await jobs.recover();
+    await jobs.recover();
+    await jobs.execute(payload);
+    expect(
+      await prisma.parsingTask.findUniqueOrThrow({
+        where: { id: payload.task_id },
+      }),
+    ).toMatchObject({
+      state: "failed",
+      attempts: 0,
+      errorCode: "models_not_ready_timeout",
+      phase: null,
+      waitingReason: null,
+    });
+    expect(
+      await prisma.outbox.count({
+        where: {
+          eventType: "parsing.failed",
+          payload: { path: ["task_id"], equals: payload.task_id },
+        },
+      }),
+    ).toBe(1);
+    expect(
+      (
+        await prisma.process.findUniqueOrThrow({
+          where: { id: item.processId },
+        })
+      ).status,
+    ).toBe("PENDING");
+    const listing = await get(
+      `/api/v1/objects/${item.objectId}/parsing`,
+    ).expect(200);
+    expect((listing.body as { items: unknown[] }).items[0]).toMatchObject({
+      can_retry: true,
+      retry_at: null,
+      waiting_reason: null,
+      error_code: "models_not_ready_timeout",
+    });
+    const requestId = randomUUID();
+    await request(server)
+      .post(prefix(item) + "/retry")
+      .auth(inspector.token, { type: "bearer" })
+      .send({ request_id: requestId })
+      .expect(202);
+    const retry = await message(item);
+    expect(retry.cycle).toBe(2);
+    expect(
+      await prisma.parsingTask.findUniqueOrThrow({
+        where: { id: retry.task_id },
+      }),
+    ).toMatchObject({ attempts: 0, modelsReadyDeadline: null });
+    await jobs.execute(retry);
+    expect(
+      await prisma.parsingTask.findUniqueOrThrow({
+        where: { id: retry.task_id },
+      }),
+    ).toMatchObject({
+      state: "succeeded",
+      attempts: 1,
+      phase: null,
+      waitingReason: null,
+      modelsReadyDeadline: null,
+    });
+  });
+
+  it.each(["admitted_failure", "missing_image"] as const)(
+    "clears the old model deadline after admission before the first progress poll: %s",
+    async (mode) => {
+      const item = await seed();
+      await jobs.fanout(item.parent);
+      const payload = await message(item);
+      await prisma.parsingTask.update({
+        where: { id: payload.task_id },
+        data: { modelsReadyDeadline: new Date(Date.now() + 60_000) },
+      });
+      parserMode = mode;
+      holdResponse = async () => {
+        // The deadline passes after admission, before the immediate error response.
+        await prisma.parsingTask.update({
+          where: { id: payload.task_id },
+          data: { modelsReadyDeadline: new Date(0) },
+        });
+      };
+      try {
+        await jobs.execute(payload);
+      } finally {
+        parserMode = "ok";
+        holdResponse = undefined;
+      }
+      await jobs.recover();
+      expect(
+        await prisma.parsingTask.findUniqueOrThrow({
+          where: { id: payload.task_id },
+        }),
+      ).toMatchObject({
+        state: "queued",
+        attempts: 1,
+        phase: "retry_delay",
+        errorCode:
+          mode === "admitted_failure"
+            ? "parser_failure"
+            : "source_or_storage_unavailable",
+        modelsReadyDeadline: null,
+      });
+      await prisma.parsingTask.update({
+        where: { id: payload.task_id },
+        data: { availableAt: new Date(0) },
+      });
+      await jobs.execute(payload);
+      expect(
+        await prisma.parsingTask.findUniqueOrThrow({
+          where: { id: payload.task_id },
+        }),
+      ).toMatchObject({ state: "succeeded", attempts: 2 });
+    },
+  );
+
+  it("explains a pipeline change before replacing historical progress and keeps that reason after checkpoint validation", async () => {
+    const item = await seed();
+    await jobs.fanout(item.parent);
+    const payload = await message(item);
+    await prisma.parsingTask.update({
+      where: { id: payload.task_id },
+      data: {
+        pipelineFingerprint: "b".repeat(64),
+        pagesCompleted: 8,
+        pagesTotal: 20,
+        checkpointPages: 6,
+        checkpointValidated: true,
+        attempts: 1,
+        previousAttemptError: "parser_timeout",
+      },
+    });
+    let release!: () => void;
+    let entered!: () => void;
+    const held = new Promise<void>((done) => {
+      release = done;
+    });
+    const ready = new Promise<void>((done) => {
+      entered = done;
+    });
+    holdResponse = () => {
+      entered();
+      return held;
+    };
+    const work = jobs.execute(payload);
+    try {
+      await ready;
+      const claimed = await prisma.parsingTask.findUniqueOrThrow({
+        where: { id: payload.task_id },
+      });
+      expect(claimed).toMatchObject({
+        pipelineFingerprint: fingerprint,
+        progressResetReason: "pipeline_version_changed",
+        pagesCompleted: 8,
+        pagesTotal: 20,
+        checkpointValidated: false,
+      });
+      expect(
+        await jobs.reportProgress(claimed, {
+          request_id: claimed.leaseToken!,
+          pipeline_fingerprint: fingerprint,
+          stage: "extracting",
+          pages_completed: 0,
+          pages_total: 1,
+          checkpoint_validated: true,
+          checkpoint_pages: null,
+          current_page: 1,
+        }),
+      ).toBe(true);
+      expect(
+        await prisma.parsingTask.findUniqueOrThrow({
+          where: { id: payload.task_id },
+        }),
+      ).toMatchObject({
+        pagesCompleted: 0,
+        pagesTotal: 1,
+        progressResetReason: "pipeline_version_changed",
+      });
+      const listing = await get(
+        `/api/v1/objects/${item.objectId}/parsing`,
+      ).expect(200);
+      expect((listing.body as { items: unknown[] }).items[0]).toMatchObject({
+        progress_reset_reason: "pipeline_version_changed",
+      });
+    } finally {
+      holdResponse = undefined;
+      release();
+      await work;
+    }
+  });
+
+  it("fences a deadline reached by an active non-admission and its duplicate completion", async () => {
+    const item = await seed();
+    await jobs.fanout(item.parent);
+    const payload = await message(item);
+    const task = await jobs.claim(payload);
+    if (!task) throw new Error("Expected claim");
+    await prisma.parsingTask.update({
+      where: { id: task.id },
+      data: { modelsReadyDeadline: new Date(0) },
+    });
+    expect(
+      await jobs.finishFailure(
+        task,
+        new ParsingError("models_not_ready", true),
+      ),
+    ).toBe(true);
+    expect(
+      await jobs.finishFailure(
+        task,
+        new ParsingError("models_not_ready", true),
+      ),
+    ).toBe(false);
+    expect(
+      await prisma.parsingTask.findUniqueOrThrow({ where: { id: task.id } }),
+    ).toMatchObject({
+      state: "failed",
+      attempts: 0,
+      errorCode: "models_not_ready_timeout",
+    });
+    expect(
+      await prisma.outbox.count({
+        where: {
+          eventType: "parsing.failed",
+          payload: { path: ["task_id"], equals: task.id },
+        },
+      }),
+    ).toBe(1);
+  });
+
   it("cancels the accepted request UUID after an ambiguous socket failure without a deadline abort", async () => {
     const item = await seed();
     await jobs.fanout(item.parent);
     const payload = await message(item);
     const before = cancelCalls;
     const controller = new AbortController();
+    await prisma.parsingTask.update({
+      where: { id: payload.task_id },
+      data: { modelsReadyDeadline: new Date(Date.now() + 60_000) },
+    });
+    holdResponse = async () => {
+      await prisma.parsingTask.update({
+        where: { id: payload.task_id },
+        data: { modelsReadyDeadline: new Date(0) },
+      });
+    };
     parserMode = "disconnect";
     try {
       await jobs.execute(payload, controller.signal);
     } finally {
       parserMode = "ok";
+      holdResponse = undefined;
     }
     expect(controller.signal.aborted).toBe(false);
     expect(cancelCalls).toBe(before + 1);
@@ -614,6 +1076,7 @@ describe("PAR durable execution and access (real PG/broker/storage, parser fault
       state: "queued",
       attempts: 1,
       errorCode: "parser_unavailable",
+      modelsReadyDeadline: null,
     });
   });
 
@@ -744,6 +1207,9 @@ describe("PAR durable execution and access (real PG/broker/storage, parser fault
     };
     const work = jobs.execute(payload);
     await ready;
+    const staleProgressOwner = await prisma.parsingTask.findUniqueOrThrow({
+      where: { id: payload.task_id },
+    });
     const nextRun = randomUUID();
     await prisma.$transaction(async (tx) => {
       await tx.process.update({
@@ -769,6 +1235,18 @@ describe("PAR durable execution and access (real PG/broker/storage, parser fault
         },
       });
     });
+    expect(
+      await jobs.reportProgress(staleProgressOwner, {
+        request_id: staleProgressOwner.leaseToken!,
+        pipeline_fingerprint: fingerprint,
+        stage: "extracting",
+        pages_completed: 1,
+        pages_total: 1,
+        checkpoint_validated: true,
+        checkpoint_pages: 0,
+        current_page: 1,
+      }),
+    ).toBe(false);
     holdResponse = undefined;
     release();
     await work;

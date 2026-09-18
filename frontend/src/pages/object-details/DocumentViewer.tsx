@@ -5,6 +5,7 @@ import { parsingErrorMessage, useParseResult } from "@/api/hooks/use-parsing";
 import type { ParseResult, ParsingFile } from "@/api/types/parsing";
 import { RenderedDocumentPage } from "./RenderedDocumentPage";
 import { TextBlocksPanel, type TextView } from "./TextBlocksPanel";
+import { isVisibleDocumentBlock } from "./document-blocks";
 import { qualityLabels, qualityReasonLabel } from "./parsing-labels";
 
 export function DocumentViewer({
@@ -123,6 +124,7 @@ function DocumentContent({
   const matches = term
     ? artifact.pages.flatMap((item) =>
         item.blocks
+          .filter(isVisibleDocumentBlock)
           .filter((block) =>
             block[mode]
               .normalize("NFC")

@@ -64,6 +64,53 @@ function mount(sourceHash = "a".repeat(64)) {
 }
 
 describe("document viewer", () => {
+  it("не создаёт фокусируемые фрагменты для пустого OCR, сохраняя пустые ячейки таблиц", async () => {
+    const result = structuredClone(parseResult);
+    const base = result.artifact.pages[0]!.blocks[0]!;
+    result.artifact.pages[0]!.blocks = [
+      {
+        ...base,
+        id: "empty-ocr",
+        source: "ocr",
+        raw_text: " \n\t",
+        normalized_text: "",
+      },
+      {
+        ...base,
+        id: "empty-cell",
+        order: 1,
+        kind: "table_cell",
+        source: "ocr",
+        raw_text: "",
+        normalized_text: "",
+        table_id: "empty-table",
+        row: 0,
+        column: 0,
+        row_span: 1,
+        column_span: 1,
+      },
+    ];
+    vi.mocked(getParseResult).mockResolvedValue(result);
+    const view = mount();
+    await screen.findByRole("img");
+    expect(
+      screen.queryByRole("button", { name: /^Фрагмент 1:/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /^Фрагмент 2:/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: "Пустой фрагмент" }),
+    ).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Таблицы" }));
+    expect(
+      screen.getByRole("button", {
+        name: /строка 1, столбец 1: Пустая ячейка/,
+      }),
+    ).toBeInTheDocument();
+    view.unmount();
+    view.client.clear();
+  });
   it("сохраняет весь текст, безопасно показывает объединённые ячейки и переходит к оригиналу на другой странице", async () => {
     const result = structuredClone(parseResult);
     const first = result.artifact.pages[0]!;

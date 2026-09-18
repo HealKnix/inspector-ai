@@ -27,6 +27,8 @@ const errorLabels: Record<string, string> = {
   parser_cancelled: "Обработка файла остановлена.",
   parser_busy: "Сервис обработки занят.",
   models_not_ready: "Сервис распознавания ещё не готов.",
+  models_not_ready_timeout:
+    "Модели распознавания не удалось подготовить вовремя. Обработка остановлена.",
   source_or_storage_unavailable:
     "Не удалось прочитать файл или сохранить результат.",
   source_not_found: "Исходный файл не найден.",

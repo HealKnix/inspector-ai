@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 
 import { parsingErrorMessage, useRenderedPage } from "@/api/hooks/use-parsing";
 import type { ParsingFile, RenderedPage, TextBlock } from "@/api/types/parsing";
+import { isVisibleDocumentBlock } from "./document-blocks";
 
 function ProtectedPageImage({
   blob,
@@ -96,7 +97,7 @@ export function RenderedDocumentPage({
             page={page}
             name={file.original_name}
           />
-          {page.blocks.map((block) => (
+          {page.blocks.filter(isVisibleDocumentBlock).map((block) => (
             <button
               key={block.id}
               ref={selectedId === block.id ? selectedRef : undefined}

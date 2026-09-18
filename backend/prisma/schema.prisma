@@ -244,32 +244,42 @@ model AuditEvent {
 // Each manual retry is a separate immutable execution cycle; broker redelivery
 // never resets attempts. States here are technical, not ProcessStatus values.
 model ParsingTask {
-  id                  String          @id @default(uuid()) @db.Uuid
-  runId               String          @map("run_id") @db.Uuid
-  fileId              String          @map("file_id") @db.Uuid
-  processId           String          @map("process_id") @db.Uuid
-  objectId            String          @map("object_id") @db.Uuid
-  cycle               Int             @default(1)
-  state               String          @default("queued")
-  attempts            Int             @default(0)
-  capacityDeferrals   Int             @default(0) @map("capacity_deferrals")
-  availableAt         DateTime        @default(now()) @map("available_at") @db.Timestamptz(3)
-  leaseUntil          DateTime?       @map("lease_until") @db.Timestamptz(3)
-  leaseToken          String?         @map("lease_token") @db.Uuid
-  dispatchedAt        DateTime?       @map("dispatched_at") @db.Timestamptz(3)
-  pipelineFingerprint String?         @map("pipeline_fingerprint") @db.Char(64)
-  pagesCompleted      Int             @default(0) @map("pages_completed")
-  pagesTotal          Int?            @map("pages_total")
-  errorCode           String?         @map("error_code")
-  createdAt           DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
-  completedAt         DateTime?       @map("completed_at") @db.Timestamptz(3)
-  run                 Run             @relation(fields: [runId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
-  file                File            @relation(fields: [fileId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
-  artifact            ParseArtifact?
-  retryReceipts       ParsingRetryReceipt[]
+  id                   String                @id @default(uuid()) @db.Uuid
+  runId                String                @map("run_id") @db.Uuid
+  fileId               String                @map("file_id") @db.Uuid
+  processId            String                @map("process_id") @db.Uuid
+  objectId             String                @map("object_id") @db.Uuid
+  cycle                Int                   @default(1)
+  state                String                @default("queued")
+  attempts             Int                   @default(0)
+  capacityDeferrals    Int                   @default(0) @map("capacity_deferrals")
+  availableAt          DateTime              @default(now()) @map("available_at") @db.Timestamptz(3)
+  leaseUntil           DateTime?             @map("lease_until") @db.Timestamptz(3)
+  leaseToken           String?               @map("lease_token") @db.Uuid
+  dispatchedAt         DateTime?             @map("dispatched_at") @db.Timestamptz(3)
+  pipelineFingerprint  String?               @map("pipeline_fingerprint") @db.Char(64)
+  pagesCompleted       Int                   @default(0) @map("pages_completed")
+  pagesTotal           Int?                  @map("pages_total")
+  phase                String?
+  progressUpdatedAt    DateTime?             @map("progress_updated_at") @db.Timestamptz(3)
+  waitingReason        String?               @map("waiting_reason")
+  checkpointValidated  Boolean?              @map("checkpoint_validated")
+  checkpointPages      Int?                  @map("checkpoint_pages")
+  currentPage          Int?                  @map("current_page")
+  previousAttemptError String?               @map("previous_attempt_error")
+  progressResetReason  String?               @map("progress_reset_reason")
+  modelsReadyDeadline  DateTime?             @map("models_ready_deadline") @db.Timestamptz(3)
+  errorCode            String?               @map("error_code")
+  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt          DateTime?             @map("completed_at") @db.Timestamptz(3)
+  run                  Run                   @relation(fields: [runId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+  file                 File                  @relation(fields: [fileId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+  artifact             ParseArtifact?
+  retryReceipts        ParsingRetryReceipt[]
 
   @@unique([runId, fileId, cycle])
   @@index([state, availableAt, leaseUntil])
+  @@index([state, modelsReadyDeadline])
   @@map("parsing_tasks")
 }
 

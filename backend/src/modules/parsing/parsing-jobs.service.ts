@@ -19,6 +19,7 @@ import {
   type ParseArtifactData,
   type ParsingMessage,
 } from "./parsing-contract.js";
+import { parserProgress, type ParserProgress } from "./parsing-progress.js";
 
 export const FILE_QUEUE = "inspector.parsing.files";
 export const PARENT_QUEUE = "inspector.documents.accepted";
@@ -162,6 +163,16 @@ export class ParsingJobsService {
         new ParsingError("worker_lease_expired", true),
         true,
       );
+    const waiting = await this.prisma.parsingTask.findMany({
+      where: { state: "queued", modelsReadyDeadline: { lte: new Date() } },
+      take: 20,
+    });
+    for (const task of waiting)
+      await this.prisma.$transaction(async (tx) => {
+        await this.access.lock(tx, task.objectId);
+        await tx.$queryRaw`SELECT id FROM processes WHERE id=${task.processId}::uuid FOR UPDATE`;
+        await this.expireModelsWait(tx, task);
+      });
     const queued = await this.prisma.parsingTask.findMany({
       where: {
         state: "queued",
@@ -192,6 +203,8 @@ export class ParsingJobsService {
               state: "failed",
               errorCode: "stale_run",
               completedAt: new Date(),
+              phase: null,
+              waitingReason: null,
             },
           });
           await this.event(tx, current, "parsing.failed", "stale_run");
@@ -201,6 +214,49 @@ export class ParsingJobsService {
         )
           await this.enqueue(tx, current);
       });
+  }
+
+  // Caller holds the object/process locks. A queued task has no lease: recovery
+  // and redelivery must agree on the same current Run/cycle before terminating it.
+  private async expireModelsWait(
+    tx: Prisma.TransactionClient,
+    task: ParsingTask,
+  ) {
+    const current = await tx.parsingTask.findUniqueOrThrow({
+      where: { id: task.id },
+      include: { run: { include: { process: true } } },
+    });
+    if (
+      current.state !== "queued" ||
+      !current.modelsReadyDeadline ||
+      current.modelsReadyDeadline.getTime() > Date.now()
+    )
+      return false;
+    const newer = await tx.parsingTask.count({
+      where: {
+        runId: task.runId,
+        fileId: task.fileId,
+        cycle: { gt: task.cycle },
+      },
+    });
+    const isCurrent =
+      !newer &&
+      current.run.version === current.run.process.version &&
+      ["PENDING", "PARSING"].includes(current.run.process.status);
+    const code = isCurrent ? "models_not_ready_timeout" : "stale_run";
+    const updated = await tx.parsingTask.update({
+      where: { id: task.id },
+      data: {
+        state: "failed",
+        errorCode: code,
+        completedAt: new Date(),
+        phase: null,
+        waitingReason: null,
+      },
+    });
+    await this.event(tx, updated, "parsing.failed", code);
+    if (isCurrent) await this.settle(tx, updated);
+    return true;
   }
 
   async claim(message: ParsingMessage) {
@@ -220,6 +276,7 @@ export class ParsingJobsService {
         task.cycle !== message.cycle
       )
         throw new ParsingError("invalid_queue_message", false);
+      if (await this.expireModelsWait(tx, task)) return null;
       if (
         task.state !== "queued" ||
         task.attempts >= 3 ||
@@ -232,7 +289,8 @@ export class ParsingJobsService {
       const leaseMs = this.parser.timeoutMs + 30_000;
       const claimed = await tx.$queryRaw<{ id: string }[]>`
         UPDATE parsing_tasks SET state='processing',attempts=attempts+1,lease_token=${token}::uuid,
-          lease_until=now()+${leaseMs}*interval '1 millisecond',error_code=NULL,pages_completed=0,pages_total=NULL
+          lease_until=now()+${leaseMs}*interval '1 millisecond',error_code=NULL,
+          phase='checking_parser',waiting_reason=NULL,checkpoint_validated=false,current_page=NULL,progress_reset_reason=NULL
         WHERE id=${task.id}::uuid AND state='queued' AND attempts<3 AND available_at<=now()
           AND NOT EXISTS(SELECT 1 FROM parsing_tasks newer WHERE newer.run_id=parsing_tasks.run_id AND newer.file_id=parsing_tasks.file_id AND newer.cycle>parsing_tasks.cycle)
         RETURNING id`;
@@ -349,22 +407,47 @@ export class ParsingJobsService {
       if (fence.isCurrent && isParserNotAdmitted(error) && !expired) {
         // Health or /parse refused admission: no document work began. Redelivery
         // cannot repeat this decrement because the lease is cleared atomically.
+        const now = Date.now();
+        const deadline =
+          fence.current.modelsReadyDeadline ??
+          (error.code === "models_not_ready"
+            ? new Date(now + this.parser.modelsReadyWaitMs)
+            : null);
+        const timedOut = deadline !== null && deadline.getTime() <= now;
         const deferred = await tx.parsingTask.update({
           where: { id: task.id },
           data: {
-            state: "queued",
+            state: timedOut ? "failed" : "queued",
             attempts: { decrement: 1 },
             capacityDeferrals: { increment: 1 },
-            errorCode: error.code,
+            errorCode: timedOut ? "models_not_ready_timeout" : error.code,
+            modelsReadyDeadline: deadline,
+            phase: timedOut
+              ? null
+              : error.code === "models_not_ready"
+                ? "waiting_models"
+                : "waiting_capacity",
+            waitingReason: timedOut ? null : error.code,
             leaseToken: null,
             leaseUntil: null,
-            completedAt: null,
+            completedAt: timedOut ? new Date(now) : null,
             availableAt: new Date(
-              Date.now() + capacityDelay(fence.current.capacityDeferrals),
+              Math.min(
+                now + capacityDelay(fence.current.capacityDeferrals),
+                deadline?.getTime() ?? Infinity,
+              ),
             ),
           },
         });
-        await this.enqueue(tx, deferred);
+        if (timedOut) {
+          await this.event(
+            tx,
+            deferred,
+            "parsing.failed",
+            "models_not_ready_timeout",
+          );
+          await this.settle(tx, deferred);
+        } else await this.enqueue(tx, deferred);
         return true;
       }
       const retry =
@@ -380,6 +463,10 @@ export class ParsingJobsService {
             Date.now() + retryDelay(fence.current.attempts),
           ),
           completedAt: retry ? null : new Date(),
+          phase: retry ? "retry_delay" : null,
+          waitingReason: retry ? "retry_backoff" : null,
+          previousAttemptError: code,
+          ...(error.admitted ? { modelsReadyDeadline: null } : {}),
         },
       });
       if (retry) await this.enqueue(tx, updated);
@@ -387,6 +474,67 @@ export class ParsingJobsService {
         await this.event(tx, fence.current, "parsing.failed", code);
         if (fence.isCurrent) await this.settle(tx, task);
       }
+      return true;
+    });
+  }
+
+  async reportProgress(task: ParsingTask, value: ParserProgress) {
+    const progress = parserProgress(
+      value,
+      task.leaseToken ?? "",
+      task.pipelineFingerprint ?? "",
+    );
+    if (!progress) return true; // Bad informational metadata cannot reset progress.
+    return this.prisma.$transaction(async (tx) => {
+      const fence = await this.fenced(tx, task);
+      if (
+        !fence?.isCurrent ||
+        fence.current.pipelineFingerprint !== progress.pipeline_fingerprint
+      )
+        return false;
+      const current = fence.current;
+      if (current.phase === "publishing") return true;
+      if (
+        current.checkpointValidated &&
+        (!progress.checkpoint_validated ||
+          progress.pages_completed < current.pagesCompleted)
+      )
+        return true;
+      const phase =
+        progress.stage === "complete" ? "publishing" : progress.stage;
+      const changed =
+        !current.checkpointValidated ||
+        current.phase !== phase ||
+        current.pagesCompleted !== progress.pages_completed ||
+        current.pagesTotal !== progress.pages_total ||
+        current.checkpointPages !== progress.checkpoint_pages ||
+        current.currentPage !== progress.current_page;
+      await tx.parsingTask.update({
+        where: { id: task.id },
+        data: {
+          phase,
+          waitingReason: null,
+          // Matching UUID/fingerprint proves the CPU worker admitted this request.
+          // A healthy /health response alone never clears a waiting deadline.
+          modelsReadyDeadline: null,
+          ...(progress.checkpoint_validated
+            ? {
+                pagesCompleted: progress.pages_completed,
+                pagesTotal: progress.pages_total,
+                checkpointPages: progress.checkpoint_pages,
+                checkpointValidated: true,
+                currentPage: progress.current_page,
+                ...(!current.checkpointValidated &&
+                progress.pages_completed < current.pagesCompleted &&
+                current.progressResetReason !== "pipeline_version_changed"
+                  ? { progressResetReason: "saved_pages_unavailable" }
+                  : {}),
+                // Polling an unchanged snapshot is not new document progress.
+                ...(changed ? { progressUpdatedAt: new Date() } : {}),
+              }
+            : { checkpointValidated: false, currentPage: null }),
+        },
+      });
       return true;
     });
   }
@@ -412,11 +560,13 @@ export class ParsingJobsService {
           controller.abort();
           return;
         }
-        const progress = await this.parser.progress(task.leaseToken);
+        if (!task.pipelineFingerprint) return;
+        const progress = await this.parser.progress(
+          task.leaseToken,
+          task.pipelineFingerprint,
+        );
         if (progress) {
-          const updated = await this.prisma
-            .$executeRaw`UPDATE parsing_tasks SET pages_completed=${progress.completed},pages_total=${progress.total}
-            WHERE id=${task.id}::uuid AND state='processing' AND lease_token=${task.leaseToken}::uuid AND lease_until>now()`;
+          const updated = await this.reportProgress(task, progress);
           if (!updated) controller.abort();
         }
       })()
@@ -426,6 +576,7 @@ export class ParsingJobsService {
         });
     }, 2000);
     const started = Date.now();
+    let admitted = false;
     try {
       const manifest = task.run.inputManifest;
       if (
@@ -451,15 +602,24 @@ export class ParsingJobsService {
       )
         throw new ParsingError("original_integrity_failed", false);
       const fingerprint = await this.parser.fingerprint();
-      task.pipelineFingerprint = fingerprint;
-      await this.prisma.parsingTask.updateMany({
-        where: {
-          id: task.id,
-          leaseToken: task.leaseToken,
-          state: "processing",
-        },
-        data: { pipelineFingerprint: fingerprint },
+      const pinned = await this.prisma.$transaction(async (tx) => {
+        const fence = await this.fenced(tx, task);
+        if (!fence?.isCurrent) return false;
+        await tx.parsingTask.update({
+          where: { id: task.id },
+          data: {
+            pipelineFingerprint: fingerprint,
+            ...(fence.current.pagesCompleted > 0 &&
+            fence.current.pipelineFingerprint &&
+            fence.current.pipelineFingerprint !== fingerprint
+              ? { progressResetReason: "pipeline_version_changed" }
+              : {}),
+          },
+        });
+        return true;
       });
+      if (!pinned) return;
+      task.pipelineFingerprint = fingerprint;
       const cachedId =
         task.cycle === 1
           ? await this.cache.get(task.file.sha256, fingerprint)
@@ -491,23 +651,38 @@ export class ParsingJobsService {
       }
       const reused = candidate !== undefined;
       if (!candidate) {
-        candidate = validateArtifact(
-          await this.parser.parse(
-            {
-              request_id: task.leaseToken,
-              storage_key: task.file.storageKey,
-              source_sha256: task.file.sha256,
-              format: task.file.format.toLowerCase(),
-            },
-            signal,
-          ),
-          task.file.sha256,
+        const parsed = await this.parser.parse(
+          {
+            request_id: task.leaseToken,
+            storage_key: task.file.storageKey,
+            source_sha256: task.file.sha256,
+            format: task.file.format.toLowerCase(),
+          },
+          signal,
           fingerprint,
         );
+        // A successful parse response proves admission even if downstream image
+        // verification/storage fails before the first informational progress poll.
+        admitted = true;
+        candidate = validateArtifact(parsed, task.file.sha256, fingerprint);
         await this.artifacts.verifyImages(candidate, signal);
       }
       const artifact = candidate;
       if (signal.aborted) throw new ParsingError("parser_timeout", true);
+      const publishing = await this.prisma.$transaction(async (tx) => {
+        const fence = await this.fenced(tx, task);
+        if (!fence?.isCurrent) return false;
+        await tx.parsingTask.update({
+          where: { id: task.id },
+          data: {
+            phase: "publishing",
+            waitingReason: null,
+            modelsReadyDeadline: null,
+          },
+        });
+        return true;
+      });
+      if (!publishing) return;
       const durable = await this.artifacts.write(artifact);
       const committed = await this.prisma.$transaction(async (tx) => {
         const fence = await this.fenced(tx, task);
@@ -539,6 +714,15 @@ export class ParsingJobsService {
             pagesCompleted: artifact.pages.length,
             pagesTotal: artifact.pages.length,
             errorCode: null,
+            phase: null,
+            waitingReason: null,
+            modelsReadyDeadline: null,
+            checkpointValidated: true,
+            checkpointPages: fence.current.checkpointValidated
+              ? fence.current.checkpointPages
+              : null,
+            currentPage: null,
+            progressUpdatedAt: new Date(),
           },
         });
         await this.event(tx, fence.current, "parsing.succeeded");
@@ -561,8 +745,12 @@ export class ParsingJobsService {
     } catch (error) {
       const outcome =
         error instanceof ParsingError
-          ? error
-          : new ParsingError("source_or_storage_unavailable", true);
+          ? new ParsingError(
+              error.code,
+              error.retryable,
+              error.admitted || admitted,
+            )
+          : new ParsingError("source_or_storage_unavailable", true, admitted);
       await this.finishFailure(task, outcome);
       this.logger.warn(
         JSON.stringify({

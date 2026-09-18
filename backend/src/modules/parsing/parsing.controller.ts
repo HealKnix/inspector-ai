@@ -27,6 +27,7 @@ import {
 } from "../auth/jwt-auth.guard.js";
 import { apiErrorSchema } from "../documents/upload-contract.js";
 import { parseArtifactSchema } from "./parsing-openapi.js";
+import { PARSING_PHASES } from "./parsing-progress.js";
 import { ParsingService } from "./parsing.service.js";
 
 export class ParsingRetryDto {
@@ -105,6 +106,15 @@ export class ParsingController {
               "error_code",
               "can_retry",
               "artifact_id",
+              "phase",
+              "progress_updated_at",
+              "waiting_reason",
+              "retry_at",
+              "checkpoint_validated",
+              "checkpoint_pages",
+              "current_page",
+              "previous_attempt_error",
+              "progress_reset_reason",
             ],
             properties: {
               file_id: { type: "string", format: "uuid" },
@@ -127,6 +137,65 @@ export class ParsingController {
               error_code: { type: "string", nullable: true },
               can_retry: { type: "boolean" },
               artifact_id: { type: "string", format: "uuid", nullable: true },
+              progress_reset_reason: {
+                type: "string",
+                enum: ["pipeline_version_changed", "saved_pages_unavailable"],
+                nullable: true,
+                description:
+                  "Почему предыдущие счётчики страниц не описывают текущую обработку; это не оценка качества документа",
+              },
+              phase: {
+                type: "string",
+                enum: [...PARSING_PHASES],
+                nullable: true,
+                description:
+                  "Технический этап; NULL у исторических задач и завершённых исходов",
+              },
+              progress_updated_at: {
+                type: "string",
+                format: "date-time",
+                nullable: true,
+                description:
+                  "Время последнего подтверждённого обновления счётчиков страниц",
+              },
+              waiting_reason: {
+                type: "string",
+                enum: ["models_not_ready", "parser_busy", "retry_backoff"],
+                nullable: true,
+              },
+              retry_at: {
+                type: "string",
+                format: "date-time",
+                nullable: true,
+                description:
+                  "Не раньше этого времени задача может быть повторно взята из очереди; не обещание времени старта",
+              },
+              checkpoint_validated: {
+                type: "boolean",
+                nullable: true,
+                description:
+                  "Проверены ли checkpoints текущей попытки; false сохраняет предыдущие счётчики только как последний известный прогресс",
+              },
+              checkpoint_pages: {
+                type: "integer",
+                minimum: 0,
+                nullable: true,
+                description:
+                  "Последнее подтверждённое число годных checkpoints PDF; NULL для обработки без возобновления по страницам",
+              },
+              current_page: {
+                type: "integer",
+                minimum: 1,
+                nullable: true,
+                description:
+                  "Текущая физическая страница; не счётчик завершённых страниц",
+              },
+              previous_attempt_error: {
+                type: "string",
+                nullable: true,
+                description:
+                  "Последняя ошибка реальной попытки; ожидание готовности её не заменяет",
+              },
             },
           },
         },

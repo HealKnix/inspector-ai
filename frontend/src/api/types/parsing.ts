@@ -19,6 +19,21 @@ export const parsingFileSchema = z.object({
   error_code: z.string().nullable(),
   can_retry: z.boolean(),
   artifact_id: z.uuid().nullable(),
+  phase: z.string().nullable().optional(),
+  progress_updated_at: z.iso.datetime({ offset: true }).nullable().optional(),
+  waiting_reason: z
+    .enum(["models_not_ready", "parser_busy", "retry_backoff"])
+    .nullable()
+    .optional(),
+  retry_at: z.iso.datetime({ offset: true }).nullable().optional(),
+  checkpoint_pages: count.nullable().optional(),
+  checkpoint_validated: z.boolean().nullable().optional(),
+  current_page: z.number().int().positive().nullable().optional(),
+  previous_attempt_error: z.string().nullable().optional(),
+  progress_reset_reason: z
+    .enum(["pipeline_version_changed", "saved_pages_unavailable"])
+    .nullable()
+    .optional(),
 });
 
 export const parsingStatusSchema = z.object({

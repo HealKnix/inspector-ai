@@ -7,8 +7,9 @@ from pathlib import Path
 
 
 class ParseError(Exception):
-    def __init__(self, code, retryable=False, status=422):
+    def __init__(self, code, retryable=False, status=422, *, admission=None):
         self.code, self.retryable, self.status = code, retryable, status
+        self.admission = admission
         super().__init__(code)
 
 

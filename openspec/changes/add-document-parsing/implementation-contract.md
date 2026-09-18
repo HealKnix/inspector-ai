@@ -116,6 +116,50 @@ All paths below are under /api/v1. Existing object access and session checks app
 
 ## Durability and deployment
 
+### Execution progress extension, 18 September 2026
+
+The additive public ParsingFile fields are nullable (old responses may omit them):
+`phase`, `progress_updated_at`, `waiting_reason`, `retry_at`,
+`checkpoint_validated`, `checkpoint_pages`, `current_page`,
+`previous_attempt_error`, `progress_reset_reason`.
+`retry_at` comes from the durable queue schedule, not a browser countdown.
+These fields do not add business ProcessStatus values or change artifact schema.
+
+Phases: checking_parser, waiting_models, waiting_capacity, starting,
+checkpoint_verifying, resuming, rendering, layout, extracting, ocr,
+publishing, retry_delay. The layout phase is reserved for the conditional
+adaptive route; current production does not claim that route is enabled.
+Waiting reasons: models_not_ready, parser_busy, retry_backoff.
+Reset reasons: pipeline_version_changed or saved_pages_unavailable.
+
+Claim/readiness preserve the last confirmed page counts. Python first verifies
+all checkpoints, including metadata/image hashes and physical page numbers,
+then reports the verified count, even if lower than the preceding attempt.
+Later progress within that execution cannot go backwards. The timestamp changes
+when actual progress/stage changes, not for repeated polls of one snapshot.
+Progress from Python includes the exact request_id and pipeline_fingerprint;
+backend additionally checks the lease, cycle and current Run before applying it.
+
+Continuous models_not_ready has a durable deadline, default 300 seconds
+(`PARSER_MODEL_READY_WAIT_SECONDS`, configurable 30–1800). Health success alone
+does not clear it. Matching progress, accepted parse result/error or a confirmed
+cancel of that request establish admission and end the waiting episode.
+Pre-admission deferrals do not consume the three actual parsing attempts.
+Expiry saves models_not_ready_timeout, one terminal event and the manual retry
+action; restarts and redelivery do not extend the deadline. parser_busy retains
+its own capacity policy. The existing PARSING → PENDING rule is unchanged.
+
+### Conditional layout extension
+
+The [approved regional plan](adaptive-ocr-plan.md) requires an experiment before
+adding page regions, block eligibility or the Areas viewer. The
+[31-image experiment](../../../docs/adaptive-layout-experiment.md) failed the
+table/caption separation conditions. This release therefore adds **no region
+schema** and does not filter native drawing labels from the full text.
+No automatic graphic exclusion or VLM is enabled. Legacy artifacts keep their
+existing meaning; whitespace-only OCR text fragments are omitted only in the
+viewer, while legitimate empty table cells remain visible.
+
 The owner-selected OCR pipeline is PP-StructureV3 with mobile1536 detection,
 the Russian eslav recognizer and nine pinned local models. It keeps overall OCR
 lines alongside plain table-cell data; independent readings may differ and repeat.

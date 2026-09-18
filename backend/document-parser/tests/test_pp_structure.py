@@ -35,6 +35,22 @@ def fixture(angle=0):
 
 
 class StructureTests(unittest.TestCase):
+    def test_whitespace_ocr_text_is_omitted_but_empty_table_cells_survive(self):
+        data, _ = fixture()
+        data["overall_ocr_res"]["rec_texts"] = [" \t\n", "RAW\nSIGN+№"]
+        data["table_res_list"][0]["pred_html"] = '<table><tr><td> </td><td></td></tr><tr><td>\n</td><td>42</td></tr></table>'
+        data["table_res_list"][0]["table_ocr_pred"]["rec_texts"] = [" ", "\n", ""]
+        blocks, *_ = convert_result(data, 400, 300)
+        self.assertEqual(sum(b["kind"] == "table_cell" for b in blocks), 4)
+        self.assertEqual(sum(b["kind"] == "table_cell" and not b["normalized_text"] for b in blocks), 3)
+        self.assertTrue(all(b["normalized_text"] for b in blocks if b["kind"] == "text"))
+        self.assertEqual(blocks[0]["structural_path"], "ocr/overall/line[2]")
+        data["table_res_list"][0]["pred_html"] = '<table><tr><td> </td><td> </td></tr></table>'
+        data["table_res_list"][0]["cell_box_list"] = []
+        blocks, _, _, reasons = convert_result(data, 400, 300)
+        self.assertEqual(len(blocks), 1)
+        self.assertIn("TABLE_STRUCTURE_REJECTED", reasons)
+
     def test_all_four_rotations_restore_cell_and_line_boxes(self):
         for angle in (0, 90, 180, 270):
             with self.subTest(angle=angle):
@@ -67,6 +83,21 @@ class StructureTests(unittest.TestCase):
         self.assertEqual(cells[1]["text"], "")
         _, valid = table_cells('<table><tr><td>A</td><td rowspan="2">B</td></tr><tr><td colspan="2">C</td></tr></table>')
         self.assertFalse(valid)
+
+    def test_rejected_grid_keeps_text_from_invalid_cells_without_html(self):
+        for attribute in ('rowspan="0"', 'colspan="1001"', 'rowspan="bad"', 'rowspan="1000" colspan="1000"'):
+            with self.subTest(attribute=attribute):
+                data, _ = fixture()
+                data["overall_ocr_res"]["rec_texts"] = []
+                data["table_res_list"][0] = {"cell_box_list": [], "table_ocr_pred": {"rec_texts": []},
+                    "pred_html": f'<table><tr><td {attribute}>UNIQUE <b>−40</b> &amp; ХВС</td><td>SECOND</td></tr></table>'}
+                blocks, _, _, reasons = convert_result(data, 400, 300)
+                self.assertEqual(len(blocks), 1)
+                self.assertEqual(blocks[0]["kind"], "text")
+                self.assertEqual(blocks[0]["normalized_text"], "UNIQUE −40 & ХВС\nSECOND")
+                self.assertTrue(blocks[0]["structural_path"].endswith("/unstructured"))
+                self.assertIn("TABLE_STRUCTURE_REJECTED", reasons)
+                self.assertNotIn("<", blocks[0]["raw_text"])
 
     def test_malformed_geometry_downgrades_without_losing_text(self):
         for variant in ("overlap", "wrong_count", "crossed_axis", "inverted", "invalid_html"):

@@ -52,6 +52,7 @@ export class ParsingError extends Error {
   constructor(
     readonly code: string,
     readonly retryable: boolean,
+    readonly admitted = false,
   ) {
     super(code);
   }

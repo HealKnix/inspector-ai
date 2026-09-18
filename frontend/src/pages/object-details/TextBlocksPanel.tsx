@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 
 import type { RenderedPage, TextBlock } from "@/api/types/parsing";
 import { TableBlocksPanel } from "./TableBlocksPanel";
+import { isVisibleDocumentBlock } from "./document-blocks";
 import { textBlockLabel } from "./parsing-labels";
 
 export type TextView = "fragments" | "tables" | "document";
@@ -30,7 +31,8 @@ export function TextBlocksPanel({
   onSelect: (id: string) => void;
   onTableSelect: (page: number, id: string) => void;
 }) {
-  const selected = blocks.find((block) => block.id === selectedId);
+  const visibleBlocks = blocks.filter(isVisibleDocumentBlock);
+  const selected = visibleBlocks.find((block) => block.id === selectedId);
   const selectedRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     selectedRef.current?.scrollIntoView?.({ block: "nearest" });
@@ -107,14 +109,14 @@ export function TextBlocksPanel({
           onSelect={onTableSelect}
         />
       )}
-      {view === "fragments" && blocks.length === 0 && (
+      {view === "fragments" && visibleBlocks.length === 0 && (
         <p className="text-copy-muted py-6 text-sm">
           На этой странице нет читаемого текста.
         </p>
       )}
       {view === "fragments" && (
         <ol className="max-h-[620px] space-y-2 overflow-y-auto">
-          {[...blocks]
+          {[...visibleBlocks]
             .sort((a, b) => a.order - b.order)
             .map((block) => (
               <li key={block.id}>

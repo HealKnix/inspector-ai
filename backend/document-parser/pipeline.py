@@ -50,13 +50,15 @@ def parse(request, settings, versions, ocr, progress):
         try:
             wrapped = json.loads(target.read_text(encoding="utf-8"))
             candidate = wrapped["page"]
+            if not isinstance(candidate, dict) or type(candidate.get("page_number")) is not int or candidate["page_number"] != number:
+                return None
             serialized = json.dumps(candidate, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
             if wrapped["metadata_sha256"] != hashlib.sha256(serialized.encode()).hexdigest():
                 return None
             image = handle_path(derived, candidate["image_key"])
             if image.is_file() and digest_file(image) == candidate["image_sha256"]:
                 return candidate
-        except (ValueError, KeyError, OSError, ParseError):
+        except (ValueError, KeyError, TypeError, OSError, ParseError):
             pass  # A missing/corrupt local acceleration record is recomputed from immutable source.
         return None
 
@@ -64,6 +66,7 @@ def parse(request, settings, versions, ocr, progress):
     if request["format"] == "pdf":
         pages = parse_pdf(original, settings, versions, ocr, progress, checkpoint)
     else:
+        progress(0, None, "extracting", {"checkpoint_validated": True, "checkpoint_pages": None, "current_page": None})
         data = original.read_bytes()
         items, reasons = (docx_items if request["format"] == "docx" else xml_items)(data, settings)
         structured_raw = "\n".join(item["text"] for item in items)
@@ -89,5 +92,5 @@ def parse(request, settings, versions, ocr, progress):
         "pages": pages}
     if len(json.dumps(artifact, ensure_ascii=False).encode()) > settings.max_output_bytes:
         raise ParseError("OUTPUT_SIZE_LIMIT")
-    progress(len(pages), len(pages), "complete")
+    progress(len(pages), len(pages), "complete", {"current_page": None})
     return artifact

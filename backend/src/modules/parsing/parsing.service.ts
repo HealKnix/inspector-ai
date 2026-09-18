@@ -15,6 +15,7 @@ import {
 import { ArtifactStorageService } from "./artifact-storage.service.js";
 import type { Quality } from "./parsing-contract.js";
 import { ParsingJobsService } from "./parsing-jobs.service.js";
+import type { ParsingPhase, WaitingReason } from "./parsing-progress.js";
 
 interface ParsingRow {
   file_id: string;
@@ -30,6 +31,16 @@ interface ParsingRow {
   error_code: string | null;
   can_retry: boolean;
   artifact_id: string | null;
+  phase: ParsingPhase | null;
+  progress_updated_at: Date | null;
+  waiting_reason: WaitingReason | null;
+  retry_at: Date | null;
+  checkpoint_validated: boolean | null;
+  checkpoint_pages: number | null;
+  current_page: number | null;
+  previous_attempt_error: string | null;
+  progress_reset_reason:
+    "pipeline_version_changed" | "saved_pages_unavailable" | null;
 }
 
 @Injectable()
@@ -50,6 +61,8 @@ export class ParsingService {
           COALESCE(t.state,'queued') AS state,COALESCE(t.attempts,0) AS attempt,
           COALESCE(t.pages_completed,0) AS pages_completed,t.pages_total,a.quality,
           COALESCE(a.reasons,ARRAY[]::text[]) AS reasons,t.error_code,
+          t.phase,t.progress_updated_at,t.waiting_reason,t.checkpoint_validated,t.checkpoint_pages,t.current_page,t.previous_attempt_error,t.progress_reset_reason,
+          CASE WHEN t.state='queued' AND t.waiting_reason IS NOT NULL THEN t.available_at ELSE NULL END AS retry_at,
           (t.state IN ('succeeded','failed') AND p.status IN ('PENDING','PARSING') AND f.corrupted_at IS NULL) AS can_retry,a.id AS artifact_id
         FROM processes p JOIN runs r ON r.process_id=p.id AND r.version=p.version
         JOIN run_inputs ri ON ri.run_id=r.id JOIN files f ON f.id=ri.file_id

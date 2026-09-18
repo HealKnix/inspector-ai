@@ -56,9 +56,15 @@ class TableHTML(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.cells, self.occupied = [], set()
+        # Preserve text independently of whether a cell can enter the bounded
+        # logical grid. Invalid spans must not erase the only available reading.
+        # The HTML input is bounded to 1M characters by table_content().
+        self.plain_parts = []
         self.row, self.column, self.current, self.invalid = -1, 0, None, False
 
     def handle_starttag(self, tag, attrs):
+        if tag in ("td", "th", "br"):
+            self.plain_parts.append("\n")
         if tag == "tr":
             self.invalid |= self.current is not None
             self.row, self.column = self.row + 1, 0
@@ -94,19 +100,25 @@ class TableHTML(HTMLParser):
             self.invalid, self.current = True, None
 
     def handle_data(self, text):
+        self.plain_parts.append(text)
         if self.current is not None:
             self.current["text"] += text
 
 
-def table_cells(markup):
+def table_content(markup):
     parser = TableHTML()
     if not isinstance(markup, str) or len(markup) > 1_000_000:
-        return [], False
+        return [], False, ""
     parser.feed(markup)
     parser.close()
     valid = not parser.invalid and parser.current is None and bool(parser.cells)
     valid = valid and all(c["row"] + c["row_span"] <= parser.row + 1 for c in parser.cells)
-    return parser.cells, valid
+    return parser.cells, valid, "".join(parser.plain_parts)
+
+
+def table_cells(markup):
+    cells, valid, _plain = table_content(markup)
+    return cells, valid
 
 
 def valid_geometry(cells, boxes, width, height):
@@ -144,6 +156,8 @@ def convert_result(data, width, height):
     overall = data["overall_ocr_res"]
     blocks, reasons = [], ["OCR_UNVERIFIED"]
     for index, text in enumerate(overall.get("rec_texts", [])):
+        if not normalize(text):
+            continue
         polygons = overall.get("rec_polys", [])
         box = polygon_box(polygons[index] if index < len(polygons) else [], rw, rh)
         if box is None:
@@ -159,7 +173,7 @@ def convert_result(data, width, height):
     compact = lambda text: re.sub(r"\s+", "", normalize(text))
     overall_text = compact("\n".join(overall.get("rec_texts", [])))
     for index, table in enumerate(data.get("table_res_list", []), 1):
-        cells, valid_html = table_cells(table.get("pred_html"))
+        cells, valid_html, plain_text = table_content(table.get("pred_html"))
         boxes = [rectangle(value, rw, rh) for value in table.get("cell_box_list", [])]
         usable = [box for box in boxes if box is not None]
         extent = [min(b[0] for b in usable), min(b[1] for b in usable), max(b[2] for b in usable), max(b[3] for b in usable)] if usable else [0, 0, rw, rh]
@@ -172,11 +186,11 @@ def convert_result(data, width, height):
                     **{key: cell[key] for key in ("row", "column", "row_span", "column_span")}))
         else:
             reasons.append("TABLE_STRUCTURE_REJECTED")
-            text = "\n".join(cell["text"] for cell in cells)
-            if text:
+            text = plain_text
+            if normalize(text):
                 blocks.append(block(text, map_box(candidate, turns, width, height), "ocr", f"ocr/table[{index}]/unstructured"))
         table_raw = "\n".join(table.get("table_ocr_pred", {}).get("rec_texts", []))
-        if table_raw:
+        if normalize(table_raw):
             # PaddleX does not inverse-map these polygons after internal table
             # rotation. Preserve raw lines with an honest enclosing-table locator.
             blocks.append(block(table_raw, map_box(candidate, turns, width, height), "ocr", f"ocr/table[{index}]/recognition-text"))

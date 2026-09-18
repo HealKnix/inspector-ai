@@ -36,14 +36,25 @@ def parse_pdf(path, settings, versions, ocr, progress, checkpoint=None):
             raise ParseError("PDF_ENCRYPTED")
         if document.page_count > settings.max_pages:
             raise ParseError("PAGE_LIMIT")
-        progress(0, document.page_count, "extracting")
-        for number, page in enumerate(document, 1):
-            if checkpoint:
+        # Verify every checkpoint before publishing a resumable count. Counting
+        # only the visited prefix would reset progress even when later pages are
+        # already durable (or conceal a corrupt/missing image in that prefix).
+        progress(0, document.page_count, "checkpoint_verifying", {"checkpoint_validated": False,
+                 "checkpoint_pages": None, "current_page": None})
+        cached_pages = {}
+        if checkpoint:
+            for number in range(1, document.page_count + 1):
                 cached = checkpoint(number)
                 if cached:
-                    pages.append(cached)
-                    progress(number, document.page_count, "resuming")
-                    continue
+                    cached_pages[number] = cached
+        completed = len(cached_pages)
+        progress(completed, document.page_count, "resuming" if completed else "extracting",
+                 {"checkpoint_validated": True, "checkpoint_pages": completed, "current_page": None})
+        for number, page in enumerate(document, 1):
+            if number in cached_pages:
+                pages.append(cached_pages.pop(number))
+                continue
+            progress(completed, document.page_count, "rendering", {"current_page": number})
             reasons = []
             width, height = page.rect.width, page.rect.height
             if width <= 0 or height <= 0 or not math.isfinite(width * height):
@@ -112,7 +123,7 @@ def parse_pdf(path, settings, versions, ocr, progress, checkpoint=None):
                 x1, y1 = min(image.width, math.ceil(region[2] * image.width)), min(image.height, math.ceil(region[3] * image.height))
                 if x1 <= x0 or y1 <= y0:
                     continue
-                progress(number - 1, document.page_count, "ocr")
+                progress(completed, document.page_count, "ocr", {"current_page": number})
                 crop = image.crop((x0, y0, x1, y1))
                 # Mask legible native text in this image region so a scanned attachment
                 # receives OCR without re-recognizing an entire searchable text layer.
@@ -198,5 +209,6 @@ def parse_pdf(path, settings, versions, ocr, progress, checkpoint=None):
             pages.append(result)
             if checkpoint:
                 checkpoint(number, result)
-            progress(number, document.page_count, "extracting")
+            completed += 1
+            progress(completed, document.page_count, "extracting", {"current_page": number})
     return pages

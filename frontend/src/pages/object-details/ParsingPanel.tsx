@@ -1,10 +1,11 @@
-import { Button, ProgressBar } from "@heroui/react";
+import { Button } from "@heroui/react";
 
 import {
   parsingErrorMessage,
   type useParsingStatus,
 } from "@/api/hooks/use-parsing";
 import type { ParsingFile } from "@/api/types/parsing";
+import { ParsingFileProgress } from "./ParsingFileProgress";
 import { RetryParsingButton } from "./RetryParsingButton";
 import {
   parsingFailureLabel,
@@ -99,25 +100,7 @@ export function ParsingPanel({
                     {parsingStateLabels[file.state]}
                     {file.attempt > 0 && ` · попытка ${file.attempt}`}
                   </p>
-                  {(file.state === "queued" || file.state === "processing") && (
-                    <div className="mt-3 max-w-sm space-y-2">
-                      <ProgressBar
-                        aria-label={`Обработка ${file.original_name}`}
-                        value={file.pages_completed}
-                        maxValue={file.pages_total || 1}
-                        isIndeterminate={!file.pages_total}
-                      >
-                        <ProgressBar.Track>
-                          <ProgressBar.Fill />
-                        </ProgressBar.Track>
-                      </ProgressBar>
-                      <p className="text-copy-muted text-xs">
-                        {file.pages_total === null
-                          ? `Обработано страниц: ${file.pages_completed}`
-                          : `Обработано страниц: ${file.pages_completed} из ${file.pages_total}`}
-                      </p>
-                    </div>
-                  )}
+                  <ParsingFileProgress file={file} />
                   {file.quality && (
                     <p
                       className={`mt-2 text-sm ${file.quality === "OK" ? "text-copy-muted" : "text-warning"}`}
@@ -135,7 +118,7 @@ export function ParsingPanel({
                     </ul>
                   )}
                   {file.state === "failed" && (
-                    <p className="text-danger mt-2 text-sm">
+                    <p role="alert" className="text-danger mt-2 text-sm">
                       {parsingFailureLabel(file.error_code)}
                     </p>
                   )}

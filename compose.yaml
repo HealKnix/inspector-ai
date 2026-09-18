@@ -88,6 +88,7 @@ services:
       PARSER_TOKEN: ${PARSER_TOKEN:?PARSER_TOKEN must be set in the root .env file}
       PARSER_FILE_TIMEOUT_SECONDS: ${PARSER_FILE_TIMEOUT_SECONDS:-600}
       REDIS_URL: redis://redis:6379
+      PARSER_MODEL_READY_WAIT_SECONDS: ${PARSER_MODEL_READY_WAIT_SECONDS:-300}
     volumes:
       - document-originals:/data/originals
       - document-quarantine:/data/quarantine
@@ -221,6 +222,7 @@ services:
       PARSER_TOKEN: ${PARSER_TOKEN:?PARSER_TOKEN must be set}
       PARSER_FILE_TIMEOUT_SECONDS: ${PARSER_FILE_TIMEOUT_SECONDS:-600}
       PARSING_WORKER_HEALTH_PORT: 3002
+      PARSER_MODEL_READY_WAIT_SECONDS: ${PARSER_MODEL_READY_WAIT_SECONDS:-300}
     volumes:
       - document-originals:/data/originals:ro
       - document-derived:/data/derived
