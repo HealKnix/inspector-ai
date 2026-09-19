@@ -9,6 +9,7 @@ import routeNames from "@/routes/routeNames";
 import { CubeLoader } from "@/components/cube-loader/CubeLoader";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicOnlyRoute } from "./PublicOnlyRoute";
+import { RoleGuard } from "./RoleGuards";
 
 const AuthPage = lazy(() =>
   import("@/pages/auth/AuthPage").then((module) => ({
@@ -33,6 +34,11 @@ const ObjectsPage = lazy(() =>
 const ObjectDetailsPage = lazy(() =>
   import("@/pages/object-details/ObjectDetailsPage").then((module) => ({
     default: module.ObjectDetailsPage,
+  })),
+);
+const AdminMatrixPage = lazy(() =>
+  import("@/pages/admin/AdminMatrixPage").then((module) => ({
+    default: module.AdminMatrixPage,
   })),
 );
 
@@ -113,6 +119,14 @@ export function AppRoutes() {
               element={<ObjectDetailsPage />}
               path={routeNames.OBJECT_DETAILS}
             />
+          </Route>
+          <Route element={<RoleGuard roles="ADMINISTRATOR" />}>
+            <Route element={<WorkspaceLayout />}>
+              <Route
+                element={<AdminMatrixPage />}
+                path={routeNames.ADMIN_MATRIX}
+              />
+            </Route>
           </Route>
         </Route>
         <Route

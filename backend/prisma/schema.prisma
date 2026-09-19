@@ -296,6 +296,7 @@ model ParseArtifact {
   createdAt           DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   task                ParsingTask @relation(fields: [taskId], references: [id], onDelete: Restrict)
   classifications     ClassificationTask[]
+  extractions         ExtractionTask[]
 
   @@index([sourceSha256, pipelineFingerprint])
   @@map("parse_artifacts")
@@ -348,4 +349,161 @@ model ParsingRetryReceipt {
 
   @@id([userId, objectId, requestId])
   @@map("parsing_retry_receipts")
+}
+
+// Matrix catalog import. Each import keeps the raw JSONL rows verbatim; rules
+// reference the parameter by code so a re-import never invalidates them.
+model MatrixImport {
+  id           String      @id @default(uuid()) @db.Uuid
+  sourceName   String      @map("source_name")
+  sourceSha256 String      @map("source_sha256") @db.Char(64)
+  originSha256 String      @map("origin_sha256") @db.Char(64)
+  rowCount     Int         @map("row_count")
+  importedBy   String?     @map("imported_by")
+  importedAt   DateTime    @default(now()) @map("imported_at") @db.Timestamptz(3)
+  rows         MatrixRow[]
+
+  @@unique([sourceSha256])
+  @@map("matrix_imports")
+}
+
+model MatrixRow {
+  id            String        @id @default(uuid()) @db.Uuid
+  importId      String        @map("import_id") @db.Uuid
+  parameterId   Int           @map("parameter_id")
+  parameterCode String        @map("parameter_code") @db.VarChar(32)
+  pdSection     String        @map("pd_section")
+  name          String
+  unit          String?
+  sourcePd      String?       @map("source_pd")
+  sourceRd      String?       @map("source_rd")
+  sourceId      String?       @map("source_id")
+  triggerText   String        @map("trigger_text")
+  criticality   String?
+  matrixRow     Int           @map("matrix_row")
+  raw           Json
+  import        MatrixImport  @relation(fields: [importId], references: [id], onDelete: Restrict)
+
+  @@unique([importId, parameterId])
+  @@unique([importId, parameterCode])
+  @@index([parameterCode])
+  @@map("matrix_rows")
+}
+
+enum RuleStatus {
+  draft
+  approved
+  rejected
+  deprecated
+}
+
+// A versioned extraction plan for one matrix parameter. Only the newest
+// approved version is executed; drafts are never picked up by the worker.
+model RuleVersion {
+  id            String     @id @default(uuid()) @db.Uuid
+  parameterCode String     @map("parameter_code") @db.VarChar(32)
+  parameterId   Int        @map("parameter_id")
+  version       Int
+  status        RuleStatus @default(draft)
+  plan          Json
+  comparison    Json?
+  applicability Json?
+  note          String?
+  createdBy     String?    @map("created_by")
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  approvedBy    String?    @map("approved_by")
+  approvedAt    DateTime?  @map("approved_at") @db.Timestamptz(3)
+
+  @@unique([parameterCode, version])
+  @@index([status, parameterCode])
+  @@map("rule_versions")
+}
+
+// Same lifecycle as ClassificationTask: one task per artifact per ruleset
+// fingerprint; a changed approved ruleset starts a new cycle.
+model ExtractionTask {
+  id           String       @id @default(uuid()) @db.Uuid
+  artifactId   String       @map("artifact_id") @db.Uuid
+  cycle        Int          @default(1)
+  fingerprint  String       @db.Char(64)
+  state        String       @default("queued")
+  attempts     Int          @default(0)
+  availableAt  DateTime     @default(now()) @map("available_at") @db.Timestamptz(3)
+  dispatchedAt DateTime?    @map("dispatched_at") @db.Timestamptz(3)
+  leaseUntil   DateTime?    @map("lease_until") @db.Timestamptz(3)
+  leaseToken   String?      @map("lease_token") @db.Uuid
+  errorCode    String?      @map("error_code")
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt  DateTime?    @map("completed_at") @db.Timestamptz(3)
+  artifact     ParseArtifact @relation(fields: [artifactId], references: [id], onDelete: Restrict)
+  extractions  Extraction[]
+
+  @@unique([artifactId, cycle])
+  @@index([state, availableAt, leaseUntil])
+  @@map("extraction_tasks")
+}
+
+// One extracted value (or an explicit negative outcome) for one parameter in
+// one artifact. Extractions are facts only: they never carry a verdict.
+model Extraction {
+  id            String          @id @default(uuid()) @db.Uuid
+  taskId        String          @map("task_id") @db.Uuid
+  artifactId    String          @map("artifact_id") @db.Uuid
+  fileId        String          @map("file_id") @db.Uuid
+  objectId      String          @map("object_id") @db.Uuid
+  processId     String          @map("process_id") @db.Uuid
+  runId         String          @map("run_id") @db.Uuid
+  parameterCode String          @map("parameter_code") @db.VarChar(32)
+  ruleVersionId String          @map("rule_version_id") @db.Uuid
+  status        String
+  stage         String?
+  valueRaw      String?         @map("value_raw")
+  value         Json?
+  unit          String?
+  alternatives  Json?
+  reason        String?
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  task          ExtractionTask  @relation(fields: [taskId], references: [id], onDelete: Restrict)
+  evidence      EvidenceFragment[]
+
+  @@index([taskId])
+  @@index([objectId, parameterCode])
+  @@map("extractions")
+}
+
+model EvidenceFragment {
+  id             String     @id @default(uuid()) @db.Uuid
+  extractionId   String     @map("extraction_id") @db.Uuid
+  fileId         String     @map("file_id") @db.Uuid
+  artifactId     String     @map("artifact_id") @db.Uuid
+  pageNumber     Int        @map("page_number")
+  sheetLabel     String?    @map("sheet_label")
+  blockId        String?    @map("block_id")
+  tableId        String?    @map("table_id")
+  tableRow       Int?       @map("table_row")
+  tableColumn    Int?       @map("table_column")
+  quote          String
+  bbox           Json?
+  structuralPath String?    @map("structural_path")
+  extraction     Extraction @relation(fields: [extractionId], references: [id], onDelete: Restrict)
+
+  @@index([extractionId])
+  @@map("evidence_fragments")
+}
+
+// Grouped extractions for one parameter on one object: expected role comes
+// from PD-stage files, actual from RD/ID; unknown stage is kept explicit.
+model EvidenceGroup {
+  id            String   @id @default(uuid()) @db.Uuid
+  objectId      String   @map("object_id") @db.Uuid
+  processId     String   @map("process_id") @db.Uuid
+  parameterCode String   @map("parameter_code") @db.VarChar(32)
+  scopeKey      String   @default("") @map("scope_key")
+  rulesetHash   String   @map("ruleset_hash") @db.Char(64)
+  members       Json
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([objectId, processId, parameterCode, scopeKey])
+  @@map("evidence_groups")
 }

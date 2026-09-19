@@ -51,7 +51,9 @@ export class OutboxService {
               ? "inspector.parsing.files"
               : event.eventType === "classification.requested"
                 ? "inspector.classification.files"
-                : "inspector.events";
+                : event.eventType === "extraction.requested"
+                  ? "inspector.extraction.artifacts"
+                  : "inspector.events";
         await channel.assertQueue(queue, { durable: true });
         let returned = false;
         channel.on("return", () => {

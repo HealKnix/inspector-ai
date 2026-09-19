@@ -5,6 +5,7 @@ class RouteNames {
   OBJECT_DETAILS = "/app/objects/:objectId" as const;
   objectDetails = (id: string) => `${this.OBJECTS}/${encodeURIComponent(id)}`;
   DOCUMENT_UPLOAD = "/app/documents/upload" as const;
+  ADMIN_MATRIX = "/app/admin/matrix" as const;
   NOT_FOUND = "*" as const;
 
   // Авторизация
