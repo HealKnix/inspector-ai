@@ -322,7 +322,7 @@ export class MatrixAdminService {
       }
       await tx.ruleVersion.updateMany({
         where: { parameterCode: rule.parameterCode, status: "approved" },
-        data: { status: "deprecated" },
+        data: { status: "deprecated", approvedBy: null, approvedAt: null },
       });
       const approved = await tx.ruleVersion.update({
         where: { id: rule.id },

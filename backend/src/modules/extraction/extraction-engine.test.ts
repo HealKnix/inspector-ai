@@ -3,6 +3,7 @@ import type {
   ParseArtifactData,
   ParseBlock,
   ParsePage,
+  ParseRegion,
 } from "../parsing/parsing-contract.js";
 import {
   contextWindows,
@@ -168,6 +169,47 @@ describe("block-search", () => {
     const hits = findAnchorHits(doc, ["общая площадь"]);
     expect(hits).toHaveLength(1);
     expect(hits[0]!.block.id).toBe("t1");
+  });
+
+  it("searches skipped-region text but skips OCR audit copies", () => {
+    const region = (
+      id: string,
+      method: ParseRegion["method"],
+    ): ParseRegion => ({
+      id,
+      kind: "unknown",
+      bbox: [0, 0, 1, 1],
+      raw_class: null,
+      raw_score: null,
+      method,
+      reasons: [],
+      table_status: "not_applicable",
+    });
+    const excluded = (
+      id: string,
+      regionId: string,
+      text: string,
+    ): ParseBlock => ({
+      ...textBlock(id, text),
+      region_id: regionId,
+      include_in_main: false,
+    });
+    const doc = artifact([
+      excluded("skip1", "r-skip", "Общая площадь здания"),
+      excluded("audit1", "r-ocr", "Общая площадь здания"),
+      {
+        ...textBlock("ocr1", "Общая площадь здания"),
+        region_id: "r-ocr",
+        include_in_main: true,
+        source: "ocr" as const,
+      },
+    ]);
+    doc.pages[0]!.regions = [
+      region("r-skip", "skipped"),
+      region("r-ocr", "ocr"),
+    ];
+    const hits = findAnchorHits(doc, ["общая площадь"]);
+    expect(hits.map((hit) => hit.block.id).sort()).toEqual(["ocr1", "skip1"]);
   });
 
   it("groups table cells into grids and scores by signature", () => {

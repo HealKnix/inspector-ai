@@ -31,8 +31,21 @@ export function findAnchorHits(
 ): AnchorHit[] {
   const hits: AnchorHit[] = [];
   for (const page of artifact.pages) {
+    const regions = new Map(
+      (page.regions ?? []).map((region) => [region.id, region] as const),
+    );
     for (const block of page.blocks) {
-      if (block.include_in_main === false) continue;
+      // include_in_main === false marks two cases: native audit copies
+      // superseded by OCR replacements (skip — counting them would duplicate
+      // every hit) and skipped-region text with no replacement — the only
+      // available evidence, which must stay searchable.
+      if (block.include_in_main === false) {
+        const method = block.region_id
+          ? regions.get(block.region_id)?.method
+          : undefined;
+        if (method === "ocr" || method === "table_ocr" || method === "hybrid")
+          continue;
+      }
       const text = blockText(block);
       if (!text) continue;
       for (const term of terms) {
