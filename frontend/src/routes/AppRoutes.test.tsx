@@ -8,7 +8,7 @@ import { useAuthSessionStore } from "@/store/auth-session";
 import { AppRoutes } from "./AppRoutes";
 import routeNames from "./routeNames";
 
-const dashboardImport = vi.hoisted(() => {
+const verificationImport = vi.hoisted(() => {
   let resolveImport: (() => void) | undefined;
   const promise = new Promise<void>((resolve) => {
     resolveImport = resolve;
@@ -30,11 +30,11 @@ vi.mock("@/pages/auth/AuthPage", () => ({
   AuthPage: () => <p>Страница входа</p>,
 }));
 
-vi.mock("@/pages/dashboard/DashboardPage", async () => {
-  await dashboardImport.promise;
+vi.mock("@/pages/verification/VerificationPage", async () => {
+  await verificationImport.promise;
 
   return {
-    DashboardPage: () => <p>Рабочая область</p>,
+    VerificationPage: () => <p>Проверка комплекта документов</p>,
   };
 });
 
@@ -59,6 +59,13 @@ const user: UserDto = {
   createdAt: "2026-09-16T08:00:00.000Z",
 };
 
+const administrator: UserDto = {
+  ...user,
+  id: "b1f9bbf4-6eb4-4dc1-9480-88284195640d",
+  login: "administrator",
+  role: Role.ADMINISTRATOR,
+};
+
 describe("AppRoutes", () => {
   it.each([
     [routeNames.OBJECTS, "Список объектов"],
@@ -78,7 +85,9 @@ describe("AppRoutes", () => {
         </AppProviders>,
       );
       expect(await screen.findByText(label)).toBeInTheDocument();
-      expect(screen.queryByText("Рабочая область")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("Проверка комплекта документов"),
+      ).not.toBeInTheDocument();
     },
   );
 
@@ -103,6 +112,27 @@ describe("AppRoutes", () => {
       screen.queryByText("Карточка объекта synthetic-id"),
     ).not.toBeInTheDocument();
   });
+
+  it("не предоставляет раздел верификации роли без подтверждённого права", async () => {
+    window.history.replaceState({}, "", routeNames.APP);
+    useAuthSessionStore.setState({
+      accessToken: "access-token",
+      initialized: true,
+      user: administrator,
+    });
+
+    render(
+      <AppProviders>
+        <AppRoutes />
+      </AppProviders>,
+    );
+
+    expect(await screen.findByText("Недостаточно прав")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Проверка комплекта документов"),
+    ).not.toBeInTheDocument();
+  });
+
   it("показывает Suspense fallback при переходе на отложенный маршрут", async () => {
     window.history.replaceState({}, "", routeNames.LOGIN);
     useAuthSessionStore.setState({
@@ -125,9 +155,11 @@ describe("AppRoutes", () => {
 
     expect(await screen.findByText("Загружаем интерфейс…")).toBeInTheDocument();
 
-    dashboardImport.resolve();
+    verificationImport.resolve();
 
-    expect(await screen.findByText("Рабочая область")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Проверка комплекта документов"),
+    ).toBeInTheDocument();
   });
 
   it("открывает защищённую страницу загрузки по прямой ссылке", async () => {

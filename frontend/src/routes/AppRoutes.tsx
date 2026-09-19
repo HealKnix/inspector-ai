@@ -3,21 +3,23 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { useCurrentUser } from "@/api/hooks/use-auth";
+import { Role } from "@/api/types/auth";
 import { WorkspaceLayout } from "@/layouts/WorkspaceLayout";
 import routeNames from "@/routes/routeNames";
 
 import { CubeLoader } from "@/components/cube-loader/CubeLoader";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicOnlyRoute } from "./PublicOnlyRoute";
+import { RoleGuard } from "./RoleGuards";
 
 const AuthPage = lazy(() =>
   import("@/pages/auth/AuthPage").then((module) => ({
     default: module.AuthPage,
   })),
 );
-const DashboardPage = lazy(() =>
-  import("@/pages/dashboard/DashboardPage").then((module) => ({
-    default: module.DashboardPage,
+const VerificationPage = lazy(() =>
+  import("@/pages/verification/VerificationPage").then((module) => ({
+    default: module.VerificationPage,
   })),
 );
 const DocumentUploadPage = lazy(() =>
@@ -103,7 +105,9 @@ export function AppRoutes() {
         </Route>
         <Route element={<ProtectedRoute />}>
           <Route element={<WorkspaceLayout />}>
-            <Route element={<DashboardPage />} path={routeNames.APP} />
+            <Route element={<RoleGuard roles={Role.INSPECTOR} />}>
+              <Route element={<VerificationPage />} path={routeNames.APP} />
+            </Route>
             <Route
               element={<DocumentUploadPage />}
               path={routeNames.DOCUMENT_UPLOAD}
