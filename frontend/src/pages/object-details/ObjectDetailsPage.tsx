@@ -1,11 +1,18 @@
 import { Button } from "@heroui/react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 
 import { useFiles, useObject } from "@/api/hooks/use-objects";
 import { useParsingStatus } from "@/api/hooks/use-parsing";
+import { Role } from "@/api/types/auth";
 import type { ParsingFile } from "@/api/types/parsing";
 import { UploadIcon } from "@/components/UploadIcon";
 import routeNames from "@/routes/routeNames";
+import { useAuthSessionStore } from "@/store/auth-session";
 import { DocumentUploader } from "./DocumentUploader";
 import { DocumentViewer, type DocumentViewState } from "./DocumentViewer";
 import { FilesTable } from "./FilesTable";
@@ -13,6 +20,10 @@ import { ParsingPanel } from "./ParsingPanel";
 
 export function ObjectDetailsPage() {
   const { objectId = "" } = useParams();
+  const navigate = useNavigate();
+  const canVerifyMetadata = useAuthSessionStore(
+    (state) => state.user?.role === Role.INSPECTOR,
+  );
   const object = useObject(objectId);
   const [params, setParams] = useSearchParams();
   const requestedPage = Number(params.get("page"));
@@ -96,6 +107,17 @@ export function ObjectDetailsPage() {
               Объект создан{" "}
               {new Date(data.created_at).toLocaleDateString("ru-RU")}
             </p>
+          )}
+          {data && canVerifyMetadata && (
+            <Button
+              className="mt-5 rounded-xl"
+              onPress={() => {
+                void navigate(routeNames.verification(data.id));
+              }}
+            >
+              <UploadIcon className="size-4.5" name="sparkles" />
+              Проверить метаданные
+            </Button>
           )}
         </header>
         {object.isPending && (

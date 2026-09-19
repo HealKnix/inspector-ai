@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { mockVerificationPackage } from "@/data/verification";
 import {
@@ -17,9 +18,21 @@ import {
 import { DiscrepancyDetails } from "./components/DiscrepancyDetails";
 import { DiscrepancyList } from "./components/DiscrepancyList";
 import { DocumentPane } from "./components/DocumentPane";
+import { ObjectVerificationWorkspace } from "./components/ObjectVerificationWorkspace";
 import { VerificationHeader } from "./components/VerificationHeader";
 
 export function VerificationPage() {
+  const [searchParams] = useSearchParams();
+  const objectId = searchParams.get("objectId")?.trim();
+
+  return objectId ? (
+    <ObjectVerificationWorkspace key={objectId} objectId={objectId} />
+  ) : (
+    <DemoVerificationPage />
+  );
+}
+
+function DemoVerificationPage() {
   const [findings, setFindings] = useState(() => [
     ...mockVerificationPackage.findings,
   ]);

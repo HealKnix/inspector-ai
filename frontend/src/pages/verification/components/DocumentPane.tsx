@@ -314,7 +314,7 @@ export function DocumentPane({
                       className="top-2.5 right-3"
                     />
                   </Modal.Header>
-                  <Modal.Body className="bg-surface-low flex min-h-0 flex-col overflow-hidden p-0">
+                  <Modal.Body className="bg-surface-low mt-0 flex min-h-0 flex-col overflow-hidden p-0">
                     <div className="border-border bg-card flex flex-wrap items-center gap-2 border-b px-3 py-2 sm:px-5">
                       <StageSelector
                         activeStage={document.stage}

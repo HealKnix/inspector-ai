@@ -4,6 +4,8 @@ class RouteNames {
   OBJECTS = "/app/objects" as const;
   OBJECT_DETAILS = "/app/objects/:objectId" as const;
   objectDetails = (id: string) => `${this.OBJECTS}/${encodeURIComponent(id)}`;
+  verification = (objectId: string) =>
+    `${this.APP}?objectId=${encodeURIComponent(objectId)}`;
   DOCUMENT_UPLOAD = "/app/documents/upload" as const;
   NOT_FOUND = "*" as const;
 

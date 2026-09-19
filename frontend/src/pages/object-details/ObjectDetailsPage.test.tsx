@@ -25,11 +25,14 @@ import {
   getRenderedPage,
 } from "@/api/endpoints/parsing";
 import { queryKeys } from "@/api/query-keys";
+import { Role } from "@/api/types/auth";
 import type { ConstructionObject, ObjectFile } from "@/api/types/objects";
 import {
   createRegionalParseResult,
   parsingStatus,
 } from "@/api/types/parsing-test-fixtures";
+import routeNames from "@/routes/routeNames";
+import { useAuthSessionStore } from "@/store/auth-session";
 import { ObjectDetailsPage } from "./ObjectDetailsPage";
 
 vi.mock("@/api/endpoints/parsing", () => ({
@@ -70,6 +73,7 @@ function LocationProbe() {
   return (
     <>
       <output data-testid="location">{useLocation().search}</output>
+      <output data-testid="pathname">{useLocation().pathname}</output>
       <button
         onClick={() => {
           void navigate(-1);
@@ -108,6 +112,16 @@ function mount(search = "") {
 }
 beforeEach(() => {
   vi.resetAllMocks();
+  useAuthSessionStore.setState({
+    accessToken: "synthetic-access-token",
+    initialized: true,
+    user: {
+      id: "77777777-7777-4777-8777-777777777777",
+      login: "synthetic-inspector",
+      role: Role.INSPECTOR,
+      createdAt: "2026-09-20T00:00:00.000Z",
+    },
+  });
   vi.mocked(getObject).mockResolvedValue(object);
   vi.mocked(listFiles).mockResolvedValue({
     items: [file],
@@ -125,6 +139,19 @@ beforeEach(() => {
 });
 
 describe("object documents", () => {
+  it("открывает проверку метаданных в контексте текущего объекта", async () => {
+    mount();
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Проверить метаданные" }),
+    );
+
+    expect(screen.getByTestId("pathname")).toHaveTextContent(routeNames.APP);
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      `?objectId=${object.id}`,
+    );
+  });
+
   it("сохраняет режим и выбранную область в URL и восстанавливает их при возврате по истории", async () => {
     URL.createObjectURL = vi.fn(() => "blob:synthetic-regional-page");
     URL.revokeObjectURL = vi.fn();
