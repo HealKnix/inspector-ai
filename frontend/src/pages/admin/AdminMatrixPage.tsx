@@ -1,4 +1,12 @@
-import { Alert, Button, Input, Spinner, Textarea } from "@heroui/react";
+import {
+  Alert,
+  Button,
+  Input,
+  Label,
+  Spinner,
+  TextArea,
+  TextField,
+} from "@heroui/react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -232,31 +240,37 @@ function RuleEditor({ row }: { row: MatrixRow }) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Input
-          label="ID объекта для прогона"
-          placeholder="uuid объекта"
-          value={objectId}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            setObjectId(event.target.value)
-          }
-        />
-        <Input
-          label="ID файла (необязательно)"
-          placeholder="uuid файла"
-          value={fileId}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            setFileId(event.target.value)
-          }
-        />
+        <TextField>
+          <Label>ID объекта для прогона</Label>
+          <Input
+            placeholder="uuid объекта"
+            value={objectId}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+              setObjectId(event.target.value)
+            }
+          />
+        </TextField>
+        <TextField>
+          <Label>ID файла (необязательно)</Label>
+          <Input
+            placeholder="uuid файла"
+            value={fileId}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+              setFileId(event.target.value)
+            }
+          />
+        </TextField>
       </div>
-      <Textarea
-        label="Поисковые термины для LLM-черновика (по строке на термин)"
-        placeholder="общая площадь&#10;технико-экономические"
-        value={terms}
-        onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
-          setTerms(event.target.value)
-        }
-      />
+      <TextField>
+        <Label>Поисковые термины для LLM-черновика (по строке на термин)</Label>
+        <TextArea
+          placeholder="общая площадь&#10;технико-экономические"
+          value={terms}
+          onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
+            setTerms(event.target.value)
+          }
+        />
+      </TextField>
       <div className="flex flex-wrap gap-2">
         <Button
           size="sm"
@@ -293,29 +307,31 @@ function RuleEditor({ row }: { row: MatrixRow }) {
 
       <div>
         <h4 className="text-sm font-semibold">Новый черновик вручную</h4>
-        <Textarea
-          className="mt-2"
-          label="План (JSON)"
-          placeholder='{"kind":"table_lookup","signature":{"any":["показател"]},"row":{"anchors":["общая площадь"]},"value":{"column":"last_numeric"}}'
-          value={planText}
-          onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
-            setPlanText(event.target.value)
-          }
-          minRows={4}
-        />
+        <TextField className="mt-2">
+          <Label>План (JSON)</Label>
+          <TextArea
+            placeholder='{"kind":"table_lookup","signature":{"any":["показател"]},"row":{"anchors":["общая площадь"]},"value":{"column":"last_numeric"}}'
+            value={planText}
+            onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
+              setPlanText(event.target.value)
+            }
+            rows={4}
+          />
+        </TextField>
         {planError && (
           <p role="alert" className="text-danger mt-1 text-xs">
             {planError}
           </p>
         )}
-        <Input
-          className="mt-2"
-          label="Комментарий"
-          value={note}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            setNote(event.target.value)
-          }
-        />
+        <TextField className="mt-2">
+          <Label>Комментарий</Label>
+          <Input
+            value={note}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+              setNote(event.target.value)
+            }
+          />
+        </TextField>
         <Button
           className="mt-2"
           size="sm"

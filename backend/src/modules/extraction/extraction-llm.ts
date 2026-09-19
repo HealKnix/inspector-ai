@@ -131,7 +131,12 @@ export async function draftPlanWithLlm(
       body: JSON.stringify({
         model: config.model,
         temperature: 0,
-        max_tokens: 2000,
+        // Reasoning models (e.g. qwen3) spend most of the completion budget on
+        // chain-of-thought before emitting the plan; 2k truncates them at
+        // finish_reason=length with empty content. Low effort keeps drafting
+        // inside the request timeout; providers without the knob ignore it.
+        max_tokens: 12000,
+        reasoning: { effort: "low" },
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM_PROMPT },

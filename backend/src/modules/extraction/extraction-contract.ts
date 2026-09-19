@@ -110,6 +110,9 @@ function terms(value: unknown, field: string, optional = false): string[] {
 
 function optionalTerms(value: unknown, field: string): string[] | undefined {
   if (value === undefined) return undefined;
+  // LLM drafts commonly emit "field": [] for absent optional lists;
+  // an empty list carries no terms, so it validates as absent.
+  if (Array.isArray(value) && value.length === 0) return undefined;
   return terms(value, field);
 }
 
@@ -121,6 +124,7 @@ function valueType(value: unknown): "number" | "text" | "enum" | undefined {
 
 function enumValues(value: unknown): string[] | undefined {
   if (value === undefined) return undefined;
+  if (Array.isArray(value) && value.length === 0) return undefined;
   if (
     !Array.isArray(value) ||
     value.length === 0 ||

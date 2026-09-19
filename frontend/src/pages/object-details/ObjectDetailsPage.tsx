@@ -211,7 +211,7 @@ export function ObjectDetailsPage() {
               key={`extraction:${objectId}`}
               objectId={objectId}
               query={extraction}
-              onEvidence={(item, evidence) => {
+              onEvidence={(_item, evidence) => {
                 setParams((current) => {
                   current.set("file", evidence.file_id);
                   current.set("documentPage", String(evidence.page_number));
