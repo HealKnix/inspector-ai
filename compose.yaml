@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:17.6-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -21,6 +22,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:4.1-management-alpine
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
@@ -34,6 +36,7 @@ services:
 
   redis:
     image: redis:7.4.2-alpine
+    restart: unless-stopped
     command:
       [
         "redis-server",
@@ -65,6 +68,7 @@ services:
     restart: "no"
 
   backend:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -110,6 +114,7 @@ services:
       retries: 10
 
   frontend:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: frontend/Dockerfile
@@ -122,6 +127,7 @@ services:
       - "${FRONTEND_PORT:-8080}:80"
 
   worker:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -152,12 +158,14 @@ services:
       retries: 3
 
   clamav:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: backend/antivirus/Dockerfile
     volumes: ["clamav-data:/var/lib/clamav"]
 
   parser-models:
+    restart: unless-stopped
     profiles: [tools]
     build:
       context: .
@@ -169,6 +177,7 @@ services:
     volumes: ["parser-models:/models"]
 
   parser:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: backend/document-parser/Dockerfile
@@ -206,6 +215,7 @@ services:
       retries: 15
 
   parsing-worker:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -247,6 +257,7 @@ services:
       retries: 5
 
   validator:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: backend/file-validator/Dockerfile
