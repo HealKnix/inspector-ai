@@ -291,6 +291,40 @@ services:
       timeout: 5s
       retries: 5
 
+  extraction-worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: runtime
+    command: ["bun", "backend/dist/extraction-worker.js"]
+    environment:
+      <<: *classification-env
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-postgres}"
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set}
+      STORAGE_ROOT: /data
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      EXTRACTION_WORKER_HEALTH_PORT: 3004
+    volumes:
+      - document-originals:/data/originals:ro
+      - document-derived:/data/derived:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "fetch('http://127.0.0.1:3004').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
   validator:
     init: true
     build:
