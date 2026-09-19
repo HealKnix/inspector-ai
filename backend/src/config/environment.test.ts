@@ -9,6 +9,38 @@ const baseEnvironment = {
 };
 
 describe("validateEnvironment", () => {
+  it("uses a 180-second structural validation budget by default", () => {
+    expect(
+      validateEnvironment(baseEnvironment).FILE_VALIDATOR_TIMEOUT_SECONDS,
+    ).toBe(180);
+  });
+
+  it.each([
+    ["25", 25],
+    ["180", 180],
+    ["300", 300],
+    [120, 120],
+  ])("accepts FILE_VALIDATOR_TIMEOUT_SECONDS=%s", (value, expected) => {
+    expect(
+      validateEnvironment({
+        ...baseEnvironment,
+        FILE_VALIDATOR_TIMEOUT_SECONDS: value,
+      }).FILE_VALIDATOR_TIMEOUT_SECONDS,
+    ).toBe(expected);
+  });
+
+  it.each(["", "24", "301", "25.5", "3m", "0x40", "NaN", null, true])(
+    "rejects an invalid structural validation budget: %s",
+    (value) => {
+      expect(() =>
+        validateEnvironment({
+          ...baseEnvironment,
+          FILE_VALIDATOR_TIMEOUT_SECONDS: value,
+        }),
+      ).toThrow("FILE_VALIDATOR_TIMEOUT_SECONDS");
+    },
+  );
+
   it.each([
     ["30s", 30],
     ["90s", 90],

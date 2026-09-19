@@ -14,6 +14,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 
+import { getClassificationStatus } from "@/api/endpoints/classification";
 import {
   downloadOriginal,
   getObject,
@@ -25,6 +26,7 @@ import {
   getRenderedPage,
 } from "@/api/endpoints/parsing";
 import { queryKeys } from "@/api/query-keys";
+import { classificationStatus } from "@/api/types/classification-test-fixtures";
 import type { ConstructionObject, ObjectFile } from "@/api/types/objects";
 import {
   createRegionalParseResult,
@@ -37,6 +39,10 @@ vi.mock("@/api/endpoints/parsing", () => ({
   getParseResult: vi.fn(),
   getRenderedPage: vi.fn(),
   retryParsing: vi.fn(),
+}));
+vi.mock("@/api/endpoints/classification", () => ({
+  getClassificationStatus: vi.fn(),
+  retryClassification: vi.fn(),
 }));
 
 vi.mock("@/api/endpoints/objects", () => ({
@@ -109,6 +115,12 @@ function mount(search = "") {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(getObject).mockResolvedValue(object);
+  vi.mocked(getClassificationStatus).mockResolvedValue({
+    schema_version: 1,
+    active: false,
+    poll_after_ms: 2000,
+    items: [],
+  });
   vi.mocked(listFiles).mockResolvedValue({
     items: [file],
     total: 1,
@@ -125,6 +137,30 @@ beforeEach(() => {
 });
 
 describe("object documents", () => {
+  it("открывает подтверждение классификации в просмотрщике на странице и блоке", async () => {
+    URL.createObjectURL = vi.fn(() => "blob:synthetic-classification-page");
+    URL.revokeObjectURL = vi.fn();
+    vi.mocked(getParsingStatus).mockResolvedValue(parsingStatus);
+    vi.mocked(getClassificationStatus).mockResolvedValue(classificationStatus);
+    vi.mocked(getParseResult).mockResolvedValue(createRegionalParseResult());
+    vi.mocked(getRenderedPage).mockResolvedValue(new Blob(["synthetic"]));
+    mount("?upload=receipt-id");
+    await screen.findByText("ПД — проектная документация");
+    fireEvent.click(screen.getByText("Признаки в документе (1)"));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Открыть признак 1: synthetic.xml, страница 1",
+      }),
+    );
+    expect(screen.getByTestId("location")).toHaveTextContent("documentPage=1");
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      "documentBlock=block-1",
+    );
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      "upload=receipt-id",
+    );
+    await screen.findByRole("img");
+  });
   it("сохраняет режим и выбранную область в URL и восстанавливает их при возврате по истории", async () => {
     URL.createObjectURL = vi.fn(() => "blob:synthetic-regional-page");
     URL.revokeObjectURL = vi.fn();

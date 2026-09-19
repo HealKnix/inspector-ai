@@ -17,7 +17,7 @@ import {
   utimes,
   writeFile,
 } from "node:fs/promises";
-import { request as httpRequest, Server } from "node:http";
+import { createServer, request as httpRequest, Server } from "node:http";
 import { resolve } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -419,6 +419,61 @@ describe("real admission dependencies", () => {
       expect(await prisma.file.count({ where: { objectId } })).toBe(0);
     },
   );
+
+  it("does not admit or enqueue a file when the structural validator returns HTTP 503", async () => {
+    const objectId = await createObject();
+    const runtimeConfig = app.get(ConfigService);
+    const originalValidatorUrl =
+      runtimeConfig.getOrThrow<string>("FILE_VALIDATOR_URL");
+    let validatorRequests = 0;
+    const unavailableValidator = createServer((req, res) => {
+      validatorRequests++;
+      req.resume();
+      res.writeHead(503, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "validator_unavailable" }));
+    });
+    await new Promise<void>((resolve, reject) => {
+      unavailableValidator.once("error", reject);
+      unavailableValidator.listen(0, "127.0.0.1", resolve);
+    });
+    try {
+      const address = unavailableValidator.address();
+      if (!address || typeof address === "string")
+        throw new Error("Expected local validator test address");
+      runtimeConfig.set(
+        "FILE_VALIDATOR_URL",
+        `http://127.0.0.1:${address.port}`,
+      );
+
+      // The real adapter still performs ClamAV before this local HTTP response.
+      const response = await upload(
+        uploadBody(objectId, syntheticPdf(), "synthetic-validator-timeout.pdf"),
+      ).expect(422);
+      expect(validatorRequests).toBe(1);
+      expect(response.body).toMatchObject({
+        process_id: null,
+        run_id: null,
+        files: [{ accepted: false, error: "validator_unavailable" }],
+      });
+      const persistedCounts = await Promise.all([
+        prisma.file.count({ where: { objectId } }),
+        prisma.process.count({ where: { objectId } }),
+        prisma.run.count({ where: { objectId } }),
+        prisma.parsingTask.count({ where: { objectId } }),
+        prisma.job.count({ where: { objectId } }),
+        prisma.outbox.count({ where: { job: { objectId } } }),
+      ]);
+      expect(persistedCounts).toEqual([0, 0, 0, 0, 0, 0]);
+    } finally {
+      runtimeConfig.set("FILE_VALIDATOR_URL", originalValidatorUrl);
+      await new Promise<void>((resolve, reject) => {
+        unavailableValidator.close((error) =>
+          error ? reject(error) : resolve(),
+        );
+        unavailableValidator.closeAllConnections();
+      });
+    }
+  });
 
   it("replays concurrently, rejects a changed key, checks access on replay and process ownership", async () => {
     const objectId = await createObject();

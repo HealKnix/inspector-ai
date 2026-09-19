@@ -1,3 +1,12 @@
+x-classification-env: &classification-env
+  CLASSIFICATION_LLM_ENABLED: ${CLASSIFICATION_LLM_ENABLED:-false}
+  CLASSIFICATION_LLM_BASE_URL: ${CLASSIFICATION_LLM_BASE_URL:-https://openrouter.ai/api/v1}
+  CLASSIFICATION_LLM_MODEL: ${CLASSIFICATION_LLM_MODEL:-qwen/qwen3.8-27b}
+  CLASSIFICATION_LLM_API_KEY: ${CLASSIFICATION_LLM_API_KEY:-}
+  CLASSIFICATION_LLM_RESPONSE_FORMAT: ${CLASSIFICATION_LLM_RESPONSE_FORMAT:-json_schema}
+  CLASSIFICATION_LLM_TIMEOUT_MS: ${CLASSIFICATION_LLM_TIMEOUT_MS:-60000}
+  CLASSIFICATION_LLM_MAX_RESPONSE_BYTES: ${CLASSIFICATION_LLM_MAX_RESPONSE_BYTES:-131072}
+
 services:
   postgres:
     image: postgres:17.6-alpine
@@ -70,6 +79,7 @@ services:
       dockerfile: backend/Dockerfile
       target: runtime
     environment:
+      <<: *classification-env
       DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-postgres}"
       FRONTEND_URL: http://localhost:${FRONTEND_PORT:-8080}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in the root .env file}
@@ -83,6 +93,7 @@ services:
       CLAMAV_HOST: clamav
       CLAMAV_PORT: 3310
       FILE_VALIDATOR_URL: http://validator:8081
+      FILE_VALIDATOR_TIMEOUT_SECONDS: ${FILE_VALIDATOR_TIMEOUT_SECONDS:-180}
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       PARSER_URL: http://parser:8090
       PARSER_TOKEN: ${PARSER_TOKEN:?PARSER_TOKEN must be set in the root .env file}
@@ -246,10 +257,47 @@ services:
       timeout: 5s
       retries: 5
 
+  classification-worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: runtime
+    command: ["bun", "backend/dist/classification-worker.js"]
+    environment:
+      <<: *classification-env
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-postgres}"
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set}
+      STORAGE_ROOT: /data
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      CLASSIFICATION_WORKER_HEALTH_PORT: 3003
+    volumes:
+      - document-originals:/data/originals:ro
+      - document-derived:/data/derived:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "fetch('http://127.0.0.1:3003').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
   validator:
+    init: true
     build:
       context: .
       dockerfile: backend/file-validator/Dockerfile
+    environment:
+      FILE_VALIDATOR_TIMEOUT_SECONDS: ${FILE_VALIDATOR_TIMEOUT_SECONDS:-180}
     volumes: ["document-quarantine:/data/quarantine:ro"]
     networks: [validation]
     read_only: true

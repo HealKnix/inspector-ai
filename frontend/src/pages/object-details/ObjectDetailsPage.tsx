@@ -1,11 +1,13 @@
 import { Button } from "@heroui/react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
+import { useClassificationStatus } from "@/api/hooks/use-classification";
 import { useFiles, useObject } from "@/api/hooks/use-objects";
 import { useParsingStatus } from "@/api/hooks/use-parsing";
 import type { ParsingFile } from "@/api/types/parsing";
 import { UploadIcon } from "@/components/UploadIcon";
 import routeNames from "@/routes/routeNames";
+import { ClassificationPanel } from "./ClassificationPanel";
 import { DocumentUploader } from "./DocumentUploader";
 import { DocumentViewer, type DocumentViewState } from "./DocumentViewer";
 import { FilesTable } from "./FilesTable";
@@ -25,6 +27,11 @@ export function ObjectDetailsPage() {
   const data = object.isError ? undefined : object.data;
   const parsing = useParsingStatus(objectId, Boolean(data));
   const parsingData = parsing.isError ? undefined : parsing.data;
+  const classification = useClassificationStatus(
+    objectId,
+    parsingData,
+    Boolean(data) && !parsing.isError,
+  );
   const selectedFileId = params.get("file");
   const selectedFile = parsingData?.items.find(
     (file) => file.file_id === selectedFileId,
@@ -175,6 +182,23 @@ export function ObjectDetailsPage() {
               objectId={objectId}
               query={parsing}
               onOpen={openDocument}
+            />
+            <ClassificationPanel
+              key={objectId}
+              objectId={objectId}
+              query={classification}
+              parsingFiles={parsingData?.items}
+              onEvidence={(file, evidence) => {
+                setParams((current) => {
+                  current.set("file", file.file_id);
+                  current.set("documentPage", String(evidence.page_number));
+                  current.set("documentView", "fragments");
+                  current.set("documentText", "normalized_text");
+                  current.set("documentBlock", evidence.block_id);
+                  current.delete("documentRegion");
+                  return current;
+                });
+              }}
             />
             {selectedFile?.state === "succeeded" &&
               selectedFile.artifact_id && (

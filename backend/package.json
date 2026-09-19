@@ -8,6 +8,7 @@
     "test:services": "node test/start-services.mjs",
     "worker": "bun dist/worker.js",
     "parsing:worker": "bun dist/parsing-worker.js",
+    "classification:worker": "bun dist/classification-worker.js",
     "dev": "nest start --watch",
     "build": "bun run prisma:generate && nest build --path tsconfig.build.json",
     "start": "bun dist/main.js",

@@ -8,6 +8,7 @@ export const queryKeys = {
     receipt: (id: string, uploadId: string) =>
       ["objects", id, "receipt", uploadId] as const,
     parsing: (id: string) => ["objects", id, "parsing"] as const,
+    classification: (id: string) => ["objects", id, "classification"] as const,
     parse: (id: string, fileId: string, runId: string, artifactId: string) =>
       ["objects", id, "parse", fileId, runId, artifactId] as const,
     renderedPage: (

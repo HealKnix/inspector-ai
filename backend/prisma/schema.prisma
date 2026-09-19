@@ -295,9 +295,47 @@ model ParseArtifact {
   pagesTotal          Int         @map("pages_total")
   createdAt           DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   task                ParsingTask @relation(fields: [taskId], references: [id], onDelete: Restrict)
+  classifications     ClassificationTask[]
 
   @@index([sourceSha256, pipelineFingerprint])
   @@map("parse_artifacts")
+}
+
+// A classification is bound to one immutable parser result. Retrying or changing
+// the classifier creates a new cycle, preserving the previous machine result.
+model ClassificationTask {
+  id          String   @id @default(uuid()) @db.Uuid
+  artifactId  String   @map("artifact_id") @db.Uuid
+  cycle       Int      @default(1)
+  fingerprint String   @db.Char(64)
+  state       String   @default("queued")
+  attempts    Int      @default(0)
+  availableAt DateTime @default(now()) @map("available_at") @db.Timestamptz(3)
+  dispatchedAt DateTime? @map("dispatched_at") @db.Timestamptz(3)
+  leaseUntil  DateTime? @map("lease_until") @db.Timestamptz(3)
+  leaseToken  String?   @map("lease_token") @db.Uuid
+  errorCode   String?   @map("error_code")
+  result      Json?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(3)
+  artifact    ParseArtifact @relation(fields: [artifactId], references: [id], onDelete: Restrict)
+  retryReceipts ClassificationRetryReceipt[]
+
+  @@unique([artifactId, cycle])
+  @@index([state, availableAt, leaseUntil])
+  @@map("classification_tasks")
+}
+
+model ClassificationRetryReceipt {
+  userId    String @map("user_id")
+  objectId  String @map("object_id") @db.Uuid
+  requestId String @map("request_id") @db.Uuid
+  taskId    String @map("task_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  task      ClassificationTask @relation(fields: [taskId], references: [id], onDelete: Restrict)
+
+  @@id([userId, objectId, requestId])
+  @@map("classification_retry_receipts")
 }
 
 model ParsingRetryReceipt {
