@@ -102,8 +102,7 @@ function distinctExtracted(
     list.push(member);
     if (target) distinct.delete(target);
     const mergedUnit = target?.slice(valueKey.length + 1) || unit;
-    if (mergedUnit)
-      for (const item of list) item.unit ??= mergedUnit;
+    if (mergedUnit) for (const item of list) item.unit ??= mergedUnit;
     distinct.set(`${valueKey}:${mergedUnit}`, list);
   }
   return [...distinct.values()].map((list) => list[0]!);

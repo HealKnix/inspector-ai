@@ -322,10 +322,7 @@ describe("regex executor", () => {
     };
     const outcome = executePlan(doc, plan, planRule(plan));
     expect(outcome.status).toBe("ambiguous");
-    expect(outcome.alternatives?.map((item) => item.unit)).toEqual([
-      "m",
-      "km",
-    ]);
+    expect(outcome.alternatives?.map((item) => item.unit)).toEqual(["m", "km"]);
   });
 });
 
