@@ -1,6 +1,6 @@
 import { Alert, Button, Spinner } from "@heroui/react";
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 import { useCurrentUser } from "@/api/hooks/use-auth";
 import { Role } from "@/api/types/auth";
@@ -12,6 +12,11 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicOnlyRoute } from "./PublicOnlyRoute";
 import { RoleGuard } from "./RoleGuards";
 
+const DashboardPage = lazy(() =>
+  import("@/pages/dashboard/DashboardPage").then((module) => ({
+    default: module.DashboardPage,
+  })),
+);
 const AuthPage = lazy(() =>
   import("@/pages/auth/AuthPage").then((module) => ({
     default: module.AuthPage,
@@ -40,7 +45,6 @@ const ObjectDetailsPage = lazy(() =>
 
 export function AppRoutes() {
   const currentUserQuery = useCurrentUser();
-  const location = useLocation();
 
   if (currentUserQuery.isPending) {
     return (
@@ -93,7 +97,6 @@ export function AppRoutes() {
           <p>Загружаем интерфейс…</p>
         </div>
       }
-      key={location.pathname}
     >
       <Routes>
         <Route element={<PublicOnlyRoute />}>
@@ -105,8 +108,12 @@ export function AppRoutes() {
         </Route>
         <Route element={<ProtectedRoute />}>
           <Route element={<WorkspaceLayout />}>
+            <Route element={<DashboardPage />} path={routeNames.ROOT} />
             <Route element={<RoleGuard roles={Role.INSPECTOR} />}>
-              <Route element={<VerificationPage />} path={routeNames.APP} />
+              <Route
+                element={<VerificationPage />}
+                path={routeNames.DOCUMENT_VERIFICATION}
+              />
             </Route>
             <Route
               element={<DocumentUploadPage />}
@@ -115,16 +122,16 @@ export function AppRoutes() {
             <Route element={<ObjectsPage />} path={routeNames.OBJECTS} />
             <Route
               element={<ObjectDetailsPage />}
-              path={routeNames.OBJECT_DETAILS}
+              path={routeNames.OBJECT_DETAILS(":objectId")}
             />
           </Route>
         </Route>
         <Route
-          element={<Navigate replace to={routeNames.APP} />}
+          element={<Navigate replace to={routeNames.ROOT} />}
           path={routeNames.ROOT}
         />
         <Route
-          element={<Navigate replace to={routeNames.APP} />}
+          element={<Navigate replace to={routeNames.ROOT} />}
           path={routeNames.NOT_FOUND}
         />
       </Routes>

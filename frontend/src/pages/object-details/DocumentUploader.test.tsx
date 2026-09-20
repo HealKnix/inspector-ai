@@ -4,6 +4,7 @@ import {
   uploadDocuments,
 } from "@/api/endpoints/objects";
 import type { UploadResponse } from "@/api/types/objects";
+import routeNames from "@/routes/routeNames";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
@@ -44,7 +45,7 @@ function receipt(uploadId: string): UploadResponse {
     ],
   };
 }
-function mount(path = "/app") {
+function mount(path = routeNames.DOCUMENT_VERIFICATION) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -78,7 +79,7 @@ describe("document upload recovery", () => {
       ],
     });
     vi.mocked(downloadOriginal).mockResolvedValue(undefined);
-    const user = mount("/app?upload=" + id);
+    const user = mount(`${routeNames.DOCUMENT_VERIFICATION}?upload=` + id);
     expect(
       await screen.findByText(
         "Все файлы уже загружены. Повторная обработка не запущена.",
@@ -153,7 +154,7 @@ describe("document upload recovery", () => {
   it("restores a receipt from the deep link after reload without resubmitting bytes", async () => {
     const id = "66666666-6666-4666-8666-666666666666";
     vi.mocked(getReceipt).mockResolvedValue(receipt(id));
-    mount("/app?upload=" + id);
+    mount(`${routeNames.DOCUMENT_VERIFICATION}?upload=` + id);
     expect(await screen.findByText("Оригинал принят")).toBeInTheDocument();
     await waitFor(() =>
       expect(getReceipt).toHaveBeenCalledWith(objectId, id, expect.anything()),

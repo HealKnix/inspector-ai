@@ -20,7 +20,7 @@ export function LoginForm() {
     const parsedValues = loginSchema.parse(values);
     loginMutation.mutate(parsedValues, {
       onSuccess: () => {
-        void navigate(routeNames.APP, { replace: true });
+        void navigate(routeNames.ROOT, { replace: true });
       },
     });
   });

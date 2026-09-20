@@ -112,7 +112,9 @@ export function ObjectDetailsPage() {
             <Button
               className="mt-5 rounded-xl"
               onPress={() => {
-                void navigate(routeNames.verification(data.id));
+                void navigate(
+                  routeNames.DOCUMENT_VERIFICATION_DETAILS(data.id),
+                );
               }}
             >
               <UploadIcon className="size-4.5" name="sparkles" />

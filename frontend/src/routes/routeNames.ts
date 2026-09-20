@@ -1,17 +1,23 @@
 class RouteNames {
-  ROOT = "/" as const;
-  APP = "/app" as const;
-  OBJECTS = "/app/objects" as const;
-  OBJECT_DETAILS = "/app/objects/:objectId" as const;
-  objectDetails = (id: string) => `${this.OBJECTS}/${encodeURIComponent(id)}`;
-  verification = (objectId: string) =>
-    `${this.APP}?objectId=${encodeURIComponent(objectId)}`;
-  DOCUMENT_UPLOAD = "/app/documents/upload" as const;
-  NOT_FOUND = "*" as const;
+  ROOT = "/";
+
+  // Объекты
+  OBJECTS = "/objects";
+  OBJECT_DETAILS = (id: string, search?: string) =>
+    `${this.OBJECTS}/${id}${search ?? ""}`;
+
+  // Документы
+  DOCUMENT_UPLOAD = "/documents/upload";
+  DOCUMENT_VERIFICATION = "/verification";
+  DOCUMENT_VERIFICATION_DETAILS = (objectId: string) =>
+    `${this.DOCUMENT_VERIFICATION}?objectId=${encodeURIComponent(objectId)}`;
 
   // Авторизация
-  LOGIN = "/login" as const;
-  REGISTER = "/register" as const;
+  LOGIN = "/login";
+  REGISTER = "/register";
+
+  // 404
+  NOT_FOUND = "*";
 }
 
 const routeNames = new RouteNames();

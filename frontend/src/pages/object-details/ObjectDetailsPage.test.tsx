@@ -97,10 +97,12 @@ function mount(search = "") {
   });
   render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[`/app/objects/${object.id}${search}`]}>
+      <MemoryRouter
+        initialEntries={[routeNames.OBJECT_DETAILS(object.id, search)]}
+      >
         <Routes>
           <Route
-            path="/app/objects/:objectId"
+            path={routeNames.OBJECT_DETAILS(":objectId")}
             element={<ObjectDetailsPage />}
           />
         </Routes>
@@ -146,9 +148,13 @@ describe("object documents", () => {
       await screen.findByRole("button", { name: "Проверить метаданные" }),
     );
 
-    expect(screen.getByTestId("pathname")).toHaveTextContent(routeNames.APP);
+    expect(screen.getByTestId("pathname")).toHaveTextContent(
+      routeNames.DOCUMENT_VERIFICATION,
+    );
     expect(screen.getByTestId("location")).toHaveTextContent(
-      `?objectId=${object.id}`,
+      routeNames
+        .DOCUMENT_VERIFICATION_DETAILS(object.id)
+        .replace(routeNames.DOCUMENT_VERIFICATION, ""),
     );
   });
 
@@ -203,7 +209,7 @@ describe("object documents", () => {
     });
     expect(screen.getByRole("link", { name: "Все объекты" })).toHaveAttribute(
       "href",
-      "/app/objects",
+      routeNames.OBJECTS,
     );
     expect(
       screen.queryByRole("button", { name: "Загрузить документы" }),

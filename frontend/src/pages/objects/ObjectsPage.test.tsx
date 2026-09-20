@@ -1,4 +1,5 @@
 import { createObject, listObjects } from "@/api/endpoints/objects";
+import routeNames from "@/routes/routeNames";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -16,11 +17,11 @@ function mount() {
   });
   render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/app/objects"]}>
+      <MemoryRouter initialEntries={[routeNames.OBJECTS]}>
         <Routes>
-          <Route path="/app/objects" element={<ObjectsPage />} />
+          <Route path={routeNames.OBJECTS} element={<ObjectsPage />} />
           <Route
-            path="/app/objects/:objectId"
+            path={routeNames.OBJECT_DETAILS(":objectId")}
             element={<p>Карточка созданного объекта</p>}
           />
         </Routes>

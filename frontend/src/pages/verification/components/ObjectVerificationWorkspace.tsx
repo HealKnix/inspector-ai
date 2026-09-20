@@ -214,7 +214,7 @@ export function ObjectVerificationWorkspace({
         <header>
           <Link
             className="text-copy-muted hover:text-accent inline-flex items-center gap-2 text-sm"
-            to={routeNames.objectDetails(objectId)}
+            to={routeNames.OBJECT_DETAILS(objectId)}
           >
             <UploadIcon className="size-4" name="arrow-left" />
             Вернуться к объекту

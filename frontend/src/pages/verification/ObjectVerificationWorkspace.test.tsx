@@ -57,7 +57,11 @@ function renderPage() {
   });
   const view = render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[routeNames.verification(parsingObjectId)]}>
+      <MemoryRouter
+        initialEntries={[
+          routeNames.DOCUMENT_VERIFICATION_DETAILS(parsingObjectId),
+        ]}
+      >
         <VerificationPage />
       </MemoryRouter>
     </QueryClientProvider>,

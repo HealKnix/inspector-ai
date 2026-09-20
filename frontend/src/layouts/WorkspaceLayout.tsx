@@ -1,8 +1,10 @@
 import { useMediaQuery } from "@heroui/react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Suspense } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { useLogout } from "@/api/hooks/use-auth";
 import { BrandMark } from "@/components/BrandMark";
+import { CubeLoader } from "@/components/cube-loader/CubeLoader";
 import {
   MobileNavigation,
   WorkspaceSidebar,
@@ -11,6 +13,7 @@ import routeNames from "@/routes/routeNames";
 import { useAuthSessionStore } from "@/store/auth-session";
 
 export function WorkspaceLayout() {
+  const location = useLocation();
   const navigate = useNavigate();
   const user = useAuthSessionStore((state) => state.user);
   const logoutMutation = useLogout();
@@ -47,7 +50,20 @@ export function WorkspaceLayout() {
         ) : null}
 
         <main className="relative flex min-h-0 min-w-0 flex-1">
-          <Outlet />
+          <Suspense
+            fallback={
+              <div
+                className="text-muted-foreground flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-5"
+                role="status"
+              >
+                <CubeLoader />
+                <p>Загружаем интерфейс…</p>
+              </div>
+            }
+            key={location.pathname}
+          >
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

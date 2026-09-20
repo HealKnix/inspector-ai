@@ -21,7 +21,7 @@ export function PublicOnlyRoute() {
   }
 
   if (user) {
-    return <Navigate replace to={routeNames.APP} />;
+    return <Navigate replace to={routeNames.ROOT} />;
   }
 
   return <Outlet />;

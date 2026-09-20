@@ -22,7 +22,7 @@ export function ObjectsPage() {
         <header>
           <Link
             className="text-copy-muted hover:text-accent inline-flex items-center gap-2 text-sm"
-            to={routeNames.APP}
+            to={routeNames.ROOT}
           >
             <UploadIcon className="size-4" name="arrow-left" />
             Рабочая область
@@ -150,7 +150,7 @@ export function ObjectsPage() {
                           <Table.Cell>
                             <Link
                               className="hover:text-accent flex items-center gap-3 py-2 font-medium"
-                              to={routeNames.objectDetails(object.id)}
+                              to={routeNames.OBJECT_DETAILS(object.id)}
                             >
                               <span className="bg-accent/10 text-accent grid size-10 shrink-0 place-items-center rounded-xl">
                                 <UploadIcon className="size-5" name="folder" />
@@ -174,7 +174,7 @@ export function ObjectsPage() {
                             <Link
                               aria-label={`Открыть документы: ${object.name}`}
                               className="text-accent inline-flex items-center gap-1 text-sm font-medium whitespace-nowrap"
-                              to={routeNames.objectDetails(object.id)}
+                              to={routeNames.OBJECT_DETAILS(object.id)}
                             >
                               Документы{" "}
                               <UploadIcon

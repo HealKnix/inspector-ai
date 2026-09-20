@@ -25,10 +25,10 @@ beforeEach(() => {
 
 function renderProtectedRoute() {
   render(
-    <MemoryRouter initialEntries={[routeNames.APP]}>
+    <MemoryRouter initialEntries={[routeNames.ROOT]}>
       <Routes>
         <Route element={<p>Страница входа</p>} path={routeNames.LOGIN} />
-        <Route element={<ProtectedRoute />} path={routeNames.APP}>
+        <Route element={<ProtectedRoute />} path={routeNames.ROOT}>
           <Route element={<p>Защищённый раздел</p>} index />
         </Route>
       </Routes>
@@ -43,7 +43,7 @@ function renderPublicOnlyRoute() {
         <Route element={<PublicOnlyRoute />} path={routeNames.LOGIN}>
           <Route element={<p>Форма входа</p>} index />
         </Route>
-        <Route element={<p>Рабочая область</p>} path={routeNames.APP} />
+        <Route element={<p>Рабочая область</p>} path={routeNames.ROOT} />
       </Routes>
     </MemoryRouter>,
   );

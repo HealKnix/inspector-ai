@@ -25,7 +25,7 @@ export function CreateObjectForm() {
   const submit = handleSubmit(({ name }) =>
     mutation.mutate(name, {
       onSuccess: (object) => {
-        void navigate(routeNames.objectDetails(object.id));
+        void navigate(routeNames.OBJECT_DETAILS(object.id));
       },
     }),
   );
