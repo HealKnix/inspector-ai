@@ -596,23 +596,24 @@ enum PackageStatus {
 // confirmed object attributes plus extracted object lists. Confirmation is a
 // separate inspector action with a basis; old versions stay immutable.
 model PackageVersion {
-  id             String               @id @default(uuid()) @db.Uuid
-  objectId       String               @map("object_id") @db.Uuid
-  processId      String?              @map("process_id") @db.Uuid
-  version        Int
-  status         PackageStatus        @default(proposed)
-  frameworkSetId String               @map("framework_set_id") @db.Uuid
-  attributes     Json
-  basis          String?
-  createdBy      String?              @map("created_by")
-  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
-  confirmedBy    String?              @map("confirmed_by")
-  confirmedAt    DateTime?            @map("confirmed_at") @db.Timestamptz(3)
-  object         ConstructionObject   @relation(fields: [objectId], references: [id], onDelete: Restrict)
-  frameworkSet   FrameworkSet         @relation(fields: [frameworkSetId], references: [id], onDelete: Restrict)
-  requirements   PackageRequirement[]
-  listItems      PackageListItem[]
-  results        CompletenessResult[]
+  id              String                  @id @default(uuid()) @db.Uuid
+  objectId        String                  @map("object_id") @db.Uuid
+  processId       String?                 @map("process_id") @db.Uuid
+  version         Int
+  status          PackageStatus           @default(proposed)
+  frameworkSetId  String                  @map("framework_set_id") @db.Uuid
+  attributes      Json
+  basis           String?
+  createdBy       String?                 @map("created_by")
+  createdAt       DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  confirmedBy     String?                 @map("confirmed_by")
+  confirmedAt     DateTime?               @map("confirmed_at") @db.Timestamptz(3)
+  object          ConstructionObject      @relation(fields: [objectId], references: [id], onDelete: Restrict)
+  frameworkSet    FrameworkSet            @relation(fields: [frameworkSetId], references: [id], onDelete: Restrict)
+  requirements    PackageRequirement[]
+  listItems       PackageListItem[]
+  results         CompletenessResult[]
+  confirmReceipts PackageConfirmReceipt[]
 
   @@unique([objectId, version])
   @@index([objectId, status, createdAt])
@@ -634,6 +635,21 @@ model PackageListItem {
 
   @@index([packageVersionId, listKind])
   @@map("package_list_items")
+}
+
+// Idempotent confirmation receipt: replaying request_id returns the recorded
+// version instead of creating a duplicate confirmation (same idiom as
+// classification_retry_receipts).
+model PackageConfirmReceipt {
+  userId           String         @map("user_id")
+  objectId         String         @map("object_id") @db.Uuid
+  requestId        String         @map("request_id") @db.Uuid
+  packageVersionId String         @map("package_version_id") @db.Uuid
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  packageVersion   PackageVersion @relation(fields: [packageVersionId], references: [id], onDelete: Restrict)
+
+  @@id([userId, objectId, requestId])
+  @@map("package_confirm_receipts")
 }
 
 model PackageRequirement {
