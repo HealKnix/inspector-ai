@@ -78,7 +78,11 @@ async function main() {
       stage: "ID",
       kind: "Акт освидетельствования скрытых работ",
     },
-    { name: "Исполнительная схема.pdf", stage: "ID", kind: "Исполнительная схема" },
+    {
+      name: "Исполнительная схема.pdf",
+      stage: "ID",
+      kind: "Исполнительная схема",
+    },
   ];
   for (const [index, document] of documents.entries()) {
     const sha = createHash("sha256").update(`${suffix}:${index}`).digest("hex");
