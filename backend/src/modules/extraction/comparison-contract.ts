@@ -1,4 +1,4 @@
-export const COMPARISON_ENGINE_VERSION = "comparison-engine-v1";
+export const COMPARISON_ENGINE_VERSION = "comparison-engine-v2";
 
 // --- Comparison specs stored in rule_versions.comparison ---
 

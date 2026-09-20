@@ -190,6 +190,26 @@ describe("evaluateGroup", () => {
     expect(verdict.status).toBe("match");
   });
 
+  it("значение без единицы сливается с тем же значением с единицей", () => {
+    const verdict = evaluateGroup(
+      [expected(159.95, "m"), expected(159.95), actual(159.95, "m")],
+      { kind: "equals" },
+      NOW,
+    );
+    expect(verdict.status).toBe("match");
+    expect(verdict.expected).toHaveLength(1);
+    expect(verdict.expected?.[0]?.unit).toBe("m");
+  });
+
+  it("разные единицы одного значения остаются неоднозначностью", () => {
+    const verdict = evaluateGroup(
+      [expected(159.95, "m"), expected(159.95, "mm"), actual(159.95, "m")],
+      { kind: "equals" },
+      NOW,
+    );
+    expect(verdict.status).toBe("expected_ambiguous");
+  });
+
   it("члены без стадии исключаются и фиксируются предупреждением", () => {
     const verdict = evaluateGroup(
       [

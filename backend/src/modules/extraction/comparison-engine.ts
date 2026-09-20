@@ -69,25 +69,44 @@ function memberRef(member: GroupMember): MemberRef {
   };
 }
 
-/** Distinct extracted values of one role; same normalized value+unit dedupes. */
+/**
+ * Distinct extracted values of one role. Same normalized value+unit dedupes;
+ * a unitless member merges into the same-valued bucket that carries a unit
+ * (missing unit is not a disagreement), while genuinely different units or
+ * values stay distinct.
+ */
 function distinctExtracted(
   members: GroupMember[],
   role: "expected" | "actual",
 ) {
-  const seen = new Map<string, GroupMember[]>();
+  const distinct = new Map<string, GroupMember[]>();
   for (const member of members) {
     if (member.role !== role || member.status !== "extracted") continue;
     const value = member.value;
     if (value === null || value === undefined) continue;
-    const key =
+    const valueKey =
       typeof value === "number"
-        ? `n:${value}:${normalizeUnit(member.unit) ?? ""}`
-        : `s:${normalizeTerm(String(value))}:${normalizeUnit(member.unit) ?? ""}`;
-    const list = seen.get(key) ?? [];
+        ? `n:${value}`
+        : `s:${normalizeTerm(String(value))}`;
+    const unit = normalizeUnit(member.unit) ?? "";
+    let target: string | null = null;
+    for (const key of distinct.keys()) {
+      if (!key.startsWith(`${valueKey}:`)) continue;
+      const keyUnit = key.slice(valueKey.length + 1);
+      if (keyUnit === unit || keyUnit === "" || unit === "") {
+        target = key;
+        break;
+      }
+    }
+    const list = (target && distinct.get(target)) || [];
     list.push(member);
-    seen.set(key, list);
+    if (target) distinct.delete(target);
+    const mergedUnit = target?.slice(valueKey.length + 1) || unit;
+    if (mergedUnit)
+      for (const item of list) item.unit ??= mergedUnit;
+    distinct.set(`${valueKey}:${mergedUnit}`, list);
   }
-  return [...seen.values()].map((list) => list[0]!);
+  return [...distinct.values()].map((list) => list[0]!);
 }
 
 function numeric(member: GroupMember): number | null {
