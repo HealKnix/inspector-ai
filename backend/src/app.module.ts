@@ -6,6 +6,7 @@ import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { validateEnvironment } from "./config/environment.js";
 import { PrismaModule } from "./infrastructure/prisma/prisma.module.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
+import { CompletenessModule } from "./modules/completeness/completeness.module.js";
 import { DocumentsModule } from "./modules/documents/documents.module.js";
 import { ExtractionModule } from "./modules/extraction/extraction.module.js";
 import { HealthModule } from "./modules/health/health.module.js";
@@ -25,6 +26,7 @@ import { ParsingModule } from "./modules/parsing/parsing.module.js";
     ParsingModule,
     ClassificationModule,
     ExtractionModule,
+    CompletenessModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
