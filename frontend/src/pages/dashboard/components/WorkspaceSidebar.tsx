@@ -75,6 +75,7 @@ interface NavigationItem {
   href: string;
   icon: DashboardIconName;
   label: string;
+  roles?: readonly Role[];
 }
 
 const primaryItems: readonly NavigationItem[] = [
@@ -89,6 +90,13 @@ const primaryItems: readonly NavigationItem[] = [
     href: routeNames.DOCUMENT_VERIFICATION,
     icon: "lightning",
     label: "Проверки",
+    roles: [Role.INSPECTOR],
+  },
+  {
+    href: routeNames.PROTOCOLS,
+    icon: "file",
+    label: "Протоколы",
+    roles: [Role.INSPECTOR],
   },
 ];
 
@@ -271,6 +279,10 @@ function SidebarContent({
   const isMobile = useMediaQuery("(max-width: 760px)");
   const location = useLocation();
   const navigate = useNavigate();
+  const visiblePrimaryItems = primaryItems.filter(
+    (item) =>
+      !item.roles || (user?.role != null && item.roles.includes(user.role)),
+  );
 
   const onActiveHrefChange = (href: string) => {
     void navigate(href);
@@ -290,7 +302,7 @@ function SidebarContent({
           <NavigationList
             activeHref={location.pathname}
             collapsed={collapsed}
-            items={primaryItems}
+            items={visiblePrimaryItems}
             onActiveHrefChange={onActiveHrefChange}
           />
           <div className="bg-border/50 mx-auto mb-auto h-px w-[95%] flex-none" />

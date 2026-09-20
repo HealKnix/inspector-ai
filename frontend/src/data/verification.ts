@@ -489,6 +489,7 @@ const findings = findingSeeds.map(createFinding);
 export const mockVerificationPackage = {
   id: "synthetic-demo-verification-package",
   title: "Проверка демонстрационного комплекта",
+  objectId: "synthetic-demo-object-north",
   objectLabel: "Демонстрационный объект «Северный»",
   sectionLabel: "Демо-раздел КР",
   source: VERIFICATION_FIXTURE_SOURCE,

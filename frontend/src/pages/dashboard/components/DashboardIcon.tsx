@@ -7,6 +7,7 @@ export type DashboardIconName =
   | "lightning"
   | "search"
   | "calendar"
+  | "file"
   | "more"
   | "folder"
   | "chat"
@@ -63,6 +64,13 @@ function IconPaths({ name }: Pick<DashboardIconProps, "name">) {
         <>
           <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
           <path d="M8 3v4M16 3v4M3.5 9.5h17M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01" />
+        </>
+      );
+    case "file":
+      return (
+        <>
+          <path d="M7 3h7l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+          <path d="M14 3v5h5M9 13h6M9 17h4" />
         </>
       );
     case "more":

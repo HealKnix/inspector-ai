@@ -1,17 +1,25 @@
 import { Button, Label, SearchField } from "@heroui/react";
 
+import { UploadIcon } from "@/components/UploadIcon";
+
 interface VerificationHeaderProps {
+  canCreateProtocol: boolean;
   fixtureNotice: string;
   objectLabel: string;
+  onCreateProtocol: () => void;
   onQueryChange: (value: string) => void;
+  pendingCount: number;
   query: string;
   sectionLabel: string;
 }
 
 export function VerificationHeader({
+  canCreateProtocol,
   fixtureNotice,
   objectLabel,
+  onCreateProtocol,
   onQueryChange,
+  pendingCount,
   query,
   sectionLabel,
 }: VerificationHeaderProps) {
@@ -78,6 +86,26 @@ export function VerificationHeader({
             <SearchField.ClearButton aria-label="Очистить поиск" />
           </SearchField.Group>
         </SearchField>
+
+        <div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row sm:items-center sm:justify-end">
+          <p
+            className="text-copy-muted text-xs leading-5 sm:mr-auto"
+            id="protocol-readiness"
+          >
+            {canCreateProtocol
+              ? "Все расхождения обработаны — протокол готов к формированию."
+              : `Осталось обработать расхождений: ${pendingCount}.`}
+          </p>
+          <Button
+            aria-describedby="protocol-readiness"
+            className="rounded-xl"
+            isDisabled={!canCreateProtocol}
+            onPress={onCreateProtocol}
+          >
+            <UploadIcon className="size-4.5" name="file" />
+            Сформировать протокол
+          </Button>
+        </div>
       </div>
     </header>
   );

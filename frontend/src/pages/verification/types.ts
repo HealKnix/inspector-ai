@@ -108,6 +108,7 @@ export interface VerificationFinding {
 export interface VerificationPackageFixture {
   id: string;
   title: string;
+  objectId: string;
   objectLabel: string;
   sectionLabel: string;
   source: typeof VERIFICATION_FIXTURE_SOURCE;

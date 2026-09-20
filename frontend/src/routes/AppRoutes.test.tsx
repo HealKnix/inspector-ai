@@ -63,6 +63,12 @@ vi.mock("@/pages/objects/ObjectsPage", () => ({
 vi.mock("@/pages/object-details/ObjectDetailsPage", () => ({
   ObjectDetailsPage: () => <p>Карточка объекта {useParams().objectId}</p>,
 }));
+vi.mock("@/pages/protocols/ProtocolsPage", () => ({
+  ProtocolsPage: () => <p>Список протоколов</p>,
+}));
+vi.mock("@/pages/protocols/ProtocolDetailsPage", () => ({
+  ProtocolDetailsPage: () => <p>Протокол {useParams().protocolId}</p>,
+}));
 
 const user: UserDto = {
   id: "27b43d75-2f24-4ff0-8bd8-d4758cfbd3cb",
@@ -151,6 +157,50 @@ describe("AppRoutes", () => {
       screen.queryByText("Проверка комплекта документов"),
     ).not.toBeInTheDocument();
   });
+
+  it.each([
+    [routeNames.PROTOCOLS, "Список протоколов"],
+    [
+      routeNames.PROTOCOL_DETAILS("synthetic-demo-protocol"),
+      "Протокол synthetic-demo-protocol",
+    ],
+  ])("открывает маршрут протоколов %s инспектору", async (path, label) => {
+    window.history.replaceState({}, "", path);
+    useAuthSessionStore.setState({
+      accessToken: "access-token",
+      initialized: true,
+      user,
+    });
+
+    render(
+      <AppProviders>
+        <AppRoutes />
+      </AppProviders>,
+    );
+
+    expect(await screen.findByText(label)).toBeInTheDocument();
+  });
+
+  it.each([routeNames.PROTOCOLS, routeNames.PROTOCOL_DETAILS("synthetic-id")])(
+    "не предоставляет маршрут протоколов %s роли без подтверждённого права",
+    async (path) => {
+      window.history.replaceState({}, "", path);
+      useAuthSessionStore.setState({
+        accessToken: "access-token",
+        initialized: true,
+        user: administrator,
+      });
+
+      render(
+        <AppProviders>
+          <AppRoutes />
+        </AppProviders>,
+      );
+
+      expect(await screen.findByText("Недостаточно прав")).toBeInTheDocument();
+      expect(screen.queryByText("Список протоколов")).not.toBeInTheDocument();
+    },
+  );
 
   it("сохраняет свёрнутый сайдбар и показывает fallback только в main", async () => {
     window.history.replaceState({}, "", routeNames.DOCUMENT_VERIFICATION);

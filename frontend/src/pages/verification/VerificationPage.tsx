@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
+import { mockProtocolViolations } from "@/data/protocols";
 import { mockVerificationPackage } from "@/data/verification";
 import {
   applyLocalFindingDecision,
@@ -14,6 +15,8 @@ import {
   type VerificationFindingDecision,
   type VerificationUiMarker,
 } from "@/pages/verification/types";
+import routeNames from "@/routes/routeNames";
+import { useProtocolStore } from "@/store/protocols";
 
 import { DiscrepancyDetails } from "./components/DiscrepancyDetails";
 import { DiscrepancyList } from "./components/DiscrepancyList";
@@ -33,6 +36,8 @@ export function VerificationPage() {
 }
 
 function DemoVerificationPage() {
+  const navigate = useNavigate();
+  const createProtocol = useProtocolStore((state) => state.createProtocol);
   const [findings, setFindings] = useState(() => [
     ...mockVerificationPackage.findings,
   ]);
@@ -78,6 +83,8 @@ function DemoVerificationPage() {
     [],
   );
   const summary = useMemo(() => getVerificationSummary(findings), [findings]);
+  const canCreateProtocol =
+    summary.totalCount > 0 && summary.pendingCount === 0;
   const visibleFindings = useMemo(
     () =>
       sortVerificationFindings(
@@ -191,6 +198,19 @@ function DemoVerificationPage() {
     );
   };
 
+  const handleCreateProtocol = () => {
+    if (!canCreateProtocol) return;
+
+    const protocol = createProtocol({
+      checkedAt: new Date().toLocaleDateString("sv-SE"),
+      findings,
+      objectId: mockVerificationPackage.objectId,
+      objectName: mockVerificationPackage.objectLabel,
+      violations: mockProtocolViolations,
+    });
+    void navigate(routeNames.PROTOCOL_DETAILS(protocol.id));
+  };
+
   const expectedDocument = selectedFinding
     ? documentsById.get(selectedFinding.expectedEvidence.documentId)
     : undefined;
@@ -205,9 +225,12 @@ function DemoVerificationPage() {
     <div className="h-full min-w-0 flex-1 overflow-y-auto">
       <div className="mx-auto min-h-full max-w-[1780px] px-4 py-5 min-[1400px]:px-6 sm:px-6 sm:py-7">
         <VerificationHeader
+          canCreateProtocol={canCreateProtocol}
           fixtureNotice={mockVerificationPackage.fixtureNotice}
           objectLabel={mockVerificationPackage.objectLabel}
+          onCreateProtocol={handleCreateProtocol}
           onQueryChange={changeQuery}
+          pendingCount={summary.pendingCount}
           query={query}
           sectionLabel={mockVerificationPackage.sectionLabel}
         />

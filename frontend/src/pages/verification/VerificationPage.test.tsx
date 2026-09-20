@@ -42,6 +42,12 @@ describe("VerificationPage", () => {
     expect(
       screen.getByRole("heading", { name: "Рекомендации" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Сформировать протокол" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByText("Осталось обработать расхождений: 29."),
+    ).toBeInTheDocument();
 
     expect(screen.queryByText("Сравнивать с:")).not.toBeInTheDocument();
     expect(

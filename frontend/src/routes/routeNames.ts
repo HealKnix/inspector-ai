@@ -12,6 +12,10 @@ class RouteNames {
   DOCUMENT_VERIFICATION_DETAILS = (objectId: string) =>
     `${this.DOCUMENT_VERIFICATION}?objectId=${encodeURIComponent(objectId)}`;
 
+  // Протоколы
+  PROTOCOLS = "/protocols";
+  PROTOCOL_DETAILS = (protocolId: string) => `${this.PROTOCOLS}/${protocolId}`;
+
   // Авторизация
   LOGIN = "/login";
   REGISTER = "/register";

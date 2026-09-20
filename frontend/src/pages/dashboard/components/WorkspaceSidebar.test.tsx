@@ -18,6 +18,12 @@ const user: UserDto = {
   login: "inspector",
   role: Role.INSPECTOR,
 };
+const administrator: UserDto = {
+  ...user,
+  id: "b1f9bbf4-6eb4-4dc1-9480-88284195640d",
+  login: "administrator",
+  role: Role.ADMINISTRATOR,
+};
 const sidebarStorageKey = "inspector-ai:sidebar-collapsed:v1";
 
 interface MatchMediaController {
@@ -87,10 +93,15 @@ function LocationProbe() {
 
 function renderSidebar(
   initialEntry: string = routeNames.DOCUMENT_VERIFICATION,
+  sidebarUser: UserDto = user,
 ) {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
-      <WorkspaceSidebar isLoggingOut={false} onLogout={vi.fn()} user={user} />
+      <WorkspaceSidebar
+        isLoggingOut={false}
+        onLogout={vi.fn()}
+        user={sidebarUser}
+      />
       <LocationProbe />
     </MemoryRouter>,
   );
@@ -108,6 +119,33 @@ describe("WorkspaceSidebar", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Проверки" }));
     expect(objectsButton).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("выделяет протоколы на странице отдельного протокола", () => {
+    installMatchMedia();
+    renderSidebar(routeNames.PROTOCOL_DETAILS("synthetic-demo-protocol"));
+
+    const protocolsButton = screen.getByRole("button", {
+      name: "Протоколы",
+    });
+    expect(protocolsButton).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(protocolsButton);
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      routeNames.PROTOCOLS,
+    );
+  });
+
+  it("скрывает инспекторские разделы от роли без подтверждённого права", () => {
+    installMatchMedia();
+    renderSidebar(routeNames.ROOT, administrator);
+
+    expect(
+      screen.queryByRole("button", { name: "Проверки" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Протоколы" }),
+    ).not.toBeInTheDocument();
   });
   beforeEach(() => {
     window.localStorage.clear();

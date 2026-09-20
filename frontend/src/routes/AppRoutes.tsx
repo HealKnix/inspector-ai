@@ -42,6 +42,16 @@ const ObjectDetailsPage = lazy(() =>
     default: module.ObjectDetailsPage,
   })),
 );
+const ProtocolsPage = lazy(() =>
+  import("@/pages/protocols/ProtocolsPage").then((module) => ({
+    default: module.ProtocolsPage,
+  })),
+);
+const ProtocolDetailsPage = lazy(() =>
+  import("@/pages/protocols/ProtocolDetailsPage").then((module) => ({
+    default: module.ProtocolDetailsPage,
+  })),
+);
 
 export function AppRoutes() {
   const currentUserQuery = useCurrentUser();
@@ -113,6 +123,11 @@ export function AppRoutes() {
               <Route
                 element={<VerificationPage />}
                 path={routeNames.DOCUMENT_VERIFICATION}
+              />
+              <Route element={<ProtocolsPage />} path={routeNames.PROTOCOLS} />
+              <Route
+                element={<ProtocolDetailsPage />}
+                path={routeNames.PROTOCOL_DETAILS(":protocolId")}
               />
             </Route>
             <Route
