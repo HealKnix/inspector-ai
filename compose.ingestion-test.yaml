@@ -30,10 +30,13 @@ services:
       timeout: 5s
       retries: 60
   validator:
+    init: true
     user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
     build:
       context: .
       dockerfile: backend/file-validator/Dockerfile
+    environment:
+      FILE_VALIDATOR_TIMEOUT_SECONDS: ${FILE_VALIDATOR_TIMEOUT_SECONDS:-180}
     volumes: ["./.test-output/storage/quarantine:/data/quarantine:ro"]
     networks: [isolated]
     read_only: true

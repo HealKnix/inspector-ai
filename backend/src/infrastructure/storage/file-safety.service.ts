@@ -86,18 +86,33 @@ export class FileSafetyService {
       };
     }
     try {
+      const timeoutSeconds = Number(
+        this.config.get("FILE_VALIDATOR_TIMEOUT_SECONDS") ?? 180,
+      );
       const response = await fetch(
         this.config.getOrThrow<string>("FILE_VALIDATOR_URL"),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ key }),
-          signal: AbortSignal.timeout(65_000),
+          // The validator supervisor gets budget +5s; leave time for its reply.
+          signal: AbortSignal.timeout((timeoutSeconds + 10) * 1000),
+          redirect: "error",
         },
       );
-      const data: unknown = await response.json();
-      if (!response.ok || typeof data !== "object" || data === null)
+      if (response.status !== 200) {
+        await response.body?.cancel();
         throw new Error("Validator unavailable");
+      }
+      const data: unknown = await response.json();
+      // Only an unambiguous completed verdict can accept or reject the format.
+      if (
+        typeof data !== "object" ||
+        data === null ||
+        Array.isArray(data) ||
+        Object.keys(data).length !== 1
+      )
+        throw new Error("Invalid validator response");
       if (
         "format" in data &&
         (data.format === "PDF" ||

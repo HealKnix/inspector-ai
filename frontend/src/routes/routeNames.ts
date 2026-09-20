@@ -16,6 +16,9 @@ class RouteNames {
   PROTOCOLS = "/protocols";
   PROTOCOL_DETAILS = (protocolId: string) => `${this.PROTOCOLS}/${protocolId}`;
 
+  // Администрирование
+  ADMIN_MATRIX = "/admin/matrix";
+
   // Авторизация
   LOGIN = "/login";
   REGISTER = "/register";

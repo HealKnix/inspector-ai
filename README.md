@@ -19,6 +19,8 @@ Bun-workspace с React-приложением, NestJS API и контейнер�
 
 Устройство контура парсинга, контракты и диагностические команды подробнее
 описаны в [инструкции парсинга](docs/document-parsing.md).
+Классификация ПД/РД/ИД по правилам и через OpenRouter/Ollama описана в
+[инструкции классификации](docs/document-classification.md).
 
 ## Планирование и выполнение OpenSpec
 
@@ -59,19 +61,20 @@ Bun-workspace с React-приложением, NestJS API и контейнер�
 
 Полный контур состоит не только из PostgreSQL и RabbitMQ:
 
-| Сервис           | Назначение                                       |
-| ---------------- | ------------------------------------------------ |
-| `postgres`       | База данных приложения                           |
-| `rabbitmq`       | Очереди приёма документов и событий              |
-| `redis`          | Временный кеш результатов парсинга               |
-| `clamav`         | Антивирусная проверка загружаемых файлов         |
-| `validator`      | Изолированная проверка структуры PDF, DOCX и XML |
-| `parser`         | OCR и структурный разбор документов              |
-| `migrate`        | Одноразовое применение миграций Prisma           |
-| `backend`        | NestJS API                                       |
-| `worker`         | Outbox и контроль целостности оригиналов         |
-| `parsing-worker` | Получение заданий из RabbitMQ и вызов парсера    |
-| `frontend`       | Production-сборка React за Nginx                 |
+| Сервис                  | Назначение                                       |
+| ----------------------- | ------------------------------------------------ |
+| `postgres`              | База данных приложения                           |
+| `rabbitmq`              | Очереди приёма документов и событий              |
+| `redis`                 | Временный кеш результатов парсинга               |
+| `clamav`                | Антивирусная проверка загружаемых файлов         |
+| `validator`             | Изолированная проверка структуры PDF, DOCX и XML |
+| `parser`                | OCR и структурный разбор документов              |
+| `migrate`               | Одноразовое применение миграций Prisma           |
+| `backend`               | NestJS API                                       |
+| `worker`                | Outbox и контроль целостности оригиналов         |
+| `parsing-worker`        | Получение заданий из RabbitMQ и вызов парсера    |
+| `classification-worker` | Классификация ПД/РД/ИД по сохранённому тексту    |
+| `frontend`              | Production-сборка React за Nginx                 |
 
 `parser-models` — отдельный служебный сервис профиля `tools`. Он загружает OCR-модели
 в именованный volume и не запускается обычной командой `docker compose up`.
@@ -332,7 +335,7 @@ bun run --cwd backend build
 `backend/src/generated/prisma`. Команда `prisma:deploy` применяет уже
 зафиксированные миграции из `backend/prisma/migrations` и не создаёт новые.
 
-`worker` и `parsing-worker` запускаются из `backend/dist`, поэтому сборка обязательна.
+`worker`, `parsing-worker` и `classification-worker` запускаются из `backend/dist`, поэтому сборка обязательна.
 После изменения их исходников повторите `bun run --cwd backend build` и перезапустите
 соответствующий процесс.
 
@@ -569,44 +572,64 @@ docker compose --env-file .env \
 
 ### Локальная разработка
 
-| Файл            | Переменная                    | Назначение                                                |
-| --------------- | ----------------------------- | --------------------------------------------------------- |
-| `frontend/.env` | `VITE_API_URL`                | Базовый URL API, по умолчанию `http://localhost:3000/api` |
-| `backend/.env`  | `DATABASE_URL`                | PostgreSQL connection string для процесса на хосте        |
-| `backend/.env`  | `FRONTEND_URL`                | Разрешённый CORS origin frontend                          |
-| `backend/.env`  | `JWT_SECRET`                  | Секрет access token, минимум 32 символа                   |
-| `backend/.env`  | `JWT_REFRESH_SECRET`          | Отдельный секрет refresh token, минимум 32 символа        |
-| `backend/.env`  | `JWT_ACCESS_TTL`              | Срок access token, по умолчанию `20m`                     |
-| `backend/.env`  | `JWT_REFRESH_TTL`             | Срок refresh token, по умолчанию `7d`                     |
-| `backend/.env`  | `NODE_ENV`                    | Режим `development`, `production` или `test`              |
-| `backend/.env`  | `PORT`                        | Порт NestJS, по умолчанию `3000`                          |
-| `backend/.env`  | `TRUST_PROXY_HOPS`            | Число доверенных proxy-hop, локально `0`                  |
-| `backend/.env`  | `STORAGE_ROOT`                | Корень хранилища документов                               |
-| `backend/.env`  | `CLAMAV_HOST/PORT`            | Адрес ClamAV                                              |
-| `backend/.env`  | `FILE_VALIDATOR_URL`          | URL изолированного валидатора                             |
-| `backend/.env`  | `RABBITMQ_URL`                | URL RabbitMQ                                              |
-| `backend/.env`  | `PARSER_URL`                  | URL parser proxy                                          |
-| `backend/.env`  | `PARSER_TOKEN`                | Отдельный секрет доступа к парсеру, минимум 32 символа    |
-| `backend/.env`  | `PARSER_FILE_TIMEOUT_SECONDS` | Таймаут обработки одного файла                            |
-| `backend/.env`  | `REDIS_URL`                   | URL Redis                                                 |
+| Файл            | Переменная                       | Назначение                                                    |
+| --------------- | -------------------------------- | ------------------------------------------------------------- |
+| `frontend/.env` | `VITE_API_URL`                   | Базовый URL API, по умолчанию `http://localhost:3000/api`     |
+| `backend/.env`  | `DATABASE_URL`                   | PostgreSQL connection string для процесса на хосте            |
+| `backend/.env`  | `FRONTEND_URL`                   | Разрешённый CORS origin frontend                              |
+| `backend/.env`  | `JWT_SECRET`                     | Секрет access token, минимум 32 символа                       |
+| `backend/.env`  | `JWT_REFRESH_SECRET`             | Отдельный секрет refresh token, минимум 32 символа            |
+| `backend/.env`  | `JWT_ACCESS_TTL`                 | Срок access token, по умолчанию `20m`                         |
+| `backend/.env`  | `JWT_REFRESH_TTL`                | Срок refresh token, по умолчанию `7d`                         |
+| `backend/.env`  | `NODE_ENV`                       | Режим `development`, `production` или `test`                  |
+| `backend/.env`  | `PORT`                           | Порт NestJS, по умолчанию `3000`                              |
+| `backend/.env`  | `TRUST_PROXY_HOPS`               | Число доверенных proxy-hop, локально `0`                      |
+| `backend/.env`  | `STORAGE_ROOT`                   | Корень хранилища документов                                   |
+| `backend/.env`  | `CLAMAV_HOST/PORT`               | Адрес ClamAV                                                  |
+| `backend/.env`  | `FILE_VALIDATOR_URL`             | URL изолированного валидатора                                 |
+| `backend/.env`  | `FILE_VALIDATOR_TIMEOUT_SECONDS` | Общий бюджет проверки структуры файла: 180 с, диапазон 25–300 |
+| `backend/.env`  | `RABBITMQ_URL`                   | URL RabbitMQ                                                  |
+| `backend/.env`  | `PARSER_URL`                     | URL parser proxy                                              |
+| `backend/.env`  | `PARSER_TOKEN`                   | Отдельный секрет доступа к парсеру, минимум 32 символа        |
+| `backend/.env`  | `PARSER_FILE_TIMEOUT_SECONDS`    | Таймаут обработки одного файла                                |
+| `backend/.env`  | `REDIS_URL`                      | URL Redis                                                     |
 
 ### Docker Compose
 
-| Переменная в корневом `.env`  | Назначение                                                        |
-| ----------------------------- | ----------------------------------------------------------------- |
-| `POSTGRES_DB`                 | Имя базы данных                                                   |
-| `POSTGRES_USER`               | Пользователь PostgreSQL                                           |
-| `POSTGRES_PASSWORD`           | Пароль PostgreSQL                                                 |
-| `POSTGRES_PORT`               | Опубликованный порт PostgreSQL; в текущем Compose оставьте `5432` |
-| `JWT_SECRET`                  | Секрет access token                                               |
-| `JWT_REFRESH_SECRET`          | Секрет refresh token                                              |
-| `JWT_ACCESS_TTL`              | Срок access token                                                 |
-| `JWT_REFRESH_TTL`             | Срок refresh token                                                |
-| `PARSER_TOKEN`                | Отдельный секрет доступа к парсеру                                |
-| `PARSER_FILE_TIMEOUT_SECONDS` | Таймаут обработки одного файла                                    |
-| `PARSER_CPU_THREADS`          | Число CPU-потоков PaddleOCR                                       |
-| `FRONTEND_URL`                | Публичный origin для deployment override                          |
-| `TRUST_PROXY_HOPS`            | Число доверенных proxy-hop для deployment override                |
+| Переменная в корневом `.env`     | Назначение                                                                  |
+| -------------------------------- | --------------------------------------------------------------------------- |
+| `POSTGRES_DB`                    | Имя базы данных                                                             |
+| `POSTGRES_USER`                  | Пользователь PostgreSQL                                                     |
+| `POSTGRES_PASSWORD`              | Пароль PostgreSQL                                                           |
+| `POSTGRES_PORT`                  | Опубликованный порт PostgreSQL; в текущем Compose оставьте `5432`           |
+| `JWT_SECRET`                     | Секрет access token                                                         |
+| `JWT_REFRESH_SECRET`             | Секрет refresh token                                                        |
+| `JWT_ACCESS_TTL`                 | Срок access token                                                           |
+| `JWT_REFRESH_TTL`                | Срок refresh token                                                          |
+| `PARSER_TOKEN`                   | Отдельный секрет доступа к парсеру                                          |
+| `PARSER_FILE_TIMEOUT_SECONDS`    | Таймаут обработки одного файла                                              |
+| `PARSER_CPU_THREADS`             | Число CPU-потоков PaddleOCR                                                 |
+| `FILE_VALIDATOR_TIMEOUT_SECONDS` | Общий бюджет проверки структуры для backend и validator, по умолчанию 180 с |
+| `FRONTEND_URL`                   | Публичный origin для deployment override                                    |
+| `TRUST_PROXY_HOPS`               | Число доверенных proxy-hop для deployment override                          |
+
+`FILE_VALIDATOR_TIMEOUT_SECONDS` задаёт общий бюджет обоих проходов qpdf и
+проверки содержимого, а не отдельный тайм-аут для каждого прохода. Supervisor
+валидатора ждёт на 5 секунд дольше, backend — на 10 секунд. Значение должно
+совпадать в backend и validator; Compose передаёт его обоим сервисам.
+Тайм-аут, остановка процесса и внутренний сбой возвращают `validator_unavailable`:
+файл не принят, поскольку проверка не завершилась. `unsafe_format` возвращается
+при подтверждённом отклонении документа правилами проверки; незавершённая
+проверка qpdf сама по себе не доказывает опасность PDF.
+
+Compose запускает validator с `init: true`: после тайм-аута supervisor завершает
+всю группу процессов, а init освобождает завершённые дочерние процессы.
+При отдельном `docker run` также передавайте `--init`.
+
+Регрессионные тесты изолированного валидатора запускаются в его Linux-образе:
+`python -m unittest discover -s /tests -v`, где `backend/file-validator/`
+подключён read-only к `/tests`, а актуальный `validator.py` — к `/app/validator.py`.
+Тесты не требуют реальных документов или внешней сети.
 
 TTL принимает целое число секунд либо значение с суффиксом `s`, `m`, `h`, `d`
 или `w`: например `90s`, `15m`, `2h`, `7d`, `1w`. Срок access token должен быть
@@ -706,7 +729,7 @@ docker compose exec -e ADMIN_LOGIN -e ADMIN_PASSWORD backend bun backend/dist/ad
 
 ### Storage, проверка и worker
 
-Полный `docker compose up -d --build` запускает API, оба worker-процесса,
+Полный `docker compose up -d --build` запускает API, три worker-процесса,
 PostgreSQL, RabbitMQ, Redis, ClamAV, изолированный валидатор PDF/DOCX/XML и parser.
 До первого запуска parser нужно заполнить volume моделей командой из раздела
 «Быстрый запуск». Начальная загрузка сигнатур ClamAV может занять несколько минут;

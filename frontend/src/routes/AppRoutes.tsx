@@ -52,6 +52,11 @@ const ProtocolDetailsPage = lazy(() =>
     default: module.ProtocolDetailsPage,
   })),
 );
+const AdminMatrixPage = lazy(() =>
+  import("@/pages/admin/AdminMatrixPage").then((module) => ({
+    default: module.AdminMatrixPage,
+  })),
+);
 
 export function AppRoutes() {
   const currentUserQuery = useCurrentUser();
@@ -139,6 +144,12 @@ export function AppRoutes() {
               element={<ObjectDetailsPage />}
               path={routeNames.OBJECT_DETAILS(":objectId")}
             />
+            <Route element={<RoleGuard roles={Role.ADMINISTRATOR} />}>
+              <Route
+                element={<AdminMatrixPage />}
+                path={routeNames.ADMIN_MATRIX}
+              />
+            </Route>
           </Route>
         </Route>
         <Route

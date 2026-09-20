@@ -1,6 +1,8 @@
 import { Button } from "@heroui/react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
+import { useClassificationStatus } from "@/api/hooks/use-classification";
+import { useExtractions } from "@/api/hooks/use-extraction";
 import { useFiles, useObject } from "@/api/hooks/use-objects";
 import { useParsingStatus } from "@/api/hooks/use-parsing";
 import { Role } from "@/api/types/auth";
@@ -9,11 +11,13 @@ import { UploadIcon } from "@/components/UploadIcon";
 import { ConstrainedLayout, PageHeader } from "@/layouts/ConstrainedLayout";
 import routeNames from "@/routes/routeNames";
 import { useAuthSessionStore } from "@/store/auth-session";
+import { ClassificationPanel } from "./components/ClassificationPanel";
 import { DocumentUploader } from "./components/DocumentUploader";
 import {
   DocumentViewer,
   type DocumentViewState,
 } from "./components/DocumentViewer";
+import { ExtractionPanel } from "./components/ExtractionPanel";
 import { FilesTable } from "./components/FilesTable";
 import { ParsingPanel } from "./components/ParsingPanel";
 
@@ -35,6 +39,16 @@ export function ObjectDetailsPage() {
   const data = object.isError ? undefined : object.data;
   const parsing = useParsingStatus(objectId, Boolean(data));
   const parsingData = parsing.isError ? undefined : parsing.data;
+  const classification = useClassificationStatus(
+    objectId,
+    parsingData,
+    Boolean(data) && !parsing.isError,
+  );
+  const extraction = useExtractions(
+    objectId,
+    parsingData?.active ?? false,
+    Boolean(data) && !parsing.isError,
+  );
   const selectedFileId = params.get("file");
   const selectedFile = parsingData?.items.find(
     (file) => file.file_id === selectedFileId,
@@ -183,6 +197,41 @@ export function ObjectDetailsPage() {
             objectId={objectId}
             query={parsing}
             onOpen={openDocument}
+          />
+          <ClassificationPanel
+            key={objectId}
+            objectId={objectId}
+            query={classification}
+            parsingFiles={parsingData?.items}
+            onEvidence={(file, evidence) => {
+              setParams((current) => {
+                current.set("file", file.file_id);
+                current.set("documentPage", String(evidence.page_number));
+                current.set("documentView", "fragments");
+                current.set("documentText", "normalized_text");
+                current.set("documentBlock", evidence.block_id);
+                current.delete("documentRegion");
+                return current;
+              });
+            }}
+          />
+          <ExtractionPanel
+            key={`extraction:${objectId}`}
+            objectId={objectId}
+            query={extraction}
+            onEvidence={(_item, evidence) => {
+              setParams((current) => {
+                current.set("file", evidence.file_id);
+                current.set("documentPage", String(evidence.page_number));
+                current.set("documentView", "fragments");
+                current.set("documentText", "normalized_text");
+                if (evidence.block_id)
+                  current.set("documentBlock", evidence.block_id);
+                else current.delete("documentBlock");
+                current.delete("documentRegion");
+                return current;
+              });
+            }}
           />
           {selectedFile?.state === "succeeded" && selectedFile.artifact_id && (
             <DocumentViewer
