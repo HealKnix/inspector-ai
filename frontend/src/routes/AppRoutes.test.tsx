@@ -1,4 +1,10 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { useParams } from "react-router-dom";
 
 import { Role, type UserDto } from "@/api/types/auth";
@@ -72,9 +78,6 @@ vi.mock("@/pages/objects/ObjectsPage", async () => {
     ),
   };
 });
-vi.mock("@/pages/object-details/ObjectDetailsPage", () => ({
-  ObjectDetailsPage: () => <p>Карточка объекта {useParams().objectId}</p>,
-}));
 vi.mock("@/pages/protocols/ProtocolsPage", () => ({
   ProtocolsPage: () => <p>Список протоколов</p>,
 }));
@@ -101,39 +104,43 @@ describe("AppRoutes", () => {
     window.localStorage.clear();
   });
 
-  it.each([
-    [routeNames.OBJECTS, "Список объектов"],
-    [
-      routeNames.OBJECT_DETAILS("synthetic-id"),
-      "Карточка объекта synthetic-id",
-    ],
-  ])(
-    "открывает маршрут объектов %s без подмены dashboard",
-    async (path, label) => {
-      window.history.replaceState({}, "", path);
-      useAuthSessionStore.setState({
-        accessToken: "access-token",
-        initialized: true,
-        user,
-      });
-      render(
-        <AppProviders>
-          <AppRoutes />
-        </AppProviders>,
-      );
-      expect(await screen.findByText(label)).toBeInTheDocument();
-      expect(
-        screen.queryByText("Проверка комплекта документов"),
-      ).not.toBeInTheDocument();
-    },
-  );
+  it("открывает маршрут объектов без подмены dashboard", async () => {
+    window.history.replaceState({}, "", routeNames.OBJECTS);
+    useAuthSessionStore.setState({
+      accessToken: "access-token",
+      initialized: true,
+      user,
+    });
+    render(
+      <AppProviders>
+        <AppRoutes />
+      </AppProviders>,
+    );
+    expect(await screen.findByText("Список объектов")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Проверка комплекта документов"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("перенаправляет карточку объекта на страницу загрузки", async () => {
+    window.history.replaceState({}, "", "/objects/synthetic-id");
+    useAuthSessionStore.setState({
+      accessToken: "access-token",
+      initialized: true,
+      user,
+    });
+    render(
+      <AppProviders>
+        <AppRoutes />
+      </AppProviders>,
+    );
+    await waitFor(() =>
+      expect(window.location.pathname).toBe("/objects/synthetic-id/upload"),
+    );
+  });
 
   it("закрывает прямую ссылку на объект для гостя", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      routeNames.OBJECT_DETAILS("synthetic-id"),
-    );
+    window.history.replaceState({}, "", "/objects/synthetic-id");
     useAuthSessionStore.setState({
       accessToken: null,
       initialized: true,
@@ -146,7 +153,7 @@ describe("AppRoutes", () => {
     );
     expect(await screen.findByText("Страница входа")).toBeInTheDocument();
     expect(
-      screen.queryByText("Карточка объекта synthetic-id"),
+      screen.queryByText("Загрузка документов"),
     ).not.toBeInTheDocument();
   });
 

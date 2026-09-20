@@ -1,3 +1,4 @@
+import { generateExpectedPackage } from "@/api/endpoints/completeness";
 import { createObject, listObjects } from "@/api/endpoints/objects";
 import routeNames from "@/routes/routeNames";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -10,6 +11,13 @@ vi.mock("@/api/endpoints/objects", () => ({
   createObject: vi.fn(),
   listObjects: vi.fn(),
 }));
+vi.mock("@/api/endpoints/completeness", () => ({
+  getExpectedPackage: vi.fn(),
+  generateExpectedPackage: vi.fn(),
+  confirmExpectedPackage: vi.fn(),
+  evaluateCompleteness: vi.fn(),
+  getCompletenessResult: vi.fn(),
+}));
 afterEach(() => vi.clearAllMocks());
 function mount() {
   const client = new QueryClient({
@@ -21,8 +29,8 @@ function mount() {
         <Routes>
           <Route path={routeNames.OBJECTS} element={<ObjectsPage />} />
           <Route
-            path={routeNames.OBJECT_DETAILS(":objectId")}
-            element={<p>Карточка созданного объекта</p>}
+            path={routeNames.OBJECT_UPLOAD(":objectId")}
+            element={<p>Страница загрузки созданного объекта</p>}
           />
         </Routes>
       </MemoryRouter>
@@ -52,12 +60,27 @@ describe("object entry point", () => {
       screen.getByRole("textbox", { name: /Название объекта/ }),
       { target: { value: "  Корпус 1  " } },
     );
+    vi.mocked(generateExpectedPackage).mockResolvedValue({
+      schema_version: 1,
+      object_id: "84831c2d-9aad-4b60-9bea-4caed0a19a53",
+      package_version: 1,
+      status: "proposed",
+      requirements: 35,
+      list_items: 0,
+      extracted_candidates: 0,
+    });
     fireEvent.click(screen.getByRole("button", { name: "Создать объект" }));
     await waitFor(() =>
       expect(createObject).toHaveBeenCalledWith("Корпус 1", expect.anything()),
     );
+    await waitFor(() =>
+      expect(generateExpectedPackage).toHaveBeenCalledWith({
+        objectId: "84831c2d-9aad-4b60-9bea-4caed0a19a53",
+        attributes: {},
+      }),
+    );
     expect(
-      await screen.findByText("Карточка созданного объекта"),
+      await screen.findByText("Страница загрузки созданного объекта"),
     ).toBeInTheDocument();
   });
   it("does not expose creation when the API denies the action", async () => {

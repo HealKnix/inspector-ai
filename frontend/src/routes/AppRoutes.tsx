@@ -1,6 +1,6 @@
 import { Alert, Button, Spinner } from "@heroui/react";
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { useCurrentUser } from "@/api/hooks/use-auth";
 import { Role } from "@/api/types/auth";
@@ -37,11 +37,6 @@ const ObjectsPage = lazy(() =>
     default: module.ObjectsPage,
   })),
 );
-const ObjectDetailsPage = lazy(() =>
-  import("@/pages/object-details/ObjectDetailsPage").then((module) => ({
-    default: module.ObjectDetailsPage,
-  })),
-);
 const ProtocolsPage = lazy(() =>
   import("@/pages/protocols/ProtocolsPage").then((module) => ({
     default: module.ProtocolsPage,
@@ -57,6 +52,11 @@ const AdminMatrixPage = lazy(() =>
     default: module.AdminMatrixPage,
   })),
 );
+
+function ObjectRedirect() {
+  const { objectId = "" } = useParams();
+  return <Navigate replace to={routeNames.OBJECT_UPLOAD(objectId)} />;
+}
 
 export function AppRoutes() {
   const currentUserQuery = useCurrentUser();
@@ -140,10 +140,7 @@ export function AppRoutes() {
               />
             </Route>
             <Route element={<ObjectsPage />} path={routeNames.OBJECTS} />
-            <Route
-              element={<ObjectDetailsPage />}
-              path={routeNames.OBJECT_DETAILS(":objectId")}
-            />
+            <Route element={<ObjectRedirect />} path="objects/:objectId" />
             <Route element={<RoleGuard roles={Role.ADMINISTRATOR} />}>
               <Route
                 element={<AdminMatrixPage />}

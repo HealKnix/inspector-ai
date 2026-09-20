@@ -48,8 +48,8 @@ function StructurePopover() {
             <dd className="text-copy-muted">Исполнительная документация</dd>
           </dl>
           <p className="text-copy-muted border-border mt-3 border-t pt-3 text-xs leading-5">
-            Эталонный состав объекта не подключён: комплектность оценивается
-            только по подтверждённым количествам файлов.
+            Эталонный состав задаётся атрибутами объекта и подтверждается
+            инспектором в панели «Комплектность документации».
           </p>
         </Popover.Dialog>
       </Popover.Content>
@@ -72,7 +72,7 @@ export function UploadHeader({ backHref, objectName }: UploadHeaderProps) {
         </>
       }
       backHref={backHref}
-      backLabel="К объекту"
+      backLabel="К объектам"
       description={
         <>
           Объект: <span className="text-foreground">{objectName}</span>.

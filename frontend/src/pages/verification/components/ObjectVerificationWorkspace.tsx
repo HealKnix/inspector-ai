@@ -212,7 +212,7 @@ export function ObjectVerificationWorkspace({
   return (
     <ConstrainedLayout>
       <PageHeader
-        backHref={routeNames.OBJECT_DETAILS(objectId)}
+        backHref={routeNames.OBJECT_UPLOAD(objectId)}
         backLabel="Вернуться к объекту"
         breadcrumbs={["Проверки", object.name, "Метаданные и страницы"]}
         badge="Инспектор"

@@ -10,6 +10,10 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import { getClassificationStatus } from "@/api/endpoints/classification";
 import {
+  getCompletenessResult,
+  getExpectedPackage,
+} from "@/api/endpoints/completeness";
+import {
   getObject,
   getReceipt,
   listFiles,
@@ -43,6 +47,13 @@ vi.mock("@/api/endpoints/parsing", () => ({
 vi.mock("@/api/endpoints/classification", () => ({
   getClassificationStatus: vi.fn(),
   retryClassification: vi.fn(),
+}));
+vi.mock("@/api/endpoints/completeness", () => ({
+  getExpectedPackage: vi.fn(),
+  generateExpectedPackage: vi.fn(),
+  confirmExpectedPackage: vi.fn(),
+  evaluateCompleteness: vi.fn(),
+  getCompletenessResult: vi.fn(),
 }));
 
 const object: ConstructionObject = {
@@ -213,6 +224,23 @@ beforeEach(() => {
   });
   vi.mocked(getParsingStatus).mockResolvedValue(parsingStatus);
   vi.mocked(getClassificationStatus).mockResolvedValue(classificationStatus);
+  vi.mocked(getExpectedPackage).mockResolvedValue({
+    schema_version: 1,
+    object_id: object.id,
+    package: null,
+    package_absent_reason: "not_generated",
+  });
+  vi.mocked(getCompletenessResult).mockResolvedValue({
+    schema_version: 1,
+    object_id: object.id,
+    process_id: null,
+    run_id: null,
+    package_version: null,
+    framework_version: null,
+    evaluated_at: null,
+    evaluation: null,
+    evaluation_absent_reason: "Нет подтверждённого перечня",
+  });
 });
 
 describe("DocumentUploadPage", () => {
@@ -278,11 +306,8 @@ describe("DocumentUploadPage", () => {
       0,
     );
     expect(
-      screen.getByText(
-        "Добавьте документы для предварительной оценки состава.",
-      ),
+      await screen.findByText(/Ожидаемый состав ещё не сформирован/),
     ).toBeInTheDocument();
-    expect(screen.getAllByText("Нет файлов")).toHaveLength(3);
     expect(
       screen.getByRole("button", { name: "Загрузить документы" }),
     ).toBeDisabled();

@@ -1,8 +1,16 @@
+import { generateExpectedPackage } from "@/api/endpoints/completeness";
 import { useCreateObject } from "@/api/hooks/use-objects";
+import { AttributesEditor } from "@/components/AttributesEditor";
+import {
+  draftToAttributes,
+  emptyAttributesDraft,
+  type AttributesDraft,
+} from "@/components/attributes-draft";
 import { UploadIcon } from "@/components/UploadIcon";
 import routeNames from "@/routes/routeNames";
 import { Button, FieldError, Input, Label, TextField } from "@heroui/react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -18,6 +26,9 @@ const schema = z.object({
 export function CreateObjectForm() {
   const mutation = useCreateObject();
   const navigate = useNavigate();
+  const [attributes, setAttributes] = useState<AttributesDraft>(
+    emptyAttributesDraft,
+  );
   const { control, handleSubmit } = useForm({
     defaultValues: { name: "" },
     resolver: zodResolver(schema),
@@ -25,7 +36,14 @@ export function CreateObjectForm() {
   const submit = handleSubmit(({ name }) =>
     mutation.mutate(name, {
       onSuccess: (object) => {
-        void navigate(routeNames.OBJECT_DETAILS(object.id));
+        void generateExpectedPackage({
+          objectId: object.id,
+          attributes: draftToAttributes(attributes),
+        })
+          .catch(() => undefined)
+          .finally(() => {
+            void navigate(routeNames.OBJECT_UPLOAD(object.id));
+          });
       },
     }),
   );
@@ -39,7 +57,7 @@ export function CreateObjectForm() {
       <div>
         <h2 className="text-lg font-semibold">Новый объект</h2>
         <p className="text-copy-muted mt-1 text-sm leading-6">
-          Создайте карточку объекта и добавьте первый комплект документов.
+          Создайте карточку объекта и задайте эталонный состав документации.
         </p>
       </div>
       <Controller
@@ -58,6 +76,7 @@ export function CreateObjectForm() {
           </TextField>
         )}
       />
+      <AttributesEditor draft={attributes} onChange={setAttributes} />
       {mutation.error && (
         <p role="alert" className="text-danger">
           {mutation.error.message}

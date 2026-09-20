@@ -340,7 +340,7 @@ export function DocumentUploadPage() {
     <ConstrainedLayout>
       <div className="pb-12">
         <UploadHeader
-          backHref={routeNames.OBJECT_DETAILS(objectId)}
+          backHref={routeNames.OBJECTS}
           objectName={object.name}
         />
 
@@ -414,13 +414,10 @@ export function DocumentUploadPage() {
           </div>
 
           <div className="min-[1100px]:col-span-4">
-            <CompletenessPanel
-              hasDocuments={summary.totalFiles > 0}
-              stageCounts={summary.stageCounts}
-            />
+            <MetadataAssistant needsReviewCount={summary.needsReviewCount} />
           </div>
 
-          <div className="min-w-0 min-[1100px]:col-span-8">
+          <div className="min-w-0 min-[1100px]:col-span-12">
             {mismatchCount > 0 && (
               <div
                 role="alert"
@@ -461,8 +458,8 @@ export function DocumentUploadPage() {
             )}
           </div>
 
-          <div className="min-[1100px]:col-span-4">
-            <MetadataAssistant needsReviewCount={summary.needsReviewCount} />
+          <div className="min-[1100px]:col-span-12">
+            <CompletenessPanel objectId={objectId} />
           </div>
         </div>
       </div>

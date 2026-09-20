@@ -110,7 +110,7 @@ function renderSidebar(
 describe("WorkspaceSidebar", () => {
   it("выделяет раздел объектов в карточке и возвращает к списку", () => {
     installMatchMedia();
-    renderSidebar(routeNames.OBJECT_DETAILS("synthetic-id"));
+    renderSidebar(routeNames.OBJECT_UPLOAD("synthetic-id"));
     const objectsButton = screen.getByRole("button", { name: "Объекты" });
     expect(objectsButton).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(objectsButton);

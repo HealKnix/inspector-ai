@@ -3,8 +3,6 @@ class RouteNames {
 
   // Объекты
   OBJECTS = "/objects";
-  OBJECT_DETAILS = (id: string, search?: string) =>
-    `${this.OBJECTS}/${id}${search ?? ""}`;
 
   // Документы
   OBJECT_UPLOAD = (id: string) => `${this.OBJECTS}/${id}/upload`;
