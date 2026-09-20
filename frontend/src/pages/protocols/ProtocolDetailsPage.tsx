@@ -224,7 +224,7 @@ export function ProtocolDetailsPage() {
       </div>
 
       <div
-        className="border-border bg-accent/5 text-copy-muted mt-4 flex items-start gap-3 rounded-2xl border px-4 py-3 text-xs leading-5"
+        className="bg-accent/10 text-accent mt-4 flex items-start gap-3 rounded-2xl px-4 py-3 text-xs leading-5"
         role="note"
       >
         <UploadIcon

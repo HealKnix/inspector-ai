@@ -102,7 +102,7 @@ export function FileDropzone({
           <br className="hidden sm:block" /> или выберите файлы на компьютере.
         </p>
 
-        <div className="mt-6 flex w-full max-w-md flex-col gap-2.5 sm:flex-row sm:justify-center">
+        <div className="mt-6 flex w-full max-w-md flex-wrap justify-center gap-2.5">
           <Button
             className="rounded-xl sm:min-w-44"
             isDisabled={isDisabled}

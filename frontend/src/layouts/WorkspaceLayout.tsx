@@ -35,7 +35,7 @@ export function WorkspaceLayout() {
   };
 
   return (
-    <div className="flex h-svh min-w-80 overflow-hidden">
+    <div className="bg-surface flex h-svh min-w-80 overflow-hidden">
       {isMobile ? null : <WorkspaceSidebar {...sidebarProps} />}
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -49,7 +49,7 @@ export function WorkspaceLayout() {
           </header>
         ) : null}
 
-        <main className="relative flex min-h-0 min-w-0 flex-1">
+        <main className="bg-background border-border relative flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-3xl min-[761px]:m-2 min-[761px]:ml-0 min-[761px]:border">
           <Suspense
             fallback={
               <div

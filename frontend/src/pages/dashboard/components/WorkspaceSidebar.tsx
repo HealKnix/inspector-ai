@@ -344,7 +344,7 @@ export function WorkspaceSidebar(props: SidebarSharedProps) {
     <aside
       aria-label="Боковая панель"
       className={cn(
-        "border-border bg-surface hidden h-svh shrink-0 flex-col border-r py-3 transition-[width] duration-200 *:px-3 min-[761px]:flex",
+        "bg-surface hidden h-svh shrink-0 flex-col py-3 transition-[width] duration-200 *:px-3 min-[761px]:flex sm:py-5",
         isCollapsed ? "w-[72px]" : "w-[var(--sidebar-width)]",
       )}
       data-collapsed={isCollapsed}
@@ -368,7 +368,7 @@ export function WorkspaceSidebar(props: SidebarSharedProps) {
           <>
             <div className="flex min-w-0 flex-1 items-center gap-2 pl-2">
               <BrandMark className="text-accent size-8 shrink-0" />
-              <p className="truncate text-sm font-medium">
+              <p className="truncate font-medium">
                 Инспектор <span className="text-accent font-semibold">ИИ</span>
               </p>
             </div>
