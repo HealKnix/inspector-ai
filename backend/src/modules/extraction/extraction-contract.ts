@@ -1,6 +1,6 @@
 import { record } from "../parsing/parsing-contract.js";
 
-export const EXTRACTION_ENGINE_VERSION = "extraction-engine-v1";
+export const EXTRACTION_ENGINE_VERSION = "extraction-engine-v2";
 
 export type ExtractionStatus =
   "extracted" | "ambiguous" | "no_evidence" | "unreadable" | "unsupported";
