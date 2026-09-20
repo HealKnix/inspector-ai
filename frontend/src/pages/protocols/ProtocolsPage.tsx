@@ -12,10 +12,10 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { UploadIcon } from "@/components/UploadIcon";
 import { PROTOCOL_FIXTURE_NOTICE } from "@/data/protocols";
+import { ConstrainedLayout, PageHeader } from "@/layouts/ConstrainedLayout";
 import routeNames from "@/routes/routeNames";
 import { useProtocolStore } from "@/store/protocols";
 
-import { ConstrainedLayout } from "../../layouts/ConstrainedLayout";
 import { filterProtocols, formatProtocolDate } from "./lib/protocols";
 
 const ALL_OBJECTS_KEY = "all";
@@ -69,31 +69,13 @@ export function ProtocolsPage() {
 
   return (
     <ConstrainedLayout>
-      <header>
-        <Link
-          className="text-copy-muted hover:text-accent inline-flex items-center gap-2 text-sm"
-          to={routeNames.ROOT}
-        >
-          <UploadIcon className="size-4" name="arrow-left" />
-          Рабочая область
-        </Link>
-        <h1 className="mt-5 text-[clamp(2rem,3.2vw,3.25rem)] leading-[1.02] font-semibold tracking-[-0.045em]">
-          Протоколы
-        </h1>
-        <p className="text-copy-muted mt-3 max-w-3xl text-sm leading-6 sm:text-base">
-          Сводные документы по завершённым демонстрационным проверкам. Выберите
-          объект или найдите нужный протокол.
-        </p>
-        <div
-          className="bg-accent/5 text-copy-muted mt-4 flex w-fit max-w-3xl items-start gap-2 rounded-xl px-3 py-2 text-xs leading-5"
-          role="note"
-        >
-          <span className="bg-accent/10 text-accent shrink-0 rounded-md px-2 py-0.5 font-semibold">
-            ДЕМО
-          </span>
-          <span>{PROTOCOL_FIXTURE_NOTICE}</span>
-        </div>
-      </header>
+      <PageHeader
+        backHref={routeNames.ROOT}
+        description="Сводные документы по завершённым демонстрационным проверкам. Выберите объект или найдите нужный протокол."
+        notice={PROTOCOL_FIXTURE_NOTICE}
+        noticeLabel="ДЕМО"
+        title="Протоколы"
+      />
 
       <section
         aria-labelledby="protocols-list-title"
@@ -123,10 +105,10 @@ export function ProtocolsPage() {
             >
               <Label>Объект</Label>
               <Select.Trigger className="rounded-xl">
-                <Select.Value />
+                <Select.Value className="max-w-full truncate" />
                 <Select.Indicator />
               </Select.Trigger>
-              <Select.Popover>
+              <Select.Popover className="not-sm:max-w-0">
                 <ListBox>
                   <ListBox.Item id={ALL_OBJECTS_KEY} textValue="Все объекты">
                     Все объекты
@@ -137,9 +119,10 @@ export function ProtocolsPage() {
                       id={object.id}
                       key={object.id}
                       textValue={object.name}
+                      className="data-selected:text-accent data-selected:bg-accent/10 flex gap-2 data-selected:[&>p]:pr-4"
                     >
-                      {object.name}
-                      <ListBox.ItemIndicator />
+                      <p className="min-w-0 flex-1 truncate">{object.name}</p>
+                      <ListBox.ItemIndicator className="text-accent" />
                     </ListBox.Item>
                   ))}
                 </ListBox>

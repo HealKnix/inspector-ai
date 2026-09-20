@@ -1,12 +1,12 @@
 import { Button } from "@heroui/react";
 import { useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { UploadIcon } from "@/components/UploadIcon";
+import { ConstrainedLayout, PageHeader } from "@/layouts/ConstrainedLayout";
 import routeNames from "@/routes/routeNames";
 import { useProtocolStore } from "@/store/protocols";
 
-import { ConstrainedLayout } from "../../layouts/ConstrainedLayout";
 import { ProtocolFindings } from "./components/ProtocolFindings";
 import { formatProtocolDate, getProtocolSummary } from "./lib/protocols";
 
@@ -88,37 +88,16 @@ export function ProtocolDetailsPage() {
 
   return (
     <ConstrainedLayout>
-      <header>
-        <Link
-          className="text-copy-muted hover:text-accent inline-flex items-center gap-2 text-sm"
-          to={routeNames.PROTOCOLS}
-        >
-          <UploadIcon className="size-4" name="arrow-left" />
-          Все протоколы
-        </Link>
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <h1 className="text-[clamp(2rem,3.2vw,3.25rem)] leading-[1.02] font-semibold tracking-[-0.045em]">
-            Протокол
-          </h1>
-          <span className="bg-accent/10 text-accent inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold">
-            <UploadIcon className="size-3.5" name="check" />
-            Сформирован
-          </span>
-        </div>
-        <p className="text-copy-muted mt-3 max-w-3xl text-sm leading-6 sm:text-base">
-          Сводный демонстрационный протокол по результатам проверки комплекта
-          документов.
-        </p>
-        <div
-          className="bg-accent/5 text-copy-muted mt-4 flex w-fit max-w-4xl items-start gap-2 rounded-xl px-3 py-2 text-xs leading-5"
-          role="note"
-        >
-          <span className="bg-accent/10 text-accent shrink-0 rounded-md px-2 py-0.5 font-semibold">
-            ДЕМО
-          </span>
-          <span>{protocol.fixtureNotice}</span>
-        </div>
-      </header>
+      <PageHeader
+        backHref={routeNames.PROTOCOLS}
+        backLabel="Все протоколы"
+        badge="Сформирован"
+        badgeIcon="check"
+        description="Сводный демонстрационный протокол по результатам проверки комплекта документов."
+        notice={protocol.fixtureNotice}
+        noticeLabel="ДЕМО"
+        title="Протокол"
+      />
 
       <section
         aria-label="Сведения о протоколе"

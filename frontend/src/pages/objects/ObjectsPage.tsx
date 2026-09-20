@@ -3,8 +3,8 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import { useObjects } from "@/api/hooks/use-objects";
 import { UploadIcon } from "@/components/UploadIcon";
+import { ConstrainedLayout, PageHeader } from "@/layouts/ConstrainedLayout";
 import routeNames from "@/routes/routeNames";
-import { ConstrainedLayout } from "../../layouts/ConstrainedLayout";
 import { CreateObjectForm } from "./components/CreateObjectForm";
 
 export function ObjectsPage() {
@@ -19,22 +19,11 @@ export function ObjectsPage() {
 
   return (
     <ConstrainedLayout>
-      <header>
-        <Link
-          className="text-copy-muted hover:text-accent inline-flex items-center gap-2 text-sm"
-          to={routeNames.ROOT}
-        >
-          <UploadIcon className="size-4" name="arrow-left" />
-          Рабочая область
-        </Link>
-        <h1 className="mt-5 text-[clamp(2rem,3.2vw,3.25rem)] leading-[1.02] font-semibold tracking-[-0.045em]">
-          Объекты строительства
-        </h1>
-        <p className="text-copy-muted mt-3 max-w-3xl text-sm leading-6 sm:text-base">
-          Выберите объект, чтобы загрузить документы и открыть сохранённые
-          оригиналы.
-        </p>
-      </header>
+      <PageHeader
+        backHref={routeNames.ROOT}
+        description="Выберите объект, чтобы загрузить документы и открыть сохранённые оригиналы."
+        title="Объекты строительства"
+      />
 
       <div className="grid items-stretch gap-4 lg:grid-cols-3">
         <section

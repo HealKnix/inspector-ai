@@ -114,21 +114,22 @@ export function ParsedDocumentPane({
         >
           <Label className="sr-only">Выберите документ</Label>
           <Select.Trigger className="rounded-xl">
-            <Select.Value />
+            <Select.Value className="max-w-full truncate" />
             <Select.Indicator />
           </Select.Trigger>
-          <Select.Popover>
+          <Select.Popover className="not-sm:max-w-0">
             <ListBox>
               {files.map((candidate) => (
                 <ListBox.Item
                   id={candidate.file_id}
                   key={`${candidate.file_id}:${candidate.run_id}:${candidate.artifact_id}`}
                   textValue={candidate.original_name}
+                  className="data-selected:text-accent data-selected:bg-accent/10 flex gap-2 data-selected:[&>p]:pr-4"
                 >
-                  <span className="min-w-0 flex-1 truncate">
+                  <p className="min-w-0 flex-1 truncate">
                     {candidate.original_name}
-                  </span>
-                  <ListBox.ItemIndicator />
+                  </p>
+                  <ListBox.ItemIndicator className="text-accent" />
                 </ListBox.Item>
               ))}
             </ListBox>

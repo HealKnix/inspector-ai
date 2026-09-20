@@ -1,19 +1,14 @@
 import { Button } from "@heroui/react";
-import {
-  Link,
-  useNavigate,
-  useParams,
-  useSearchParams,
-} from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { useFiles, useObject } from "@/api/hooks/use-objects";
 import { useParsingStatus } from "@/api/hooks/use-parsing";
 import { Role } from "@/api/types/auth";
 import type { ParsingFile } from "@/api/types/parsing";
 import { UploadIcon } from "@/components/UploadIcon";
+import { ConstrainedLayout, PageHeader } from "@/layouts/ConstrainedLayout";
 import routeNames from "@/routes/routeNames";
 import { useAuthSessionStore } from "@/store/auth-session";
-import { ConstrainedLayout } from "../../layouts/ConstrainedLayout";
 import { DocumentUploader } from "./components/DocumentUploader";
 import {
   DocumentViewer,
@@ -92,19 +87,12 @@ export function ObjectDetailsPage() {
 
   return (
     <ConstrainedLayout>
-      <header>
-        <Link
-          className="text-copy-muted hover:text-accent inline-flex items-center gap-2 text-sm"
-          to={routeNames.OBJECTS}
-        >
-          <UploadIcon className="size-4" name="arrow-left" /> Все объекты
-        </Link>
-        <h1 className="mt-5 text-[clamp(2rem,3.2vw,3.25rem)] leading-[1.08] font-semibold tracking-[-0.045em] break-words">
-          {data?.name ?? "Документы объекта"}
-        </h1>
-        <p className="text-copy-muted mt-3 text-sm leading-6 sm:text-base">
-          Оригиналы документов и загрузка новых комплектов.
-        </p>
+      <PageHeader
+        backHref={routeNames.OBJECTS}
+        backLabel="Все объекты"
+        description="Оригиналы документов и загрузка новых комплектов."
+        title={data?.name ?? "Документы объекта"}
+      >
         {data && (
           <p className="text-copy-muted mt-3 text-xs">
             Объект создан{" "}
@@ -122,7 +110,7 @@ export function ObjectDetailsPage() {
             Проверить метаданные
           </Button>
         )}
-      </header>
+      </PageHeader>
       {object.isPending && (
         <p role="status" className="text-copy-muted py-8">
           Загружаем объект…

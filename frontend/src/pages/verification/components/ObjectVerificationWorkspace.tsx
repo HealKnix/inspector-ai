@@ -1,13 +1,13 @@
 import { Button } from "@heroui/react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import { useObject } from "@/api/hooks/use-objects";
 import { parsingErrorMessage, useParsingStatus } from "@/api/hooks/use-parsing";
 import type { ParsingFile } from "@/api/types/parsing";
 import { UploadIcon } from "@/components/UploadIcon";
+import { ConstrainedLayout, PageHeader } from "@/layouts/ConstrainedLayout";
 import routeNames from "@/routes/routeNames";
 
-import { ConstrainedLayout } from "../../../layouts/ConstrainedLayout";
 import { ParsedDocumentPane } from "./ParsedDocumentPane";
 
 const parsingStatePresentation: Record<
@@ -211,45 +211,20 @@ export function ObjectVerificationWorkspace({
 
   return (
     <ConstrainedLayout>
-      <header>
-        <Link
-          className="text-copy-muted hover:text-accent inline-flex items-center gap-2 text-sm"
-          to={routeNames.OBJECT_DETAILS(objectId)}
-        >
-          <UploadIcon className="size-4" name="arrow-left" />
-          Вернуться к объекту
-        </Link>
-        <nav
-          aria-label="Хлебные крошки"
-          className="text-copy-muted mt-5 flex min-w-0 items-center gap-2 text-xs sm:text-sm"
-        >
-          <span>Проверки</span>
-          <span aria-hidden="true">/</span>
-          <span className="truncate">{object.name}</span>
-          <span aria-hidden="true">/</span>
-          <span>Метаданные и страницы</span>
-        </nav>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h1 className="text-[clamp(1.9rem,3vw,3rem)] leading-none font-semibold tracking-[-0.04em]">
-            Проверка комплекта документов
-          </h1>
-          <span className="bg-accent/10 text-accent rounded-full px-2.5 py-1 text-xs font-semibold">
-            Инспектор
-          </span>
-        </div>
-        <div
-          className="bg-accent/5 text-copy-muted mt-4 flex w-fit max-w-full items-start gap-2 rounded-xl px-3 py-2 text-xs leading-5"
-          role="note"
-        >
-          <span className="bg-accent/10 text-accent shrink-0 rounded-md px-2 py-0.5 font-semibold">
-            ДАННЫЕ ОБЪЕКТА
-          </span>
-          <span>
+      <PageHeader
+        backHref={routeNames.OBJECT_DETAILS(objectId)}
+        backLabel="Вернуться к объекту"
+        breadcrumbs={["Проверки", object.name, "Метаданные и страницы"]}
+        badge="Инспектор"
+        notice={
+          <>
             Показаны фактические страницы текущих результатов обработки объекта
             «{object.name}».
-          </span>
-        </div>
-      </header>
+          </>
+        }
+        noticeLabel="ДАННЫЕ ОБЪЕКТА"
+        title="Проверка комплекта документов"
+      />
 
       {files.length === 0 ? (
         <section className="border-line bg-card text-copy-muted mt-5 grid min-h-72 place-items-center rounded-2xl border p-6 text-center text-sm">

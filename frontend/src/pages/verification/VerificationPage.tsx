@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { mockProtocolViolations } from "@/data/protocols";
 import { mockVerificationPackage } from "@/data/verification";
+import { ConstrainedLayout } from "@/layouts/ConstrainedLayout";
 import {
   applyLocalFindingDecision,
   filterVerificationFindings,
@@ -18,7 +19,6 @@ import {
 import routeNames from "@/routes/routeNames";
 import { useProtocolStore } from "@/store/protocols";
 
-import { ConstrainedLayout } from "../../layouts/ConstrainedLayout";
 import { DiscrepancyDetails } from "./components/DiscrepancyDetails";
 import { DiscrepancyList } from "./components/DiscrepancyList";
 import { DocumentPane } from "./components/DocumentPane";

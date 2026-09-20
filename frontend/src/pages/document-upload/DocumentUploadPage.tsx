@@ -15,7 +15,7 @@ import type {
 
 import { FileDropzone } from "@/components/file-dropzone/FileDropzone";
 import { UploadIcon } from "@/components/UploadIcon";
-import { ConstrainedLayout } from "../../layouts/ConstrainedLayout";
+import { ConstrainedLayout } from "@/layouts/ConstrainedLayout";
 import { CompletenessPanel } from "./components/CompletenessPanel";
 import { DocumentsTable } from "./components/DocumentsTable";
 import { MetadataAssistant } from "./components/MetadataAssistant";
@@ -101,7 +101,7 @@ export function DocumentUploadPage() {
 
   return (
     <ConstrainedLayout>
-      <div className="mt-3 pb-12">
+      <div className="pb-12">
         <UploadHeader fixtureNotice={mockUploadPackage.fixtureNotice} />
         <UploadSteps activeStep={documents.length > 0 ? 2 : 1} />
 
