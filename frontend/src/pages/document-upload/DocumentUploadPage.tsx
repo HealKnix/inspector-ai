@@ -339,10 +339,7 @@ export function DocumentUploadPage() {
   return (
     <ConstrainedLayout>
       <div className="pb-12">
-        <UploadHeader
-          backHref={routeNames.OBJECTS}
-          objectName={object.name}
-        />
+        <UploadHeader backHref={routeNames.OBJECTS} objectName={object.name} />
 
         <div className="mt-5 grid items-start gap-4 min-[1100px]:grid-cols-12">
           <div className="grid gap-4 min-[760px]:grid-cols-12 min-[1100px]:col-span-8">

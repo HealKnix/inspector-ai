@@ -1,11 +1,11 @@
 import { generateExpectedPackage } from "@/api/endpoints/completeness";
 import { useCreateObject } from "@/api/hooks/use-objects";
-import { AttributesEditor } from "@/components/AttributesEditor";
 import {
   draftToAttributes,
   emptyAttributesDraft,
   type AttributesDraft,
 } from "@/components/attributes-draft";
+import { AttributesEditor } from "@/components/AttributesEditor";
 import { UploadIcon } from "@/components/UploadIcon";
 import routeNames from "@/routes/routeNames";
 import { Button, FieldError, Input, Label, TextField } from "@heroui/react";
@@ -26,9 +26,8 @@ const schema = z.object({
 export function CreateObjectForm() {
   const mutation = useCreateObject();
   const navigate = useNavigate();
-  const [attributes, setAttributes] = useState<AttributesDraft>(
-    emptyAttributesDraft,
-  );
+  const [attributes, setAttributes] =
+    useState<AttributesDraft>(emptyAttributesDraft);
   const { control, handleSubmit } = useForm({
     defaultValues: { name: "" },
     resolver: zodResolver(schema),

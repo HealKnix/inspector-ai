@@ -7,10 +7,7 @@ import {
   TextField,
 } from "@heroui/react";
 
-import {
-  BOOLEAN_ATTRIBUTES,
-  type AttributesDraft,
-} from "./attributes-draft";
+import { BOOLEAN_ATTRIBUTES, type AttributesDraft } from "./attributes-draft";
 
 export function AttributesEditor({
   draft,

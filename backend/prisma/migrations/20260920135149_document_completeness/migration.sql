@@ -1,38 +1,16 @@
 -- CreateEnum
-CREATE TYPE "FrameworkSetStatus" AS ENUM ('draft', 'approved', 'deprecated');
+DO $$
+BEGIN
+    CREATE TYPE "FrameworkSetStatus" AS ENUM ('draft', 'approved', 'deprecated');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "PackageStatus" AS ENUM ('proposed', 'confirmed');
-
--- DropForeignKey
-ALTER TABLE "classification_retry_receipts" DROP CONSTRAINT "classification_retry_receipts_object_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "classification_retry_receipts" DROP CONSTRAINT "classification_retry_receipts_task_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "classification_retry_receipts" DROP CONSTRAINT "classification_retry_receipts_user_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "classification_tasks" DROP CONSTRAINT "classification_tasks_artifact_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "evidence_fragments" DROP CONSTRAINT "evidence_fragments_extraction_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "extraction_tasks" DROP CONSTRAINT "extraction_tasks_artifact_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "extractions" DROP CONSTRAINT "extractions_rule_version_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "extractions" DROP CONSTRAINT "extractions_task_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "matrix_rows" DROP CONSTRAINT "matrix_rows_import_id_fkey";
-
--- AlterTable
-ALTER TABLE "evidence_groups" ALTER COLUMN "updated_at" DROP DEFAULT;
+DO $$
+BEGIN
+    CREATE TYPE "PackageStatus" AS ENUM ('proposed', 'confirmed');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- CreateTable
 CREATE TABLE "framework_sets" (
@@ -181,24 +159,6 @@ CREATE INDEX "package_requirements_package_version_id_idx" ON "package_requireme
 CREATE INDEX "completeness_results_object_id_process_id_created_at_idx" ON "completeness_results"("object_id", "process_id", "created_at");
 
 -- AddForeignKey
-ALTER TABLE "classification_tasks" ADD CONSTRAINT "classification_tasks_artifact_id_fkey" FOREIGN KEY ("artifact_id") REFERENCES "parse_artifacts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "classification_retry_receipts" ADD CONSTRAINT "classification_retry_receipts_task_id_fkey" FOREIGN KEY ("task_id") REFERENCES "classification_tasks"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "matrix_rows" ADD CONSTRAINT "matrix_rows_import_id_fkey" FOREIGN KEY ("import_id") REFERENCES "matrix_imports"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "extraction_tasks" ADD CONSTRAINT "extraction_tasks_artifact_id_fkey" FOREIGN KEY ("artifact_id") REFERENCES "parse_artifacts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "extractions" ADD CONSTRAINT "extractions_task_id_fkey" FOREIGN KEY ("task_id") REFERENCES "extraction_tasks"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "evidence_fragments" ADD CONSTRAINT "evidence_fragments_extraction_id_fkey" FOREIGN KEY ("extraction_id") REFERENCES "extractions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "framework_vocabularies" ADD CONSTRAINT "framework_vocabularies_set_id_fkey" FOREIGN KEY ("set_id") REFERENCES "framework_sets"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -230,6 +190,3 @@ ALTER TABLE "completeness_results" ADD CONSTRAINT "completeness_results_run_id_p
 
 -- AddForeignKey
 ALTER TABLE "completeness_results" ADD CONSTRAINT "completeness_results_package_version_id_fkey" FOREIGN KEY ("package_version_id") REFERENCES "package_versions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- RenameIndex
-ALTER INDEX "evidence_groups_object_id_process_id_parameter_code_scope_key_k" RENAME TO "evidence_groups_object_id_process_id_parameter_code_scope_k_key";

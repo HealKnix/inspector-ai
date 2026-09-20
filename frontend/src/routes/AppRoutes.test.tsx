@@ -152,9 +152,7 @@ describe("AppRoutes", () => {
       </AppProviders>,
     );
     expect(await screen.findByText("Страница входа")).toBeInTheDocument();
-    expect(
-      screen.queryByText("Загрузка документов"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Загрузка документов")).not.toBeInTheDocument();
   });
 
   it("не предоставляет раздел верификации роли без подтверждённого права", async () => {
