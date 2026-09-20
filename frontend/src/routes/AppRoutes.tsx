@@ -126,6 +126,10 @@ export function AppRoutes() {
             <Route element={<DashboardPage />} path={routeNames.ROOT} />
             <Route element={<RoleGuard roles={Role.INSPECTOR} />}>
               <Route
+                element={<DocumentUploadPage />}
+                path={routeNames.OBJECT_UPLOAD(":objectId")}
+              />
+              <Route
                 element={<VerificationPage />}
                 path={routeNames.DOCUMENT_VERIFICATION}
               />
@@ -135,10 +139,6 @@ export function AppRoutes() {
                 path={routeNames.PROTOCOL_DETAILS(":protocolId")}
               />
             </Route>
-            <Route
-              element={<DocumentUploadPage />}
-              path={routeNames.DOCUMENT_UPLOAD}
-            />
             <Route element={<ObjectsPage />} path={routeNames.OBJECTS} />
             <Route
               element={<ObjectDetailsPage />}

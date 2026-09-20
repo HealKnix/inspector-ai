@@ -4,12 +4,10 @@ import { UploadIcon } from "@/components/UploadIcon";
 
 interface MetadataAssistantProps {
   needsReviewCount: number;
-  onReview: () => void;
 }
 
 export function MetadataAssistant({
   needsReviewCount,
-  onReview,
 }: MetadataAssistantProps) {
   return (
     <section className="border-border bg-card flex flex-col rounded-[20px] border p-5 shadow-sm sm:p-6">
@@ -44,11 +42,7 @@ export function MetadataAssistant({
         </ul>
       </div>
 
-      <Button
-        className="mt-4 w-full rounded-xl"
-        isDisabled={needsReviewCount === 0}
-        onPress={onReview}
-      >
+      <Button className="mt-4 w-full rounded-xl" isDisabled>
         <UploadIcon className="size-4.5" name="play" />
         Разобрать ({needsReviewCount})
       </Button>

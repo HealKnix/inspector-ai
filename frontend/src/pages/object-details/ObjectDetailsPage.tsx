@@ -12,7 +12,6 @@ import { ConstrainedLayout, PageHeader } from "@/layouts/ConstrainedLayout";
 import routeNames from "@/routes/routeNames";
 import { useAuthSessionStore } from "@/store/auth-session";
 import { ClassificationPanel } from "./components/ClassificationPanel";
-import { DocumentUploader } from "./components/DocumentUploader";
 import {
   DocumentViewer,
   type DocumentViewState,
@@ -113,16 +112,34 @@ export function ObjectDetailsPage() {
             {new Date(data.created_at).toLocaleDateString("ru-RU")}
           </p>
         )}
-        {data && canVerifyMetadata && (
-          <Button
-            className="mt-5 rounded-xl"
-            onPress={() => {
-              void navigate(routeNames.DOCUMENT_VERIFICATION_DETAILS(data.id));
-            }}
-          >
-            <UploadIcon className="size-4.5" name="sparkles" />
-            Проверить метаданные
-          </Button>
+        {data && (
+          <div className="mt-5 flex flex-wrap gap-3">
+            {data.allowed_actions.includes("upload") && (
+              <Button
+                className="rounded-xl"
+                onPress={() => {
+                  void navigate(routeNames.OBJECT_UPLOAD(data.id));
+                }}
+              >
+                <UploadIcon className="size-4.5" name="upload" />
+                Загрузить документы
+              </Button>
+            )}
+            {canVerifyMetadata && (
+              <Button
+                className="rounded-xl"
+                onPress={() => {
+                  void navigate(
+                    routeNames.DOCUMENT_VERIFICATION_DETAILS(data.id),
+                  );
+                }}
+                variant="outline"
+              >
+                <UploadIcon className="size-4.5" name="sparkles" />
+                Проверить метаданные
+              </Button>
+            )}
+          </div>
         )}
       </PageHeader>
       {object.isPending && (
@@ -151,16 +168,14 @@ export function ObjectDetailsPage() {
         <>
           <div className="grid items-start gap-4 xl:grid-cols-3">
             <div className="min-w-0 xl:col-span-2">
-              {data.allowed_actions.includes("upload") ? (
-                <DocumentUploader key={objectId} objectId={objectId} />
-              ) : (
-                <section className="border-border bg-card rounded-[20px] border p-6">
-                  <h2 className="text-lg font-semibold">Просмотр документов</h2>
-                  <p className="text-copy-muted mt-2 text-sm leading-6">
-                    Для этого объекта загрузка документов недоступна.
-                  </p>
-                </section>
-              )}
+              <section className="border-border bg-card rounded-[20px] border p-6">
+                <h2 className="text-lg font-semibold">Просмотр документов</h2>
+                <p className="text-copy-muted mt-2 text-sm leading-6">
+                  {data.allowed_actions.includes("upload")
+                    ? "Новые оригиналы добавляются на странице загрузки комплекта."
+                    : "Для этого объекта загрузка документов недоступна."}
+                </p>
+              </section>
             </div>
             <aside className="space-y-4">
               <section className="bg-accent text-accent-foreground rounded-[25px] p-6 sm:p-7">

@@ -4,8 +4,6 @@ import { UploadIcon } from "@/components/UploadIcon";
 
 interface CompletenessPanelProps {
   hasDocuments: boolean;
-  missingRequiredSourceParameterCount: number;
-  showMockFindings: boolean;
   stageCounts: Record<DocumentStage, number>;
 }
 
@@ -17,8 +15,6 @@ const stageLabels: Array<{ label: string; stage: DocumentStage }> = [
 
 export function CompletenessPanel({
   hasDocuments,
-  missingRequiredSourceParameterCount,
-  showMockFindings,
   stageCounts,
 }: CompletenessPanelProps) {
   return (
@@ -57,32 +53,16 @@ export function CompletenessPanel({
         ))}
       </dl>
 
-      {showMockFindings ? (
-        <div className="bg-warning/10 text-foreground mt-4 flex gap-3 rounded-[14px] px-4 py-3">
-          <UploadIcon className="mt-0.5 size-5 shrink-0" name="warning" />
-          <div>
-            <p className="text-sm font-semibold">
-              Для {missingRequiredSourceParameterCount} контрольных параметров
-            </p>
-            <p className="mt-0.5 text-xs leading-5">
-              Не найдены обязательные источники
-            </p>
-          </div>
-        </div>
-      ) : hasDocuments ? (
-        <div className="bg-surface-high text-copy-muted mt-4 rounded-[14px] px-4 py-3 text-sm leading-5">
-          Источники для контрольных параметров будут оценены после обработки.
-        </div>
-      ) : (
-        <div className="bg-surface-high text-copy-muted mt-4 rounded-[14px] px-4 py-3 text-sm">
-          Добавьте документы для предварительной оценки состава.
-        </div>
-      )}
+      <div className="bg-surface-high text-copy-muted mt-4 rounded-[14px] px-4 py-3 text-sm leading-5">
+        {hasDocuments
+          ? "Источники для контрольных параметров будут оценены после обработки."
+          : "Добавьте документы для предварительной оценки состава."}
+      </div>
 
       <p className="text-copy-muted mt-4 text-xs leading-5">
-        {hasDocuments
-          ? "Предварительная оценка построена по загруженным файлам. Эталонный состав объекта не подключён, поэтому система не показывает неподтверждённые знаменатели."
-          : "Эталонный состав объекта не подключён. После загрузки будут показаны только подтверждённые количества файлов."}
+        Показано подтверждённое количество файлов по стадиям. Эталонный состав
+        объекта не подключён, поэтому система не показывает неподтверждённые
+        знаменатели.
       </p>
     </section>
   );

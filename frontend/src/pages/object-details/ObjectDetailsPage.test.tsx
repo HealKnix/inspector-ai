@@ -300,6 +300,7 @@ describe("object documents", () => {
       expect(listFiles).toHaveBeenCalledWith(
         object.id,
         2,
+        20,
         expect.any(AbortSignal),
       ),
     );
@@ -317,7 +318,7 @@ describe("object documents", () => {
     );
     await act(() =>
       client.invalidateQueries({
-        queryKey: queryKeys.objects.files(object.id, 1),
+        queryKey: queryKeys.objects.files(object.id, 1, 20),
       }),
     );
     expect(await screen.findByRole("alert")).toHaveTextContent(

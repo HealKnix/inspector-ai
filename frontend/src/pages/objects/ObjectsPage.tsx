@@ -157,17 +157,29 @@ export function ObjectsPage() {
                           )}
                         </Table.Cell>
                         <Table.Cell>
-                          <Link
-                            aria-label={`Открыть документы: ${object.name}`}
-                            className="text-accent inline-flex items-center gap-1 text-sm font-medium whitespace-nowrap"
-                            to={routeNames.OBJECT_DETAILS(object.id)}
-                          >
-                            Документы{" "}
-                            <UploadIcon
-                              className="size-4"
-                              name="chevron-right"
-                            />
-                          </Link>
+                          <div className="flex items-center gap-4">
+                            {object.allowed_actions.includes("upload") && (
+                              <Link
+                                aria-label={`Загрузить документы: ${object.name}`}
+                                className="text-accent inline-flex items-center gap-1 text-sm font-medium whitespace-nowrap"
+                                to={routeNames.OBJECT_UPLOAD(object.id)}
+                              >
+                                Загрузить{" "}
+                                <UploadIcon className="size-4" name="upload" />
+                              </Link>
+                            )}
+                            <Link
+                              aria-label={`Открыть документы: ${object.name}`}
+                              className="text-accent inline-flex items-center gap-1 text-sm font-medium whitespace-nowrap"
+                              to={routeNames.OBJECT_DETAILS(object.id)}
+                            >
+                              Документы{" "}
+                              <UploadIcon
+                                className="size-4"
+                                name="chevron-right"
+                              />
+                            </Link>
+                          </div>
                         </Table.Cell>
                       </Table.Row>
                     ))}

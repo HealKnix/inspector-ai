@@ -3,8 +3,8 @@ export const queryKeys = {
     all: ["objects"] as const,
     list: (page: number) => ["objects", "list", page] as const,
     detail: (id: string) => ["objects", id] as const,
-    files: (id: string, page: number) =>
-      ["objects", id, "files", page] as const,
+    files: (id: string, page: number, limit: number) =>
+      ["objects", id, "files", page, limit] as const,
     receipt: (id: string, uploadId: string) =>
       ["objects", id, "receipt", uploadId] as const,
     parsing: (id: string) => ["objects", id, "parsing"] as const,

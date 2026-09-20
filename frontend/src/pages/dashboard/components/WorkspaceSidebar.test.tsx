@@ -250,7 +250,7 @@ describe("WorkspaceSidebar", () => {
     fireEvent.click(uploadButton);
 
     expect(screen.getByTestId("location")).toHaveTextContent(
-      routeNames.DOCUMENT_UPLOAD,
+      routeNames.OBJECTS,
     );
     expect(uploadButton).toHaveAttribute("aria-pressed", "true");
 

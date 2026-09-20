@@ -6,14 +6,6 @@ export const DocumentStage = {
 
 export type DocumentStage = (typeof DocumentStage)[keyof typeof DocumentStage];
 
-export const MetadataPresentationState = {
-  READY: "ready",
-  NEEDS_REVIEW: "needs-review",
-} as const;
-
-export type MetadataPresentationState =
-  (typeof MetadataPresentationState)[keyof typeof MetadataPresentationState];
-
 export const SupportedUploadExtension = {
   PDF: "pdf",
   DOCX: "docx",
@@ -22,39 +14,6 @@ export const SupportedUploadExtension = {
 
 export type SupportedUploadExtension =
   (typeof SupportedUploadExtension)[keyof typeof SupportedUploadExtension];
-
-export const UploadDocumentSource = {
-  LOCAL_BROWSER: "local-browser",
-  SYNTHETIC_DEMO: "synthetic-demo",
-} as const;
-
-export type UploadDocumentSource =
-  (typeof UploadDocumentSource)[keyof typeof UploadDocumentSource];
-
-export interface UploadDocument {
-  id: string;
-  objectId: string;
-  name: string;
-  extension: SupportedUploadExtension;
-  mimeType: string;
-  sizeBytes: number;
-  pageCount: number | null;
-  stage: DocumentStage | null;
-  section: string | null;
-  cipher: string | null;
-  revision: string | null;
-  approvalStatus: string | null;
-  approvalDate: string | null;
-  sheetNumber: string | number | null;
-  pageNumber: string | number | null;
-  fileHash: string | null;
-  predecessorRevisionReference: string | null;
-  successorRevisionReference: string | null;
-  metadataState: MetadataPresentationState;
-  metadataNote: string | null;
-  source: UploadDocumentSource;
-  isSynthetic: boolean;
-}
 
 export interface UploadLimits {
   readonly maxFileSizeBytes: number;
@@ -71,37 +30,6 @@ export const INTERACTIVE_UPLOAD_LIMITS = {
     SupportedUploadExtension.XML,
   ],
 } as const satisfies UploadLimits;
-
-export interface UploadPackageFixture {
-  id: string;
-  objectId: string;
-  title: string;
-  source: typeof UploadDocumentSource.SYNTHETIC_DEMO;
-  isSynthetic: true;
-  fixtureNotice: string;
-  documents: readonly UploadDocument[];
-  uploadLimits: UploadLimits;
-  expectedManifest: null;
-  controlledParametersWithoutSources: number;
-}
-
-export interface UploadSummary {
-  totalFiles: number;
-  totalKnownPages: number;
-  totalSizeBytes: number;
-  stageCounts: Record<DocumentStage, number>;
-  readyCount: number;
-  needsReviewCount: number;
-  unclassifiedCount: number;
-}
-
-export type UploadDocumentFilter =
-  "all" | DocumentStage | typeof MetadataPresentationState.NEEDS_REVIEW;
-
-export interface UploadDocumentFilterOptions {
-  filter: UploadDocumentFilter;
-  query: string;
-}
 
 export const UploadValidationErrorCode = {
   FILE_SIZE_EXCEEDED: "file-size-exceeded",
@@ -121,7 +49,103 @@ export interface UploadValidationError {
 export interface UploadValidationResult {
   acceptedFiles: File[];
   errors: UploadValidationError[];
-  existingSizeBytes: number;
+  pendingSizeBytes: number;
   acceptedSizeBytes: number;
   resultingPackageSizeBytes: number;
+}
+
+export const UploadRowOrigin = {
+  LOCAL: "local",
+  REMOTE: "remote",
+} as const;
+
+export type UploadRowOrigin =
+  (typeof UploadRowOrigin)[keyof typeof UploadRowOrigin];
+
+export const UploadRowStatus = {
+  PENDING: "pending",
+  UPLOADING: "uploading",
+  REJECTED: "rejected",
+  DUPLICATE: "duplicate",
+  ACCEPTED: "accepted",
+  QUEUED: "queued",
+  PROCESSING: "processing",
+  CLASSIFYING: "classifying",
+  READY: "ready",
+  NEEDS_REVIEW: "needs-review",
+  FAILED: "failed",
+} as const;
+
+export type UploadRowStatus =
+  (typeof UploadRowStatus)[keyof typeof UploadRowStatus];
+
+export const UploadRetryKind = {
+  PARSING: "parsing",
+  CLASSIFICATION: "classification",
+} as const;
+
+export type UploadRetryKind =
+  (typeof UploadRetryKind)[keyof typeof UploadRetryKind];
+
+export interface PendingUploadFile {
+  clientFileId: string;
+  file: File;
+  declaredStage: DocumentStage;
+  acceptedFileId: string | null;
+  outcome: PendingUploadOutcome | null;
+}
+
+export interface PendingUploadOutcome {
+  duplicate: boolean;
+  message: string;
+  existingFileId: string | null;
+}
+
+export interface UploadRow {
+  id: string;
+  origin: UploadRowOrigin;
+  name: string;
+  extension: SupportedUploadExtension;
+  sizeBytes: number;
+  clientFileId: string | null;
+  fileId: string | null;
+  sha256: string | null;
+  integrityError: boolean;
+  pageCount: number | null;
+  declaredStage: DocumentStage | null;
+  detectedStage: DocumentStage | null;
+  stage: DocumentStage | null;
+  stageMismatch: boolean;
+  status: UploadRowStatus;
+  statusDetail: string | null;
+  needsReview: boolean;
+  retryKind: UploadRetryKind | null;
+  existingFileId: string | null;
+}
+
+export interface UploadSummary {
+  totalFiles: number;
+  totalKnownPages: number;
+  totalSizeBytes: number;
+  stageCounts: Record<DocumentStage, number>;
+  readyCount: number;
+  needsReviewCount: number;
+  unclassifiedCount: number;
+  pendingCount: number;
+  failedCount: number;
+}
+
+export const UploadDocumentFilter = {
+  ALL: "all",
+  NEEDS_REVIEW: "needs-review",
+  FAILED: "failed",
+} as const;
+
+export type UploadDocumentFilter =
+  | (typeof UploadDocumentFilter)[keyof typeof UploadDocumentFilter]
+  | DocumentStage;
+
+export interface UploadDocumentFilterOptions {
+  filter: UploadDocumentFilter;
+  query: string;
 }

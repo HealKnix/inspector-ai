@@ -13,13 +13,13 @@ function HowItWorksPopover() {
       <Popover.Content className="border-border bg-popover max-w-80 rounded-2xl border p-0 shadow-xl">
         <Popover.Dialog className="p-4 outline-none">
           <Popover.Heading className="font-semibold">
-            Четыре шага подготовки
+            Как проходит загрузка
           </Popover.Heading>
           <ol className="text-copy-muted mt-3 space-y-2 text-sm leading-5">
-            <li>1. Добавьте PDF, DOCX и XML.</li>
-            <li>2. Проверьте автоматически найденные метаданные.</li>
-            <li>3. Оцените комплектность по доступным источникам.</li>
-            <li>4. Передайте комплект на асинхронную обработку.</li>
+            <li>1. Выберите стадию документации и добавьте PDF, DOCX и XML.</li>
+            <li>2. Отправьте пакет — сервер проверит и сохранит оригиналы.</li>
+            <li>3. Дождитесь обработки: стадия определяется автоматически.</li>
+            <li>4. Разберите документы, требующие уточнения.</li>
           </ol>
         </Popover.Dialog>
       </Popover.Content>
@@ -48,8 +48,8 @@ function StructurePopover() {
             <dd className="text-copy-muted">Исполнительная документация</dd>
           </dl>
           <p className="text-copy-muted border-border mt-3 border-t pt-3 text-xs leading-5">
-            Ожидаемый состав зависит от объекта. В демонстрационном наборе
-            ведомость состава не подключена.
+            Эталонный состав объекта не подключён: комплектность оценивается
+            только по подтверждённым количествам файлов.
           </p>
         </Popover.Dialog>
       </Popover.Content>
@@ -58,10 +58,11 @@ function StructurePopover() {
 }
 
 interface UploadHeaderProps {
-  fixtureNotice: string;
+  backHref: string;
+  objectName: string;
 }
 
-export function UploadHeader({ fixtureNotice }: UploadHeaderProps) {
+export function UploadHeader({ backHref, objectName }: UploadHeaderProps) {
   return (
     <PageHeader
       actions={
@@ -70,9 +71,15 @@ export function UploadHeader({ fixtureNotice }: UploadHeaderProps) {
           <StructurePopover />
         </>
       }
-      description="Добавьте ПД, РД и ИД — система определит стадию, раздел, шифр и редакцию."
-      notice={fixtureNotice}
-      noticeLabel="ДЕМО"
+      backHref={backHref}
+      backLabel="К объекту"
+      description={
+        <>
+          Объект: <span className="text-foreground">{objectName}</span>.
+          Выберите стадию и добавьте файлы — система проверит пакет, сохранит
+          оригиналы и определит стадию каждого документа.
+        </>
+      }
       title="Загрузка комплекта документов"
     />
   );

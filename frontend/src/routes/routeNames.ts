@@ -7,7 +7,7 @@ class RouteNames {
     `${this.OBJECTS}/${id}${search ?? ""}`;
 
   // Документы
-  DOCUMENT_UPLOAD = "/documents/upload";
+  OBJECT_UPLOAD = (id: string) => `${this.OBJECTS}/${id}/upload`;
   DOCUMENT_VERIFICATION = "/verification";
   DOCUMENT_VERIFICATION_DETAILS = (objectId: string) =>
     `${this.DOCUMENT_VERIFICATION}?objectId=${encodeURIComponent(objectId)}`;

@@ -57,9 +57,21 @@ vi.mock("@/pages/document-upload/DocumentUploadPage", async () => {
     DocumentUploadPage: () => <p>Загрузка документов</p>,
   };
 });
-vi.mock("@/pages/objects/ObjectsPage", () => ({
-  ObjectsPage: () => <p>Список объектов</p>,
-}));
+vi.mock("@/pages/objects/ObjectsPage", async () => {
+  const { Link } = await import("react-router-dom");
+  const { default: routeNames } = await import("@/routes/routeNames");
+
+  return {
+    ObjectsPage: () => (
+      <>
+        <p>Список объектов</p>
+        <Link to={routeNames.OBJECT_UPLOAD("synthetic-id")}>
+          Загрузить комплект
+        </Link>
+      </>
+    ),
+  };
+});
 vi.mock("@/pages/object-details/ObjectDetailsPage", () => ({
   ObjectDetailsPage: () => <p>Карточка объекта {useParams().objectId}</p>,
 }));
@@ -227,6 +239,9 @@ describe("AppRoutes", () => {
     expect(sidebar).toHaveAttribute("data-collapsed", "true");
 
     fireEvent.click(screen.getByRole("button", { name: "Загрузка комплекта" }));
+    expect(await screen.findByText("Список объектов")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("link", { name: "Загрузить комплект" }));
 
     const fallback = await screen.findByText("Загружаем интерфейс…");
     expect(fallback.closest("main")).toBeInTheDocument();
@@ -270,7 +285,11 @@ describe("AppRoutes", () => {
   });
 
   it("открывает защищённую страницу загрузки по прямой ссылке", async () => {
-    window.history.replaceState({}, "", routeNames.DOCUMENT_UPLOAD);
+    window.history.replaceState(
+      {},
+      "",
+      routeNames.OBJECT_UPLOAD("synthetic-id"),
+    );
     useAuthSessionStore.setState({
       accessToken: "access-token",
       initialized: true,

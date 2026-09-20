@@ -82,9 +82,10 @@ const primaryItems: readonly NavigationItem[] = [
   { href: routeNames.ROOT, icon: "grid", label: "Дашборд" },
   { href: routeNames.OBJECTS, icon: "folder", label: "Объекты" },
   {
-    href: routeNames.DOCUMENT_UPLOAD,
+    href: routeNames.OBJECTS,
     icon: "upload",
     label: "Загрузка комплекта",
+    roles: [Role.INSPECTOR],
   },
   {
     href: routeNames.DOCUMENT_VERIFICATION,
@@ -137,7 +138,7 @@ function NavigationList({
           item.href.split("/").at(1) === activeHref?.split("/").at(1);
 
         return (
-          <Tooltip key={item.href} isDisabled={!collapsed}>
+          <Tooltip key={`${item.href}:${item.label}`} isDisabled={!collapsed}>
             <Button
               aria-label={collapsed ? item.label : undefined}
               aria-pressed={isActive}
