@@ -9,6 +9,7 @@ import type { ParsingFile } from "@/api/types/parsing";
 import { UploadIcon } from "@/components/UploadIcon";
 import routeNames from "@/routes/routeNames";
 import { ClassificationPanel } from "./ClassificationPanel";
+import { CompletenessPanel } from "./CompletenessPanel";
 import { DocumentUploader } from "./DocumentUploader";
 import { DocumentViewer, type DocumentViewState } from "./DocumentViewer";
 import { ExtractionPanel } from "./ExtractionPanel";
@@ -206,6 +207,10 @@ export function ObjectDetailsPage() {
                   return current;
                 });
               }}
+            />
+            <CompletenessPanel
+              key={`completeness:${objectId}`}
+              objectId={objectId}
             />
             <ExtractionPanel
               key={`extraction:${objectId}`}
