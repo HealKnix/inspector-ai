@@ -13,12 +13,13 @@ import type {
   UploadDocumentFilter,
 } from "@/pages/document-upload/types";
 
+import { FileDropzone } from "@/components/file-dropzone/FileDropzone";
+import { UploadIcon } from "@/components/UploadIcon";
+import { ConstrainedLayout } from "@/layouts/ConstrainedLayout";
 import { CompletenessPanel } from "./components/CompletenessPanel";
 import { DocumentsTable } from "./components/DocumentsTable";
-import { FileDropzone } from "./components/FileDropzone";
 import { MetadataAssistant } from "./components/MetadataAssistant";
 import { UploadHeader } from "./components/UploadHeader";
-import { UploadIcon } from "./components/UploadIcon";
 import { UploadSteps } from "./components/UploadSteps";
 import { UploadSummary } from "./components/UploadSummary";
 
@@ -99,8 +100,8 @@ export function DocumentUploadPage() {
   };
 
   return (
-    <div className="h-full min-w-0 flex-1 overflow-y-auto">
-      <div className="mx-auto min-h-full max-w-[1680px] px-4 pt-5 pb-26 min-[1400px]:px-8 sm:px-6 sm:pt-7">
+    <ConstrainedLayout>
+      <div className="pb-12">
         <UploadHeader fixtureNotice={mockUploadPackage.fixtureNotice} />
         <UploadSteps activeStep={documents.length > 0 ? 2 : 1} />
 
@@ -160,7 +161,7 @@ export function DocumentUploadPage() {
         </div>
       </div>
 
-      <div className="border-border bg-background/75 absolute inset-x-0 bottom-0 z-20 mx-auto mt-5 flex min-h-18 max-w-[1680px] items-center gap-3 border-t px-4 py-3 backdrop-blur-md min-[720px]:justify-end min-[1400px]:px-8 sm:px-6">
+      <div className="border-border bg-background/75 absolute inset-x-0 bottom-0 z-20 mt-5 flex min-h-18 items-center gap-3 border-t px-4 py-3 backdrop-blur-md min-[720px]:justify-end min-[1400px]:px-8 sm:px-6">
         <p className="text-copy-muted mr-auto hidden text-sm min-[720px]:block">
           Выбрано {selectedIds.size} файлов
         </p>
@@ -189,6 +190,6 @@ export function DocumentUploadPage() {
           Проверить метаданные
         </Button>
       </div>
-    </div>
+    </ConstrainedLayout>
   );
 }

@@ -1,22 +1,30 @@
 import { Button, ScrollShadow } from "@heroui/react";
 import { useRef, useState, type ChangeEvent, type DragEvent } from "react";
 
+import { UploadIcon } from "@/components/UploadIcon";
 import { cn } from "@/lib/utils";
-import { UploadIcon } from "./UploadIcon";
 
 interface FileDropzoneProps {
   errors: readonly string[];
   onFilesSelected: (files: readonly File[]) => void;
+  isDisabled?: boolean;
+  inputLabel?: string;
 }
 
 const supportedFormats = ".pdf,.docx,.xml";
 
-export function FileDropzone({ errors, onFilesSelected }: FileDropzoneProps) {
+export function FileDropzone({
+  errors,
+  onFilesSelected,
+  isDisabled = false,
+  inputLabel = "Выбор файлов для загрузки",
+}: FileDropzoneProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (isDisabled) return;
     const files = Array.from(event.currentTarget.files ?? []);
     event.currentTarget.value = "";
     onFilesSelected(files);
@@ -25,6 +33,7 @@ export function FileDropzone({ errors, onFilesSelected }: FileDropzoneProps) {
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragging(false);
+    if (isDisabled) return;
     onFilesSelected(Array.from(event.dataTransfer.files));
   };
 
@@ -32,12 +41,15 @@ export function FileDropzone({ errors, onFilesSelected }: FileDropzoneProps) {
     <section
       className={cn(
         "border-accent/50 bg-accent/2.5 dark:bg-accent/5 h-full rounded-[20px] border border-dashed shadow-sm transition-colors",
-        isDragging && "border-accent dark:bg-accent/10 bg-accent/5",
+        isDragging &&
+          !isDisabled &&
+          "border-accent dark:bg-accent/10 bg-accent/5",
       )}
     >
       <input
         accept={supportedFormats}
-        aria-label="Выбор файлов для загрузки"
+        aria-label={inputLabel}
+        disabled={isDisabled}
         className="hidden"
         multiple
         onChange={handleInputChange}
@@ -48,6 +60,7 @@ export function FileDropzone({ errors, onFilesSelected }: FileDropzoneProps) {
       <input
         accept={supportedFormats}
         aria-label="Выбор папки для загрузки"
+        disabled={isDisabled}
         className="hidden"
         multiple
         onChange={handleInputChange}
@@ -64,7 +77,7 @@ export function FileDropzone({ errors, onFilesSelected }: FileDropzoneProps) {
         className="flex h-full flex-col items-center justify-center px-5 py-9 text-center sm:px-8"
         onDragEnter={(event) => {
           event.preventDefault();
-          setIsDragging(true);
+          if (!isDisabled) setIsDragging(true);
         }}
         onDragLeave={(event) => {
           if (
@@ -89,9 +102,10 @@ export function FileDropzone({ errors, onFilesSelected }: FileDropzoneProps) {
           <br className="hidden sm:block" /> или выберите файлы на компьютере.
         </p>
 
-        <div className="mt-6 flex w-full max-w-md flex-col gap-2.5 sm:flex-row sm:justify-center">
+        <div className="mt-6 flex w-full max-w-md flex-wrap justify-center gap-2.5">
           <Button
             className="rounded-xl sm:min-w-44"
+            isDisabled={isDisabled}
             onPress={() => fileInputRef.current?.click()}
           >
             <UploadIcon className="size-4.5" name="file" />
@@ -100,6 +114,7 @@ export function FileDropzone({ errors, onFilesSelected }: FileDropzoneProps) {
           <Button
             className="hover:bg-accent/10 hover:text-accent hover:border-accent/25 rounded-xl transition-all sm:min-w-44"
             onPress={() => folderInputRef.current?.click()}
+            isDisabled={isDisabled}
             variant="outline"
           >
             <UploadIcon className="size-4.5" name="folder" />

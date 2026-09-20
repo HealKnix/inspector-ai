@@ -18,10 +18,12 @@ import { AuthSessionsService } from "./auth-sessions.service.js";
 
 export interface AuthenticatedRequest extends Request {
   user: PublicUser;
+  authSessionId: string;
 }
 
 interface RequestWithOptionalUser extends Request {
   user?: PublicUser;
+  authSessionId?: string;
 }
 
 function getBearerToken(request: Request): string | undefined {
@@ -105,6 +107,7 @@ export class JwtAuthGuard implements CanActivate {
       }
 
       request.user = user;
+      request.authSessionId = subject.sessionId;
       return true;
     } catch {
       throw new UnauthorizedException("Сессия недействительна");

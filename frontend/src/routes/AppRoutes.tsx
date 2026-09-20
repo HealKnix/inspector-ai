@@ -1,23 +1,30 @@
 import { Alert, Button, Spinner } from "@heroui/react";
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 import { useCurrentUser } from "@/api/hooks/use-auth";
+import { Role } from "@/api/types/auth";
 import { WorkspaceLayout } from "@/layouts/WorkspaceLayout";
 import routeNames from "@/routes/routeNames";
 
 import { CubeLoader } from "@/components/cube-loader/CubeLoader";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicOnlyRoute } from "./PublicOnlyRoute";
+import { RoleGuard } from "./RoleGuards";
 
+const DashboardPage = lazy(() =>
+  import("@/pages/dashboard/DashboardPage").then((module) => ({
+    default: module.DashboardPage,
+  })),
+);
 const AuthPage = lazy(() =>
   import("@/pages/auth/AuthPage").then((module) => ({
     default: module.AuthPage,
   })),
 );
-const DashboardPage = lazy(() =>
-  import("@/pages/dashboard/DashboardPage").then((module) => ({
-    default: module.DashboardPage,
+const VerificationPage = lazy(() =>
+  import("@/pages/verification/VerificationPage").then((module) => ({
+    default: module.VerificationPage,
   })),
 );
 const DocumentUploadPage = lazy(() =>
@@ -25,10 +32,34 @@ const DocumentUploadPage = lazy(() =>
     default: module.DocumentUploadPage,
   })),
 );
+const ObjectsPage = lazy(() =>
+  import("@/pages/objects/ObjectsPage").then((module) => ({
+    default: module.ObjectsPage,
+  })),
+);
+const ObjectDetailsPage = lazy(() =>
+  import("@/pages/object-details/ObjectDetailsPage").then((module) => ({
+    default: module.ObjectDetailsPage,
+  })),
+);
+const ProtocolsPage = lazy(() =>
+  import("@/pages/protocols/ProtocolsPage").then((module) => ({
+    default: module.ProtocolsPage,
+  })),
+);
+const ProtocolDetailsPage = lazy(() =>
+  import("@/pages/protocols/ProtocolDetailsPage").then((module) => ({
+    default: module.ProtocolDetailsPage,
+  })),
+);
+const AdminMatrixPage = lazy(() =>
+  import("@/pages/admin/AdminMatrixPage").then((module) => ({
+    default: module.AdminMatrixPage,
+  })),
+);
 
 export function AppRoutes() {
   const currentUserQuery = useCurrentUser();
-  const location = useLocation();
 
   if (currentUserQuery.isPending) {
     return (
@@ -81,7 +112,6 @@ export function AppRoutes() {
           <p>Загружаем интерфейс…</p>
         </div>
       }
-      key={location.pathname}
     >
       <Routes>
         <Route element={<PublicOnlyRoute />}>
@@ -93,19 +123,41 @@ export function AppRoutes() {
         </Route>
         <Route element={<ProtectedRoute />}>
           <Route element={<WorkspaceLayout />}>
-            <Route element={<DashboardPage />} path={routeNames.APP} />
+            <Route element={<DashboardPage />} path={routeNames.ROOT} />
+            <Route element={<RoleGuard roles={Role.INSPECTOR} />}>
+              <Route
+                element={<VerificationPage />}
+                path={routeNames.DOCUMENT_VERIFICATION}
+              />
+              <Route element={<ProtocolsPage />} path={routeNames.PROTOCOLS} />
+              <Route
+                element={<ProtocolDetailsPage />}
+                path={routeNames.PROTOCOL_DETAILS(":protocolId")}
+              />
+            </Route>
             <Route
               element={<DocumentUploadPage />}
               path={routeNames.DOCUMENT_UPLOAD}
             />
+            <Route element={<ObjectsPage />} path={routeNames.OBJECTS} />
+            <Route
+              element={<ObjectDetailsPage />}
+              path={routeNames.OBJECT_DETAILS(":objectId")}
+            />
+            <Route element={<RoleGuard roles={Role.ADMINISTRATOR} />}>
+              <Route
+                element={<AdminMatrixPage />}
+                path={routeNames.ADMIN_MATRIX}
+              />
+            </Route>
           </Route>
         </Route>
         <Route
-          element={<Navigate replace to={routeNames.APP} />}
+          element={<Navigate replace to={routeNames.ROOT} />}
           path={routeNames.ROOT}
         />
         <Route
-          element={<Navigate replace to={routeNames.APP} />}
+          element={<Navigate replace to={routeNames.ROOT} />}
           path={routeNames.NOT_FOUND}
         />
       </Routes>

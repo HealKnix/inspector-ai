@@ -1,6 +1,6 @@
 import { Button } from "@heroui/react";
 
-import { UploadIcon } from "./UploadIcon";
+import { UploadIcon } from "@/components/UploadIcon";
 
 interface MetadataAssistantProps {
   needsReviewCount: number;

@@ -5,7 +5,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 const viteWatchIgnored = [
-  /[\\/]\node_modules[\\/]/,
+  /[\\/]node_modules[\\/]/,
   /[\\/][^\\/]+\.(?:spec|test)\.[^\\/]+$/,
 ];
 

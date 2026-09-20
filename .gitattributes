@@ -1,0 +1,2 @@
+# Historical source digests must survive Windows checkouts unchanged.
+openspec/superseded/** text eol=lf

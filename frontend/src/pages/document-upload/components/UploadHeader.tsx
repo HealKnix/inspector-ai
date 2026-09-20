@@ -1,6 +1,7 @@
 import { Button, Popover } from "@heroui/react";
 
-import { UploadIcon } from "./UploadIcon";
+import { UploadIcon } from "@/components/UploadIcon";
+import { PageHeader } from "@/layouts/ConstrainedLayout";
 
 function HowItWorksPopover() {
   return (
@@ -62,30 +63,17 @@ interface UploadHeaderProps {
 
 export function UploadHeader({ fixtureNotice }: UploadHeaderProps) {
   return (
-    <header className="flex flex-col gap-5 min-[880px]:flex-row min-[880px]:items-start min-[880px]:justify-between">
-      <div className="min-w-0">
-        <h1 className="mt-3 text-[clamp(2rem,3.2vw,3.25rem)] leading-[1.02] font-semibold tracking-[-0.045em]">
-          Загрузка комплекта документов
-        </h1>
-        <p className="text-copy-muted mt-3 max-w-3xl text-sm leading-6 sm:text-base">
-          Добавьте ПД, РД и ИД — система определит стадию, раздел, шифр и
-          редакцию.
-        </p>
-        <div
-          className="bg-accent/5 text-copy-muted mt-4 flex max-w-3xl items-center gap-2 rounded-xl px-3 py-2 text-xs leading-5"
-          role="note"
-        >
-          <span className="bg-accent/10 text-accent mt-0.5 shrink-0 rounded-md px-2 py-0.5 font-semibold">
-            ДЕМО
-          </span>
-          <span>{fixtureNotice}</span>
-        </div>
-      </div>
-
-      <div className="flex shrink-0 flex-wrap gap-2.5">
-        <HowItWorksPopover />
-        <StructurePopover />
-      </div>
-    </header>
+    <PageHeader
+      actions={
+        <>
+          <HowItWorksPopover />
+          <StructurePopover />
+        </>
+      }
+      description="Добавьте ПД, РД и ИД — система определит стадию, раздел, шифр и редакцию."
+      notice={fixtureNotice}
+      noticeLabel="ДЕМО"
+      title="Загрузка комплекта документов"
+    />
   );
 }

@@ -10,3 +10,14 @@ node_modules
 .env*
 **/.env*
 *.log
+.test-output
+.playwright-cli
+output
+backend/var
+frontend/.heroui-docs
+**/__pycache__
+**/.venv
+**/.pytest_cache
+backend/document-parser/models
+backend/document-parser/.cache
+backend/document-parser/experiments

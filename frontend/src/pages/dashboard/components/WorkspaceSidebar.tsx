@@ -36,34 +36,71 @@ const fallbackAvatars = [
   AvatarPurple,
 ];
 
-type NavigationItemId =
-  | "create"
-  | "checks"
-  | "search"
-  | "documents"
-  | "more"
-  | "archive"
-  | "messages"
-  | "help";
+const SIDEBAR_COLLAPSED_STORAGE_KEY = "inspector-ai:sidebar-collapsed:v1";
+
+function getStoredSidebarCollapsed() {
+  if (typeof window === "undefined") return false;
+
+  try {
+    const storedValue = window.localStorage.getItem(
+      SIDEBAR_COLLAPSED_STORAGE_KEY,
+    );
+
+    if (storedValue === "true") return true;
+    if (storedValue !== null) {
+      window.localStorage.removeItem(SIDEBAR_COLLAPSED_STORAGE_KEY);
+    }
+  } catch {
+    return false;
+  }
+
+  return false;
+}
+
+function saveSidebarCollapsed(collapsed: boolean) {
+  if (typeof window === "undefined") return;
+
+  try {
+    if (collapsed) {
+      window.localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, "true");
+    } else {
+      window.localStorage.removeItem(SIDEBAR_COLLAPSED_STORAGE_KEY);
+    }
+  } catch {
+    // The sidebar still keeps its state for the current page session.
+  }
+}
 
 interface NavigationItem {
+  href: string;
   icon: DashboardIconName;
-  id: NavigationItemId;
   label: string;
+  roles?: readonly Role[];
 }
 
 const primaryItems: readonly NavigationItem[] = [
-  { icon: "plus", id: "create", label: "Создать" },
-  { icon: "lightning", id: "checks", label: "Проверки" },
-  { icon: "search", id: "search", label: "Поиск" },
-  { icon: "calendar", id: "documents", label: "Документы" },
-  { icon: "more", id: "more", label: "Ещё" },
+  { href: routeNames.ROOT, icon: "grid", label: "Дашборд" },
+  { href: routeNames.OBJECTS, icon: "folder", label: "Объекты" },
+  {
+    href: routeNames.DOCUMENT_UPLOAD,
+    icon: "upload",
+    label: "Загрузка комплекта",
+  },
+  {
+    href: routeNames.DOCUMENT_VERIFICATION,
+    icon: "lightning",
+    label: "Проверки",
+    roles: [Role.INSPECTOR],
+  },
+  {
+    href: routeNames.PROTOCOLS,
+    icon: "file",
+    label: "Протоколы",
+    roles: [Role.INSPECTOR],
+  },
 ];
 
-const secondaryItems: readonly NavigationItem[] = [
-  { icon: "folder", id: "archive", label: "Архив" },
-  { icon: "chat", id: "messages", label: "Сообщения" },
-];
+const secondaryItems: readonly NavigationItem[] = [];
 
 const roleLabels: Record<Role, string> = {
   [Role.ADMINISTRATOR]: "Администратор",
@@ -79,27 +116,28 @@ interface SidebarSharedProps {
 }
 
 interface NavigationListProps {
-  activeItem: NavigationItemId | null;
+  activeHref: string | null;
   collapsed: boolean;
   items: readonly NavigationItem[];
   className?: string;
-  onActiveItemChange: (item: NavigationItemId) => void;
+  onActiveHrefChange: (item: string) => void;
 }
 
 function NavigationList({
-  activeItem,
+  activeHref,
   collapsed,
   items,
   className,
-  onActiveItemChange,
+  onActiveHrefChange,
 }: NavigationListProps) {
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
       {items.map((item) => {
-        const isActive = item.id === activeItem;
+        const isActive =
+          item.href.split("/").at(1) === activeHref?.split("/").at(1);
 
         return (
-          <Tooltip key={item.id} isDisabled={!collapsed}>
+          <Tooltip key={item.href} isDisabled={!collapsed}>
             <Button
               aria-label={collapsed ? item.label : undefined}
               aria-pressed={isActive}
@@ -111,7 +149,7 @@ function NavigationList({
               )}
               isIconOnly={collapsed}
               onPress={() => {
-                onActiveItemChange(item.id);
+                onActiveHrefChange(item.href);
               }}
               variant="ghost"
             >
@@ -160,7 +198,7 @@ function AccountPopover({
           isIconOnly={compact}
           variant="ghost"
         >
-          <Avatar>
+          <Avatar className="size-9">
             <Avatar.Image
               src={fallbackAvatars[randomNumberFromId % fallbackAvatars.length]}
             />
@@ -241,38 +279,14 @@ function SidebarContent({
   const isMobile = useMediaQuery("(max-width: 760px)");
   const location = useLocation();
   const navigate = useNavigate();
-  const [selectedStubItem, setSelectedStubItem] = useState<{
-    item: NavigationItemId;
-    pathname: string;
-  } | null>(null);
+  const visiblePrimaryItems = primaryItems.filter(
+    (item) =>
+      !item.roles || (user?.role != null && item.roles.includes(user.role)),
+  );
 
-  const routeActiveItem: NavigationItemId | null =
-    location.pathname === routeNames.DOCUMENT_UPLOAD
-      ? "create"
-      : location.pathname === routeNames.APP
-        ? "checks"
-        : null;
-  const activeItem =
-    selectedStubItem?.pathname === location.pathname
-      ? selectedStubItem.item
-      : routeActiveItem;
-
-  const handleActiveItemChange = (item: NavigationItemId) => {
-    if (item === "create") {
-      setSelectedStubItem(null);
-      void navigate(routeNames.DOCUMENT_UPLOAD);
-      onNavigate?.();
-      return;
-    }
-
-    if (item === "checks") {
-      setSelectedStubItem(null);
-      void navigate(routeNames.APP);
-      onNavigate?.();
-      return;
-    }
-
-    setSelectedStubItem({ item, pathname: location.pathname });
+  const onActiveHrefChange = (href: string) => {
+    void navigate(href);
+    onNavigate?.();
   };
 
   return (
@@ -286,24 +300,17 @@ function SidebarContent({
           className="flex min-h-0 flex-1 flex-col gap-1.5"
         >
           <NavigationList
-            activeItem={activeItem}
+            activeHref={location.pathname}
             collapsed={collapsed}
-            items={primaryItems}
-            onActiveItemChange={handleActiveItemChange}
+            items={visiblePrimaryItems}
+            onActiveHrefChange={onActiveHrefChange}
           />
-          <div className="bg-border/50 mx-auto h-px w-[95%] flex-none" />
+          <div className="bg-border/50 mx-auto mb-auto h-px w-[95%] flex-none" />
           <NavigationList
-            activeItem={activeItem}
+            activeHref={location.pathname}
             collapsed={collapsed}
             items={secondaryItems}
-            onActiveItemChange={handleActiveItemChange}
-          />
-          <NavigationList
-            activeItem={activeItem}
-            collapsed={collapsed}
-            items={[{ icon: "help", id: "help", label: "Помощь" }]}
-            className="mt-auto"
-            onActiveItemChange={handleActiveItemChange}
+            onActiveHrefChange={onActiveHrefChange}
           />
           <SystemStatusPopover compact={collapsed} />
         </nav>
@@ -323,14 +330,21 @@ function SidebarContent({
 
 export function WorkspaceSidebar(props: SidebarSharedProps) {
   const isNarrow = useMediaQuery("(max-width: 1280px)");
-  const [isManuallyCollapsed, setIsManuallyCollapsed] = useState(false);
+  const [isManuallyCollapsed, setIsManuallyCollapsed] = useState(
+    getStoredSidebarCollapsed,
+  );
   const isCollapsed = isNarrow || isManuallyCollapsed;
+
+  const setManualCollapsed = (collapsed: boolean) => {
+    setIsManuallyCollapsed(collapsed);
+    saveSidebarCollapsed(collapsed);
+  };
 
   return (
     <aside
       aria-label="Боковая панель"
       className={cn(
-        "border-border bg-surface hidden h-svh shrink-0 flex-col border-r py-3 transition-[width] duration-200 *:px-3 min-[761px]:flex",
+        "bg-surface hidden h-svh shrink-0 flex-col py-3 transition-[width] duration-200 *:px-3 min-[761px]:flex sm:py-5",
         isCollapsed ? "w-[72px]" : "w-[var(--sidebar-width)]",
       )}
       data-collapsed={isCollapsed}
@@ -344,7 +358,7 @@ export function WorkspaceSidebar(props: SidebarSharedProps) {
             isIconOnly
             isDisabled={isNarrow}
             onPress={() => {
-              setIsManuallyCollapsed(false);
+              setManualCollapsed(false);
             }}
             variant="ghost"
           >
@@ -354,7 +368,7 @@ export function WorkspaceSidebar(props: SidebarSharedProps) {
           <>
             <div className="flex min-w-0 flex-1 items-center gap-2 pl-2">
               <BrandMark className="text-accent size-8 shrink-0" />
-              <p className="truncate text-sm font-medium">
+              <p className="truncate font-medium">
                 Инспектор <span className="text-accent font-semibold">ИИ</span>
               </p>
             </div>
@@ -364,7 +378,7 @@ export function WorkspaceSidebar(props: SidebarSharedProps) {
               className="justify-left text-muted-foreground size-9 min-w-9 rounded-xl"
               isIconOnly
               onPress={() => {
-                setIsManuallyCollapsed(true);
+                setManualCollapsed(true);
               }}
               variant="ghost"
             >

@@ -6,6 +6,7 @@ import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import cookieParser from "cookie-parser";
+import { json, type NextFunction, type Request, type Response } from "express";
 import helmet from "helmet";
 
 import { AppModule } from "./app.module.js";
@@ -15,7 +16,9 @@ import {
 } from "./common/const/auth.constants.js";
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+  });
   const configService = app.get(ConfigService);
   const frontendUrl = configService.getOrThrow<string>("FRONTEND_URL");
   const trustProxyHops = configService.getOrThrow<number>("TRUST_PROXY_HOPS");
@@ -26,6 +29,15 @@ async function bootstrap(): Promise<void> {
   }
   app.use(helmet());
   app.use(cookieParser());
+  const parseJson = json({ limit: "100kb" });
+  app.use((request: Request, response: Response, next: NextFunction) => {
+    if (
+      request.method === "POST" &&
+      /^\/api\/v1\/documents\/upload\/?$/.test(request.path)
+    )
+      next();
+    else parseJson(request, response, next);
+  });
   app.enableCors({ credentials: true, origin: frontendUrl });
   app.enableShutdownHooks();
   app.useGlobalPipes(
@@ -38,7 +50,9 @@ async function bootstrap(): Promise<void> {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle("Инспектор ИИ API")
-    .setDescription("Технический API аутентификации начального среза проекта")
+    .setDescription(
+      "Аутентификация, объекты строительства и безопасный приём документов",
+    )
     .setVersion("0.1.0")
     .addBearerAuth(
       { bearerFormat: "JWT", scheme: "bearer", type: "http" },

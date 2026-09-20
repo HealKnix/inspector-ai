@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_PASSWORD: ingestion-test-only
+      POSTGRES_DB: ingestion_test
+    ports: ["127.0.0.1:25432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ingestion_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  rabbitmq:
+    image: rabbitmq:4.1-management-alpine
+    ports: ["127.0.0.1:25672:5672", "127.0.0.1:25673:15672"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  clamav:
+    build:
+      context: .
+      dockerfile: backend/antivirus/Dockerfile
+    ports: ["127.0.0.1:23310:3310"]
+    volumes: ["clamav-test:/var/lib/clamav"]
+    healthcheck:
+      test: ["CMD", "clamdscan", "--ping", "1"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+  validator:
+    init: true
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    build:
+      context: .
+      dockerfile: backend/file-validator/Dockerfile
+    environment:
+      FILE_VALIDATOR_TIMEOUT_SECONDS: ${FILE_VALIDATOR_TIMEOUT_SECONDS:-180}
+    volumes: ["./.test-output/storage/quarantine:/data/quarantine:ro"]
+    networks: [isolated]
+    read_only: true
+    tmpfs: ["/tmp:size=64m,noexec,nosuid"]
+    mem_limit: 512m
+    cpus: 1
+    pids_limit: 32
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+  validator-proxy:
+    image: nginx:1.28.0-alpine
+    ports: ["127.0.0.1:28081:80"]
+    volumes:
+      ["./backend/test/validator-proxy.conf:/etc/nginx/conf.d/default.conf:ro"]
+    networks: [default, isolated]
+    depends_on: [validator]
+  upload-proxy:
+    image: nginx:1.28.0-alpine
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    ports: ["127.0.0.1:28080:80"]
+    volumes:
+      ["./.test-output/upload-proxy.conf:/etc/nginx/conf.d/default.conf:ro"]
+networks:
+  isolated:
+    internal: true
+volumes:
+  clamav-test:

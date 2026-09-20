@@ -70,13 +70,13 @@
   --field-placeholder: var(--muted);
   --field-border: var(--border);
   --surface-foreground: var(--foreground);
-  --surface-secondary: #f2f3f7;
+  --surface-secondary: hsl(246, 24%, 96%);
   --surface-secondary-foreground: var(--foreground);
-  --surface-tertiary: #e9ebf1;
+  --surface-tertiary: hsl(246, 22%, 93%);
   --surface-tertiary-foreground: var(--foreground);
   --overlay: #ffffff;
   --overlay-foreground: var(--foreground);
-  --default: #e9ebf2;
+  --default: hsl(246, 26%, 93%);
   --default-foreground: var(--foreground);
   --success: #16a374;
   --success-foreground: #ffffff;
@@ -86,33 +86,33 @@
   --danger-foreground: #ffffff;
   --segment: #ffffff;
   --segment-foreground: var(--foreground);
-  --separator: #e3e5eb;
+  --separator: hsl(246, 17%, 91%);
   --focus: var(--accent);
   --link: var(--accent);
   --backdrop: rgb(15 18 28 / 0.48);
-  --surface-low: #f6f7fa;
+  --surface-low: hsl(246, 29%, 97%);
   --surface: #ffffff;
-  --surface-high: #f1f2f6;
-  --surface-raised: #e9ebf1;
-  --line: #dfe2e9;
-  --copy-muted: #687080;
+  --surface-high: hsl(246, 22%, 95%);
+  --surface-raised: hsl(246, 22%, 93%);
+  --line: hsl(246, 19%, 89%);
+  --copy-muted: hsl(246, 10%, 45%);
 }
 
 .dark,
 [data-theme="dark"] {
   color-scheme: dark;
   --background: hsl(246 24% 4%);
-  --foreground: hsl(225 18% 95%);
+  --foreground: hsl(246 18% 95%);
   --card: hsl(246 15% 8%);
-  --card-foreground: hsl(225 18% 95%);
+  --card-foreground: hsl(246 18% 95%);
   --popover: hsl(246 14% 10%);
-  --popover-foreground: hsl(225 18% 95%);
+  --popover-foreground: hsl(246 18% 95%);
   --primary: 246 99% 65%;
   --primary-foreground: 0 0% 100%;
   --accent: hsl(var(--primary));
   --accent-foreground: hsl(var(--primary-foreground));
   --secondary: hsl(246 12% 12%);
-  --secondary-foreground: hsl(225 15% 91%);
+  --secondary-foreground: hsl(246 15% 91%);
   --muted: hsl(246 9% 59%);
   --muted-foreground: hsl(246 9% 59%);
   --destructive: hsl(341 84% 61%);
@@ -120,18 +120,18 @@
   --border: hsl(246 10% 16%);
   --input: hsl(246 10% 16%);
   --ring: hsl(246 99% 65%);
-  --field-background: #15161b;
+  --field-background: hsl(246, 13%, 9%);
   --field-foreground: var(--foreground);
   --field-placeholder: var(--muted);
   --field-border: var(--border);
   --surface-foreground: var(--foreground);
-  --surface-secondary: #121318;
+  --surface-secondary: hsl(246, 14%, 8%);
   --surface-secondary-foreground: var(--foreground);
-  --surface-tertiary: #17181e;
+  --surface-tertiary: hsl(246, 13%, 10%);
   --surface-tertiary-foreground: var(--foreground);
-  --overlay: #17181e;
+  --overlay: hsl(246, 13%, 10%);
   --overlay-foreground: var(--foreground);
-  --default: #1b1c22;
+  --default: hsl(246, 11%, 12%);
   --default-foreground: var(--foreground);
   --success: #34d399;
   --success-foreground: #06130f;
@@ -139,18 +139,18 @@
   --warning-foreground: #171006;
   --danger: #f43f6f;
   --danger-foreground: #ffffff;
-  --segment: #17181e;
+  --segment: hsl(246, 13%, 10%);
   --segment-foreground: var(--foreground);
   --separator: var(--border);
   --focus: var(--accent);
   --link: var(--accent);
   --backdrop: rgb(0 0 0 / 0.7);
-  --surface-low: #090a0d;
-  --surface: #0d0e12;
-  --surface-high: #121318;
-  --surface-raised: #17181e;
-  --line: #252730;
-  --copy-muted: #9295a1;
+  --surface-low: hsl(246, 18%, 4%);
+  --surface: hsl(246, 16%, 6%);
+  --surface-high: hsl(246, 14%, 8%);
+  --surface-raised: hsl(246, 13%, 10%);
+  --line: hsl(246, 13%, 17%);
+  --copy-muted: hsl(246, 7%, 60%);
 }
 
 :root {

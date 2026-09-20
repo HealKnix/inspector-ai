@@ -35,7 +35,7 @@ export function RegisterForm() {
       },
       {
         onSuccess: () => {
-          void navigate(routeNames.APP, { replace: true });
+          void navigate(routeNames.ROOT, { replace: true });
         },
       },
     );

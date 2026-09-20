@@ -18,6 +18,13 @@ const user: UserDto = {
   login: "inspector",
   role: Role.INSPECTOR,
 };
+const administrator: UserDto = {
+  ...user,
+  id: "b1f9bbf4-6eb4-4dc1-9480-88284195640d",
+  login: "administrator",
+  role: Role.ADMINISTRATOR,
+};
+const sidebarStorageKey = "inspector-ai:sidebar-collapsed:v1";
 
 interface MatchMediaController {
   setMatches: (query: string, matches: boolean) => void;
@@ -84,16 +91,62 @@ function LocationProbe() {
   return <output data-testid="location">{useLocation().pathname}</output>;
 }
 
-function renderSidebar(initialEntry = routeNames.APP) {
-  render(
+function renderSidebar(
+  initialEntry: string = routeNames.DOCUMENT_VERIFICATION,
+  sidebarUser: UserDto = user,
+) {
+  return render(
     <MemoryRouter initialEntries={[initialEntry]}>
-      <WorkspaceSidebar isLoggingOut={false} onLogout={vi.fn()} user={user} />
+      <WorkspaceSidebar
+        isLoggingOut={false}
+        onLogout={vi.fn()}
+        user={sidebarUser}
+      />
       <LocationProbe />
     </MemoryRouter>,
   );
 }
 
 describe("WorkspaceSidebar", () => {
+  it("выделяет раздел объектов в карточке и возвращает к списку", () => {
+    installMatchMedia();
+    renderSidebar(routeNames.OBJECT_DETAILS("synthetic-id"));
+    const objectsButton = screen.getByRole("button", { name: "Объекты" });
+    expect(objectsButton).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(objectsButton);
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      routeNames.OBJECTS,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Проверки" }));
+    expect(objectsButton).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("выделяет протоколы на странице отдельного протокола", () => {
+    installMatchMedia();
+    renderSidebar(routeNames.PROTOCOL_DETAILS("synthetic-demo-protocol"));
+
+    const protocolsButton = screen.getByRole("button", {
+      name: "Протоколы",
+    });
+    expect(protocolsButton).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(protocolsButton);
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      routeNames.PROTOCOLS,
+    );
+  });
+
+  it("скрывает инспекторские разделы от роли без подтверждённого права", () => {
+    installMatchMedia();
+    renderSidebar(routeNames.ROOT, administrator);
+
+    expect(
+      screen.queryByRole("button", { name: "Проверки" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Протоколы" }),
+    ).not.toBeInTheDocument();
+  });
   beforeEach(() => {
     window.localStorage.clear();
     document.documentElement.classList.remove("light", "dark");
@@ -118,6 +171,35 @@ describe("WorkspaceSidebar", () => {
     expect(sidebar).toHaveAttribute("data-collapsed", "false");
   });
 
+  it("восстанавливает ручное состояние после повторного монтирования", () => {
+    installMatchMedia();
+    const firstRender = renderSidebar();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Свернуть боковую панель" }),
+    );
+    expect(window.localStorage.getItem(sidebarStorageKey)).toBe("true");
+
+    firstRender.unmount();
+    const secondRender = renderSidebar();
+    expect(screen.getByLabelText("Боковая панель")).toHaveAttribute(
+      "data-collapsed",
+      "true",
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Развернуть боковую панель" }),
+    );
+    expect(window.localStorage.getItem(sidebarStorageKey)).toBeNull();
+
+    secondRender.unmount();
+    renderSidebar();
+    expect(screen.getByLabelText("Боковая панель")).toHaveAttribute(
+      "data-collapsed",
+      "false",
+    );
+  });
+
   it("автоматически сворачивается при ширине 1280 px и меньше", () => {
     const matchMedia = installMatchMedia();
     renderSidebar();
@@ -128,6 +210,7 @@ describe("WorkspaceSidebar", () => {
       matchMedia.setMatches("(max-width: 1280px)", true);
     });
     expect(sidebar).toHaveAttribute("data-collapsed", "true");
+    expect(window.localStorage.getItem(sidebarStorageKey)).toBeNull();
     expect(
       screen.getByRole("button", { name: "Развернуть боковую панель" }),
     ).toBeDisabled();
@@ -158,26 +241,24 @@ describe("WorkspaceSidebar", () => {
     renderSidebar();
 
     const checksButton = screen.getByRole("button", { name: "Проверки" });
-    const createButton = screen.getByRole("button", { name: "Создать" });
+    const uploadButton = screen.getByRole("button", {
+      name: "Загрузка комплекта",
+    });
 
     expect(checksButton).toHaveAttribute("aria-pressed", "true");
 
-    const searchButton = screen.getByRole("button", { name: "Поиск" });
-    fireEvent.click(searchButton);
-
-    expect(searchButton).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByTestId("location")).toHaveTextContent(routeNames.APP);
-
-    fireEvent.click(createButton);
+    fireEvent.click(uploadButton);
 
     expect(screen.getByTestId("location")).toHaveTextContent(
       routeNames.DOCUMENT_UPLOAD,
     );
-    expect(createButton).toHaveAttribute("aria-pressed", "true");
+    expect(uploadButton).toHaveAttribute("aria-pressed", "true");
 
     fireEvent.click(checksButton);
 
-    expect(screen.getByTestId("location")).toHaveTextContent(routeNames.APP);
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      routeNames.DOCUMENT_VERIFICATION,
+    );
     expect(checksButton).toHaveAttribute("aria-pressed", "true");
   });
 

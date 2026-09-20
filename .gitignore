@@ -15,3 +15,13 @@ coverage/
 frontend/dist/
 backend/dist/
 backend/src/generated/
+backend/var/
+.test-output/
+.playwright-cli/
+output/playwright/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+backend/document-parser/models/
+backend/document-parser/.cache/

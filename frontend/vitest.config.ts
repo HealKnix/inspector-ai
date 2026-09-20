@@ -17,6 +17,10 @@ export default defineConfig({
     },
     environment: "jsdom",
     globals: true,
+    // Bound concurrent JSDOM and HeroUI initialization on local and CI machines.
+    maxWorkers: 2,
+    pool: "vmThreads",
+    isolate: false,
     setupFiles: ["./src/test/setup.ts"],
   },
 });

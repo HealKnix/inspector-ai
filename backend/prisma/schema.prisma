@@ -15,15 +15,52 @@ enum Role {
 }
 
 model User {
-  id           String        @id @default(uuid())
-  login        String        @unique @db.VarChar(64)
-  passwordHash String        @map("password_hash")
-  role         Role?         @default(INSPECTOR)
-  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
-  authSessions AuthSession[]
+  id                  String               @id @default(uuid())
+  login               String               @unique @db.VarChar(64)
+  passwordHash        String               @map("password_hash")
+  role                Role?                @default(INSPECTOR)
+  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  authSessions        AuthSession[]
+  createdObjects      ConstructionObject[] @relation("ObjectCreator")
+  objectAccess        ObjectAccess[]       @relation("ObjectMember")
+  grantedObjectAccess ObjectAccess[]       @relation("AccessGrantor")
+  uploadedFiles       File[]
+  uploadReceipts      UploadReceipt[]
+  auditEvents         AuditEvent[]
 
   @@map("users")
+}
+
+model ConstructionObject {
+  id          String          @id @default(uuid()) @db.Uuid
+  name        String
+  createdBy   String          @map("created_by")
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  creator     User            @relation("ObjectCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  access      ObjectAccess[]
+  processes   Process[]
+  files       File[]
+  receipts    UploadReceipt[]
+  auditEvents AuditEvent[]
+
+  @@index([createdAt, id])
+  @@map("objects")
+}
+
+model ObjectAccess {
+  objectId  String             @map("object_id") @db.Uuid
+  userId    String             @map("user_id")
+  grantedBy String             @map("granted_by")
+  createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  object    ConstructionObject @relation(fields: [objectId], references: [id], onDelete: Restrict)
+  user      User               @relation("ObjectMember", fields: [userId], references: [id], onDelete: Restrict)
+  grantor   User               @relation("AccessGrantor", fields: [grantedBy], references: [id], onDelete: Restrict)
+
+  @@id([objectId, userId])
+  @@index([userId, objectId])
+  @@map("object_access")
 }
 
 model AuthSession {
@@ -39,4 +76,434 @@ model AuthSession {
   @@index([userId])
   @@index([expiresAt])
   @@map("auth_sessions")
+}
+
+enum ProcessStatus {
+  PENDING
+  PARSING
+  READY
+  VERIFYING
+  COMPLETED
+  FINALIZED
+}
+
+model Process {
+  id        String             @id @default(uuid()) @db.Uuid
+  objectId  String             @map("object_id") @db.Uuid
+  status    ProcessStatus      @default(PENDING)
+  version   Int                @default(1)
+  createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  object    ConstructionObject @relation(fields: [objectId], references: [id], onDelete: Restrict)
+  runs      Run[]
+
+  @@unique([id, objectId])
+  @@index([objectId, createdAt])
+  @@map("processes")
+}
+
+model Run {
+  id                String          @id @default(uuid()) @db.Uuid
+  processId         String          @map("process_id") @db.Uuid
+  objectId          String          @map("object_id") @db.Uuid
+  version           Int
+  inputManifest     Json            @map("input_manifest")
+  inputManifestHash String          @map("input_manifest_hash") @db.Char(64)
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  process           Process         @relation(fields: [processId, objectId], references: [id, objectId], onDelete: Restrict)
+  files             File[]
+  inputs            RunInput[]
+  receipts          UploadReceipt[]
+  jobs              Job[]
+  parsingTasks      ParsingTask[]
+
+  @@unique([id, processId, objectId])
+  @@unique([processId, version])
+  @@map("runs")
+}
+
+model File {
+  id                 String             @id @default(uuid()) @db.Uuid
+  objectId           String             @map("object_id") @db.Uuid
+  processId          String             @map("process_id") @db.Uuid
+  runId              String             @map("run_id") @db.Uuid
+  originalName       String             @map("original_name")
+  format             String
+  size               Int
+  sha256             String             @db.Char(64)
+  storageKey         String             @unique @map("storage_key") @db.Uuid
+  uploadedBy         String             @map("uploaded_by")
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  integrityCheckedAt DateTime?          @map("integrity_checked_at") @db.Timestamptz(3)
+  corruptedAt        DateTime?          @map("corrupted_at") @db.Timestamptz(3)
+  object             ConstructionObject @relation(fields: [objectId], references: [id], onDelete: Restrict)
+  uploader           User               @relation(fields: [uploadedBy], references: [id], onDelete: Restrict)
+  run                Run                @relation(fields: [runId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+  inputs             RunInput[]
+  content            ObjectFileContent?
+  parsingTasks       ParsingTask[]
+
+  @@unique([id, processId, objectId])
+  @@unique([id, objectId, sha256])
+  @@index([objectId, createdAt, id])
+  @@map("files")
+}
+
+// A canonical original for each object/hash; historical duplicate Files remain intact.
+// Populated by the files INSERT trigger so concurrent/direct writes obey uniqueness.
+model ObjectFileContent {
+  objectId String @map("object_id") @db.Uuid
+  sha256   String @db.Char(64)
+  fileId   String @map("file_id") @db.Uuid
+  file     File   @relation(fields: [fileId, objectId, sha256], references: [id, objectId, sha256], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([objectId, sha256])
+  @@unique([fileId, objectId, sha256])
+  @@map("object_file_contents")
+}
+
+model RunInput {
+  runId     String @map("run_id") @db.Uuid
+  fileId    String @map("file_id") @db.Uuid
+  processId String @map("process_id") @db.Uuid
+  objectId  String @map("object_id") @db.Uuid
+  run       Run    @relation(fields: [runId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+  file      File   @relation(fields: [fileId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+
+  @@id([runId, fileId])
+  @@map("run_inputs")
+}
+
+model UploadReceipt {
+  id             String             @id @default(uuid()) @db.Uuid
+  userId         String             @map("user_id")
+  objectId       String             @map("object_id") @db.Uuid
+  clientUploadId String             @map("client_upload_id") @db.Uuid
+  fingerprint    String             @db.Char(64)
+  processId      String?            @map("process_id") @db.Uuid
+  runId          String?            @map("run_id") @db.Uuid
+  httpStatus     Int                @map("http_status")
+  response       Json
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  user           User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  object         ConstructionObject @relation(fields: [objectId], references: [id], onDelete: Restrict)
+  run            Run?               @relation(fields: [runId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+
+  @@unique([userId, objectId, clientUploadId])
+  @@index([objectId, userId, createdAt])
+  @@map("upload_receipts")
+}
+
+model Job {
+  id        String   @id @default(uuid()) @db.Uuid
+  runId     String   @map("run_id") @db.Uuid
+  processId String   @map("process_id") @db.Uuid
+  objectId  String   @map("object_id") @db.Uuid
+  kind      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  run       Run      @relation(fields: [runId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+  outbox    Outbox[]
+
+  @@unique([runId, kind])
+  @@map("jobs")
+}
+
+model Outbox {
+  id          String    @id @default(uuid()) @db.Uuid
+  jobId       String?   @map("job_id") @db.Uuid
+  eventType   String    @map("event_type")
+  payload     Json
+  attempts    Int       @default(0)
+  availableAt DateTime  @default(now()) @map("available_at") @db.Timestamptz(3)
+  deliveredAt DateTime? @map("delivered_at") @db.Timestamptz(3)
+  leaseUntil  DateTime? @map("lease_until") @db.Timestamptz(3)
+  leaseToken  String?   @map("lease_token") @db.Uuid
+  lastError   String?   @map("last_error")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  job         Job?      @relation(fields: [jobId], references: [id], onDelete: Restrict)
+
+  @@index([deliveredAt, availableAt])
+  @@map("outbox")
+}
+
+model AuditEvent {
+  id        String              @id @default(uuid()) @db.Uuid
+  userId    String              @map("user_id")
+  objectId  String?             @map("object_id") @db.Uuid
+  action    String
+  requestId String              @map("request_id") @db.Uuid
+  ip        String?
+  details   Json
+  createdAt DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  user      User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  object    ConstructionObject? @relation(fields: [objectId], references: [id], onDelete: Restrict)
+
+  @@index([objectId, createdAt])
+  @@map("audit_events")
+}
+
+// Each manual retry is a separate immutable execution cycle; broker redelivery
+// never resets attempts. States here are technical, not ProcessStatus values.
+model ParsingTask {
+  id                   String                @id @default(uuid()) @db.Uuid
+  runId                String                @map("run_id") @db.Uuid
+  fileId               String                @map("file_id") @db.Uuid
+  processId            String                @map("process_id") @db.Uuid
+  objectId             String                @map("object_id") @db.Uuid
+  cycle                Int                   @default(1)
+  state                String                @default("queued")
+  attempts             Int                   @default(0)
+  capacityDeferrals    Int                   @default(0) @map("capacity_deferrals")
+  availableAt          DateTime              @default(now()) @map("available_at") @db.Timestamptz(3)
+  leaseUntil           DateTime?             @map("lease_until") @db.Timestamptz(3)
+  leaseToken           String?               @map("lease_token") @db.Uuid
+  dispatchedAt         DateTime?             @map("dispatched_at") @db.Timestamptz(3)
+  pipelineFingerprint  String?               @map("pipeline_fingerprint") @db.Char(64)
+  pagesCompleted       Int                   @default(0) @map("pages_completed")
+  pagesTotal           Int?                  @map("pages_total")
+  phase                String?
+  progressUpdatedAt    DateTime?             @map("progress_updated_at") @db.Timestamptz(3)
+  waitingReason        String?               @map("waiting_reason")
+  checkpointValidated  Boolean?              @map("checkpoint_validated")
+  checkpointPages      Int?                  @map("checkpoint_pages")
+  currentPage          Int?                  @map("current_page")
+  previousAttemptError String?               @map("previous_attempt_error")
+  progressResetReason  String?               @map("progress_reset_reason")
+  modelsReadyDeadline  DateTime?             @map("models_ready_deadline") @db.Timestamptz(3)
+  errorCode            String?               @map("error_code")
+  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt          DateTime?             @map("completed_at") @db.Timestamptz(3)
+  run                  Run                   @relation(fields: [runId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+  file                 File                  @relation(fields: [fileId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+  artifact             ParseArtifact?
+  retryReceipts        ParsingRetryReceipt[]
+
+  @@unique([runId, fileId, cycle])
+  @@index([state, availableAt, leaseUntil])
+  @@index([state, modelsReadyDeadline])
+  @@map("parsing_tasks")
+}
+
+model ParseArtifact {
+  id                  String      @id @default(uuid()) @db.Uuid
+  taskId              String      @unique @map("task_id") @db.Uuid
+  sourceSha256        String      @map("source_sha256") @db.Char(64)
+  pipelineFingerprint String      @map("pipeline_fingerprint") @db.Char(64)
+  storageKey          String      @map("storage_key") @db.Uuid
+  artifactSha256      String      @map("artifact_sha256") @db.Char(64)
+  quality             String
+  reasons             String[]
+  pagesTotal          Int         @map("pages_total")
+  createdAt           DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  task                ParsingTask @relation(fields: [taskId], references: [id], onDelete: Restrict)
+  classifications     ClassificationTask[]
+  extractions         ExtractionTask[]
+
+  @@index([sourceSha256, pipelineFingerprint])
+  @@map("parse_artifacts")
+}
+
+// A classification is bound to one immutable parser result. Retrying or changing
+// the classifier creates a new cycle, preserving the previous machine result.
+model ClassificationTask {
+  id          String   @id @default(uuid()) @db.Uuid
+  artifactId  String   @map("artifact_id") @db.Uuid
+  cycle       Int      @default(1)
+  fingerprint String   @db.Char(64)
+  state       String   @default("queued")
+  attempts    Int      @default(0)
+  availableAt DateTime @default(now()) @map("available_at") @db.Timestamptz(3)
+  dispatchedAt DateTime? @map("dispatched_at") @db.Timestamptz(3)
+  leaseUntil  DateTime? @map("lease_until") @db.Timestamptz(3)
+  leaseToken  String?   @map("lease_token") @db.Uuid
+  errorCode   String?   @map("error_code")
+  result      Json?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(3)
+  artifact    ParseArtifact @relation(fields: [artifactId], references: [id], onDelete: Restrict)
+  retryReceipts ClassificationRetryReceipt[]
+
+  @@unique([artifactId, cycle])
+  @@index([state, availableAt, leaseUntil])
+  @@map("classification_tasks")
+}
+
+model ClassificationRetryReceipt {
+  userId    String @map("user_id")
+  objectId  String @map("object_id") @db.Uuid
+  requestId String @map("request_id") @db.Uuid
+  taskId    String @map("task_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  task      ClassificationTask @relation(fields: [taskId], references: [id], onDelete: Restrict)
+
+  @@id([userId, objectId, requestId])
+  @@map("classification_retry_receipts")
+}
+
+model ParsingRetryReceipt {
+  userId    String      @map("user_id")
+  objectId  String      @map("object_id") @db.Uuid
+  requestId String      @map("request_id") @db.Uuid
+  taskId    String      @map("task_id") @db.Uuid
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  task      ParsingTask @relation(fields: [taskId], references: [id], onDelete: Restrict)
+
+  @@id([userId, objectId, requestId])
+  @@map("parsing_retry_receipts")
+}
+
+// Matrix catalog import. Each import keeps the raw JSONL rows verbatim; rules
+// reference the parameter by code so a re-import never invalidates them.
+model MatrixImport {
+  id           String      @id @default(uuid()) @db.Uuid
+  sourceName   String      @map("source_name")
+  sourceSha256 String      @map("source_sha256") @db.Char(64)
+  originSha256 String      @map("origin_sha256") @db.Char(64)
+  rowCount     Int         @map("row_count")
+  importedBy   String?     @map("imported_by")
+  importedAt   DateTime    @default(now()) @map("imported_at") @db.Timestamptz(3)
+  rows         MatrixRow[]
+
+  @@unique([sourceSha256])
+  @@map("matrix_imports")
+}
+
+model MatrixRow {
+  id            String        @id @default(uuid()) @db.Uuid
+  importId      String        @map("import_id") @db.Uuid
+  parameterId   Int           @map("parameter_id")
+  parameterCode String        @map("parameter_code") @db.VarChar(32)
+  pdSection     String        @map("pd_section")
+  name          String
+  unit          String?
+  sourcePd      String?       @map("source_pd")
+  sourceRd      String?       @map("source_rd")
+  sourceId      String?       @map("source_id")
+  triggerText   String        @map("trigger_text")
+  criticality   String?
+  matrixRow     Int           @map("matrix_row")
+  raw           Json
+  import        MatrixImport  @relation(fields: [importId], references: [id], onDelete: Restrict)
+
+  @@unique([importId, parameterId])
+  @@unique([importId, parameterCode])
+  @@index([parameterCode])
+  @@map("matrix_rows")
+}
+
+enum RuleStatus {
+  draft
+  approved
+  rejected
+  deprecated
+}
+
+// A versioned extraction plan for one matrix parameter. Only the newest
+// approved version is executed; drafts are never picked up by the worker.
+model RuleVersion {
+  id            String     @id @default(uuid()) @db.Uuid
+  parameterCode String     @map("parameter_code") @db.VarChar(32)
+  parameterId   Int        @map("parameter_id")
+  version       Int
+  status        RuleStatus @default(draft)
+  plan          Json
+  comparison    Json?
+  applicability Json?
+  note          String?
+  createdBy     String?    @map("created_by")
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  approvedBy    String?    @map("approved_by")
+  approvedAt    DateTime?  @map("approved_at") @db.Timestamptz(3)
+
+  @@unique([parameterCode, version])
+  @@index([status, parameterCode])
+  @@map("rule_versions")
+}
+
+// Same lifecycle as ClassificationTask: one task per artifact per ruleset
+// fingerprint; a changed approved ruleset starts a new cycle.
+model ExtractionTask {
+  id           String       @id @default(uuid()) @db.Uuid
+  artifactId   String       @map("artifact_id") @db.Uuid
+  cycle        Int          @default(1)
+  fingerprint  String       @db.Char(64)
+  state        String       @default("queued")
+  attempts     Int          @default(0)
+  availableAt  DateTime     @default(now()) @map("available_at") @db.Timestamptz(3)
+  dispatchedAt DateTime?    @map("dispatched_at") @db.Timestamptz(3)
+  leaseUntil   DateTime?    @map("lease_until") @db.Timestamptz(3)
+  leaseToken   String?      @map("lease_token") @db.Uuid
+  errorCode    String?      @map("error_code")
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt  DateTime?    @map("completed_at") @db.Timestamptz(3)
+  artifact     ParseArtifact @relation(fields: [artifactId], references: [id], onDelete: Restrict)
+  extractions  Extraction[]
+
+  @@unique([artifactId, cycle])
+  @@index([state, availableAt, leaseUntil])
+  @@map("extraction_tasks")
+}
+
+// One extracted value (or an explicit negative outcome) for one parameter in
+// one artifact. Extractions are facts only: they never carry a verdict.
+model Extraction {
+  id            String          @id @default(uuid()) @db.Uuid
+  taskId        String          @map("task_id") @db.Uuid
+  artifactId    String          @map("artifact_id") @db.Uuid
+  fileId        String          @map("file_id") @db.Uuid
+  objectId      String          @map("object_id") @db.Uuid
+  processId     String          @map("process_id") @db.Uuid
+  runId         String          @map("run_id") @db.Uuid
+  parameterCode String          @map("parameter_code") @db.VarChar(32)
+  ruleVersionId String          @map("rule_version_id") @db.Uuid
+  status        String
+  stage         String?
+  valueRaw      String?         @map("value_raw")
+  value         Json?
+  unit          String?
+  alternatives  Json?
+  reason        String?
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  task          ExtractionTask  @relation(fields: [taskId], references: [id], onDelete: Restrict)
+  evidence      EvidenceFragment[]
+
+  @@index([taskId])
+  @@index([objectId, parameterCode])
+  @@map("extractions")
+}
+
+model EvidenceFragment {
+  id             String     @id @default(uuid()) @db.Uuid
+  extractionId   String     @map("extraction_id") @db.Uuid
+  fileId         String     @map("file_id") @db.Uuid
+  artifactId     String     @map("artifact_id") @db.Uuid
+  pageNumber     Int        @map("page_number")
+  sheetLabel     String?    @map("sheet_label")
+  blockId        String?    @map("block_id")
+  tableId        String?    @map("table_id")
+  tableRow       Int?       @map("table_row")
+  tableColumn    Int?       @map("table_column")
+  quote          String
+  bbox           Json?
+  structuralPath String?    @map("structural_path")
+  extraction     Extraction @relation(fields: [extractionId], references: [id], onDelete: Restrict)
+
+  @@index([extractionId])
+  @@map("evidence_fragments")
+}
+
+// Grouped extractions for one parameter on one object: expected role comes
+// from PD-stage files, actual from RD/ID; unknown stage is kept explicit.
+model EvidenceGroup {
+  id            String   @id @default(uuid()) @db.Uuid
+  objectId      String   @map("object_id") @db.Uuid
+  processId     String   @map("process_id") @db.Uuid
+  parameterCode String   @map("parameter_code") @db.VarChar(32)
+  scopeKey      String   @default("") @map("scope_key")
+  rulesetHash   String   @map("ruleset_hash") @db.Char(64)
+  members       Json
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([objectId, processId, parameterCode, scopeKey])
+  @@map("evidence_groups")
 }
