@@ -1,6 +1,7 @@
 import {
   Button,
   Checkbox,
+  Chip,
   Label,
   Popover,
   SearchField,
@@ -17,6 +18,7 @@ import type {
 } from "@/pages/document-upload/types";
 
 import { UploadIcon } from "@/components/UploadIcon";
+import { cn } from "@/lib/utils";
 
 interface DocumentsTableProps {
   documents: readonly UploadDocument[];
@@ -84,22 +86,21 @@ function MetadataBadge({
   const isReady = metadataState === "ready";
 
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-        isReady
-          ? "bg-success/10 text-foreground"
-          : "bg-warning/10 text-foreground"
-      }`}
+    <Chip
+      variant="soft"
+      color={isReady ? "success" : "warning"}
+      className={cn("ring-1", isReady ? "ring-success" : "ring-warning")}
     >
-      {isReady ? (
-        <span className="bg-success text-success-foreground grid size-4 place-items-center rounded-full">
-          <UploadIcon className="size-2.5" name="check" />
-        </span>
-      ) : (
-        <span className="bg-warning size-2 rounded-full" />
-      )}
-      {isReady ? "Определено" : "Требует уточнения"}
-    </span>
+      <span
+        className={cn(
+          "bg-warning size-2 flex-none rounded-full",
+          isReady && "bg-success",
+        )}
+      />
+      <Chip.Label className="ml-1 text-nowrap">
+        {isReady ? "Определено" : "Требует уточнения"}
+      </Chip.Label>
+    </Chip>
   );
 }
 

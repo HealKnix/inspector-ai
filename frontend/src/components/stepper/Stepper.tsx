@@ -37,14 +37,13 @@ export function Stepper({
         const marker = (
           <span
             className={cn(
-              "ring-border grid size-10 flex-none place-items-center rounded-full font-semibold ring-2 transition-colors",
+              "ring-border bg-background text-copy-muted grid size-10 flex-none place-items-center rounded-full font-semibold ring-2 transition-colors",
               isComplete && "bg-accent text-accent-foreground ring-accent",
-              isCurrent && "bg-background text-accent ring-accent",
-              !isReached && "bg-surface-raised text-copy-muted",
+              isCurrent && "text-accent ring-accent",
             )}
           >
             {isComplete ? (
-              <UploadIcon className="size-5" name="check" />
+              <UploadIcon className="size-5 stroke-2" name="check" />
             ) : (
               stepNumber
             )}
@@ -76,22 +75,29 @@ export function Stepper({
             key={step.label}
           >
             {index > 0 ? (
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "absolute top-5 h-0.75 -translate-y-1/2 transition-colors",
-                  isReached ? "bg-accent" : "bg-line",
-                )}
-                style={{
-                  left: "calc(-50% + 22px)",
-                  right: "calc(50% + 22px)",
-                }}
-              />
+              <>
+                <div
+                  aria-hidden="true"
+                  className="bg-border absolute top-5 h-0.75 -translate-y-1/2"
+                  style={{
+                    left: "calc(-50% + 22px)",
+                    right: "calc(50% + 22px)",
+                  }}
+                >
+                  <div
+                    aria-hidden="true"
+                    className={cn(
+                      "bg-accent h-full w-0 transition-all duration-250",
+                      isReached && "w-full",
+                    )}
+                  />
+                </div>
+              </>
             ) : null}
             {onStepClick ? (
               <button
                 aria-label={`Шаг ${stepNumber}: ${step.label}`}
-                className="focus-visible:ring-ring flex min-w-0 flex-col items-center rounded-2xl px-2 outline-none focus-visible:ring-2"
+                className="focus-visible:ring-ring flex min-w-0 flex-col items-center rounded-2xl px-2 transition-all outline-none hover:opacity-75 focus-visible:ring-2 active:opacity-60"
                 onClick={() => onStepClick(stepNumber)}
                 type="button"
               >
