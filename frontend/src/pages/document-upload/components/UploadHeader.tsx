@@ -64,7 +64,7 @@ export function UploadHeader({ fixtureNotice }: UploadHeaderProps) {
   return (
     <header className="flex flex-col gap-5 min-[880px]:flex-row min-[880px]:items-start min-[880px]:justify-between">
       <div className="min-w-0">
-        <h1 className="mt-3 text-[clamp(2rem,3.2vw,3.25rem)] leading-[1.02] font-semibold tracking-[-0.045em]">
+        <h1 className="text-[clamp(2rem,3.2vw,3.25rem)] leading-[1.02] font-semibold tracking-[-0.045em]">
           Загрузка комплекта документов
         </h1>
         <p className="text-copy-muted mt-3 max-w-3xl text-sm leading-6 sm:text-base">

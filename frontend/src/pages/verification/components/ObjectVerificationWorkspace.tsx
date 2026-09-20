@@ -7,6 +7,7 @@ import type { ParsingFile } from "@/api/types/parsing";
 import { UploadIcon } from "@/components/UploadIcon";
 import routeNames from "@/routes/routeNames";
 
+import { ConstrainedLayout } from "../../../layouts/ConstrainedLayout";
 import { ParsedDocumentPane } from "./ParsedDocumentPane";
 
 const parsingStatePresentation: Record<
@@ -209,123 +210,121 @@ export function ObjectVerificationWorkspace({
   };
 
   return (
-    <div className="h-full min-w-0 flex-1 overflow-y-auto">
-      <div className="mx-auto min-h-full max-w-[1780px] px-4 py-5 min-[1400px]:px-6 sm:px-6 sm:py-7">
-        <header>
-          <Link
-            className="text-copy-muted hover:text-accent inline-flex items-center gap-2 text-sm"
-            to={routeNames.OBJECT_DETAILS(objectId)}
-          >
-            <UploadIcon className="size-4" name="arrow-left" />
-            Вернуться к объекту
-          </Link>
-          <nav
-            aria-label="Хлебные крошки"
-            className="text-copy-muted mt-5 flex min-w-0 items-center gap-2 text-xs sm:text-sm"
-          >
-            <span>Проверки</span>
-            <span aria-hidden="true">/</span>
-            <span className="truncate">{object.name}</span>
-            <span aria-hidden="true">/</span>
-            <span>Метаданные и страницы</span>
-          </nav>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <h1 className="text-[clamp(1.9rem,3vw,3rem)] leading-none font-semibold tracking-[-0.04em]">
-              Проверка комплекта документов
-            </h1>
-            <span className="bg-accent/10 text-accent rounded-full px-2.5 py-1 text-xs font-semibold">
-              Инспектор
-            </span>
-          </div>
-          <div
-            className="bg-accent/5 text-copy-muted mt-4 flex w-fit max-w-full items-start gap-2 rounded-xl px-3 py-2 text-xs leading-5"
-            role="note"
-          >
-            <span className="bg-accent/10 text-accent shrink-0 rounded-md px-2 py-0.5 font-semibold">
-              ДАННЫЕ ОБЪЕКТА
-            </span>
-            <span>
-              Показаны фактические страницы текущих результатов обработки
-              объекта «{object.name}».
-            </span>
-          </div>
-        </header>
+    <ConstrainedLayout>
+      <header>
+        <Link
+          className="text-copy-muted hover:text-accent inline-flex items-center gap-2 text-sm"
+          to={routeNames.OBJECT_DETAILS(objectId)}
+        >
+          <UploadIcon className="size-4" name="arrow-left" />
+          Вернуться к объекту
+        </Link>
+        <nav
+          aria-label="Хлебные крошки"
+          className="text-copy-muted mt-5 flex min-w-0 items-center gap-2 text-xs sm:text-sm"
+        >
+          <span>Проверки</span>
+          <span aria-hidden="true">/</span>
+          <span className="truncate">{object.name}</span>
+          <span aria-hidden="true">/</span>
+          <span>Метаданные и страницы</span>
+        </nav>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <h1 className="text-[clamp(1.9rem,3vw,3rem)] leading-none font-semibold tracking-[-0.04em]">
+            Проверка комплекта документов
+          </h1>
+          <span className="bg-accent/10 text-accent rounded-full px-2.5 py-1 text-xs font-semibold">
+            Инспектор
+          </span>
+        </div>
+        <div
+          className="bg-accent/5 text-copy-muted mt-4 flex w-fit max-w-full items-start gap-2 rounded-xl px-3 py-2 text-xs leading-5"
+          role="note"
+        >
+          <span className="bg-accent/10 text-accent shrink-0 rounded-md px-2 py-0.5 font-semibold">
+            ДАННЫЕ ОБЪЕКТА
+          </span>
+          <span>
+            Показаны фактические страницы текущих результатов обработки объекта
+            «{object.name}».
+          </span>
+        </div>
+      </header>
 
-        {files.length === 0 ? (
-          <section className="border-line bg-card text-copy-muted mt-5 grid min-h-72 place-items-center rounded-2xl border p-6 text-center text-sm">
-            В объекте пока нет документов, зарегистрированных для обработки.
-          </section>
-        ) : readyFiles.length === 0 ? (
-          <div className="mt-5 grid gap-4 min-[1100px]:grid-cols-12">
-            <section className="border-line bg-card text-copy-muted grid min-h-72 place-items-center rounded-2xl border p-6 text-center text-sm min-[1100px]:col-span-8">
-              Страницы появятся после успешного завершения обработки хотя бы
-              одного документа.
-            </section>
-            <div className="min-[1100px]:col-span-4">
-              <PackageDocumentsPanel files={files} />
-            </div>
-          </div>
-        ) : (
-          <div className="mt-5 grid items-stretch gap-4 min-[1440px]:grid-cols-12">
-            <div
-              className={`grid min-w-0 gap-4 min-[1440px]:col-span-8 ${rightFile ? "min-[840px]:grid-cols-2" : "grid-cols-1"}`}
-            >
-              {leftFile && (
-                <ParsedDocumentPane
-                  className="h-[680px]"
-                  file={leftFile}
-                  files={readyFiles}
-                  key={`left:${leftFile.file_id}:${leftFile.run_id}:${leftFile.artifact_id}`}
-                  label="Документ 1"
-                  objectId={objectId}
-                  onFileChange={(fileId) => selectFile("left", fileId)}
-                  onPageChange={(page) =>
-                    updateSearchParam("leftPage", String(page))
-                  }
-                  pageNumber={positivePage(searchParams.get("leftPage"))}
-                />
-              )}
-              {rightFile && (
-                <ParsedDocumentPane
-                  className="h-[680px]"
-                  file={rightFile}
-                  files={readyFiles}
-                  key={`right:${rightFile.file_id}:${rightFile.run_id}:${rightFile.artifact_id}`}
-                  label="Документ 2"
-                  objectId={objectId}
-                  onFileChange={(fileId) => selectFile("right", fileId)}
-                  onPageChange={(page) =>
-                    updateSearchParam("rightPage", String(page))
-                  }
-                  pageNumber={positivePage(searchParams.get("rightPage"))}
-                />
-              )}
-            </div>
-            <div className="min-w-0 min-[1440px]:col-span-4">
-              <PackageDocumentsPanel files={files} />
-            </div>
-          </div>
-        )}
-
-        <section className="border-line bg-card mt-4 rounded-2xl border p-5 sm:p-6">
-          <div className="flex items-start gap-3">
-            <span className="bg-warning/10 text-warning grid size-10 shrink-0 place-items-center rounded-xl">
-              <UploadIcon className="size-5" name="info" />
-            </span>
-            <div>
-              <h2 className="font-semibold">Проверка метаданных</h2>
-              <p className="text-copy-muted mt-2 max-w-4xl text-sm leading-6">
-                Текущий API возвращает страницы и техническое состояние
-                обработки, но ещё не предоставляет распознанные стадию ПД/РД/ИД,
-                шифр, редакцию, утверждение и решения по спорным полям. Поэтому
-                эта страница не подменяет отсутствующий результат проверки
-                вымышленными значениями и пока работает как фактический
-                предпросмотр комплекта.
-              </p>
-            </div>
-          </div>
+      {files.length === 0 ? (
+        <section className="border-line bg-card text-copy-muted mt-5 grid min-h-72 place-items-center rounded-2xl border p-6 text-center text-sm">
+          В объекте пока нет документов, зарегистрированных для обработки.
         </section>
-      </div>
-    </div>
+      ) : readyFiles.length === 0 ? (
+        <div className="mt-5 grid gap-4 min-[1100px]:grid-cols-12">
+          <section className="border-line bg-card text-copy-muted grid min-h-72 place-items-center rounded-2xl border p-6 text-center text-sm min-[1100px]:col-span-8">
+            Страницы появятся после успешного завершения обработки хотя бы
+            одного документа.
+          </section>
+          <div className="min-[1100px]:col-span-4">
+            <PackageDocumentsPanel files={files} />
+          </div>
+        </div>
+      ) : (
+        <div className="mt-5 grid items-stretch gap-4 min-[1440px]:grid-cols-12">
+          <div
+            className={`grid min-w-0 gap-4 min-[1440px]:col-span-8 ${rightFile ? "min-[840px]:grid-cols-2" : "grid-cols-1"}`}
+          >
+            {leftFile && (
+              <ParsedDocumentPane
+                className="h-[680px]"
+                file={leftFile}
+                files={readyFiles}
+                key={`left:${leftFile.file_id}:${leftFile.run_id}:${leftFile.artifact_id}`}
+                label="Документ 1"
+                objectId={objectId}
+                onFileChange={(fileId) => selectFile("left", fileId)}
+                onPageChange={(page) =>
+                  updateSearchParam("leftPage", String(page))
+                }
+                pageNumber={positivePage(searchParams.get("leftPage"))}
+              />
+            )}
+            {rightFile && (
+              <ParsedDocumentPane
+                className="h-[680px]"
+                file={rightFile}
+                files={readyFiles}
+                key={`right:${rightFile.file_id}:${rightFile.run_id}:${rightFile.artifact_id}`}
+                label="Документ 2"
+                objectId={objectId}
+                onFileChange={(fileId) => selectFile("right", fileId)}
+                onPageChange={(page) =>
+                  updateSearchParam("rightPage", String(page))
+                }
+                pageNumber={positivePage(searchParams.get("rightPage"))}
+              />
+            )}
+          </div>
+          <div className="min-w-0 min-[1440px]:col-span-4">
+            <PackageDocumentsPanel files={files} />
+          </div>
+        </div>
+      )}
+
+      <section className="border-line bg-card mt-4 rounded-2xl border p-5 sm:p-6">
+        <div className="flex items-start gap-3">
+          <span className="bg-warning/10 text-warning grid size-10 shrink-0 place-items-center rounded-xl">
+            <UploadIcon className="size-5" name="info" />
+          </span>
+          <div>
+            <h2 className="font-semibold">Проверка метаданных</h2>
+            <p className="text-copy-muted mt-2 max-w-4xl text-sm leading-6">
+              Текущий API возвращает страницы и техническое состояние обработки,
+              но ещё не предоставляет распознанные стадию ПД/РД/ИД, шифр,
+              редакцию, утверждение и решения по спорным полям. Поэтому эта
+              страница не подменяет отсутствующий результат проверки
+              вымышленными значениями и пока работает как фактический
+              предпросмотр комплекта.
+            </p>
+          </div>
+        </div>
+      </section>
+    </ConstrainedLayout>
   );
 }

@@ -5,14 +5,14 @@ import {
   type useParsingStatus,
 } from "@/api/hooks/use-parsing";
 import type { ParsingFile } from "@/api/types/parsing";
-import { ParsingFileProgress } from "./ParsingFileProgress";
-import { RetryParsingButton } from "./RetryParsingButton";
 import {
   parsingFailureLabel,
   parsingStateLabels,
   qualityLabels,
   qualityReasonLabel,
-} from "./parsing-labels";
+} from "../lib/parsing-labels";
+import { ParsingFileProgress } from "./ParsingFileProgress";
+import { RetryParsingButton } from "./RetryParsingButton";
 
 export function ParsingPanel({
   objectId,

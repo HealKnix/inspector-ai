@@ -3,10 +3,11 @@ import { useEffect, useRef, useState } from "react";
 
 import { parsingErrorMessage, useParseResult } from "@/api/hooks/use-parsing";
 import type { ParseResult, ParsingFile } from "@/api/types/parsing";
-import { RenderedDocumentPage } from "./RenderedDocumentPage";
+import { isVisibleDocumentBlock } from "@/components/rendered-document-page/document-blocks";
+import { RenderedDocumentPage } from "@/components/rendered-document-page/RenderedDocumentPage";
+
+import { qualityLabels, qualityReasonLabel } from "../lib/parsing-labels";
 import { TextBlocksPanel, type TextView } from "./TextBlocksPanel";
-import { isVisibleDocumentBlock } from "./document-blocks";
-import { qualityLabels, qualityReasonLabel } from "./parsing-labels";
 
 export interface DocumentViewState {
   view: TextView;

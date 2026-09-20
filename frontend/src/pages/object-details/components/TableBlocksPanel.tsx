@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
 
 import type { RenderedPage, TextBlock } from "@/api/types/parsing";
+
+import { buildTableGrid, groupTableCells } from "../lib/table-layout";
 import { RegionTableStatus } from "./RegionTableStatus";
-import { buildTableGrid, groupTableCells } from "./table-layout";
 
 export function TableBlocksPanel({
   pages,

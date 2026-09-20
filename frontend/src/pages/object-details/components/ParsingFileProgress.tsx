@@ -1,7 +1,7 @@
 import { ProgressBar } from "@heroui/react";
 
 import type { ParsingFile } from "@/api/types/parsing";
-import { parsingFailureLabel } from "./parsing-labels";
+import { parsingFailureLabel } from "../lib/parsing-labels";
 
 const phases: Record<string, string> = {
   checking_parser: "Проверяем готовность сервиса распознавания",

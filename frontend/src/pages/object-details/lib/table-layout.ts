@@ -1,5 +1,5 @@
 import type { RenderedPage, TextBlock } from "@/api/types/parsing";
-import { isVisibleDocumentBlock } from "./document-blocks";
+import { isVisibleDocumentBlock } from "@/components/rendered-document-page/document-blocks";
 
 export interface ExtractedTable {
   id: string;

@@ -2,8 +2,9 @@ import { Button } from "@heroui/react";
 import { useEffect, useRef } from "react";
 
 import type { RenderedPage, TextBlock } from "@/api/types/parsing";
-import { isVisibleDocumentBlock } from "./document-blocks";
-import { textBlockLabel } from "./parsing-labels";
+import { isVisibleDocumentBlock } from "@/components/rendered-document-page/document-blocks";
+
+import { textBlockLabel } from "../lib/parsing-labels";
 import { RegionPanel } from "./RegionPanel";
 import { TableBlocksPanel } from "./TableBlocksPanel";
 

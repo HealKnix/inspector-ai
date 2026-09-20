@@ -18,6 +18,7 @@ import {
 import routeNames from "@/routes/routeNames";
 import { useProtocolStore } from "@/store/protocols";
 
+import { ConstrainedLayout } from "../../layouts/ConstrainedLayout";
 import { DiscrepancyDetails } from "./components/DiscrepancyDetails";
 import { DiscrepancyList } from "./components/DiscrepancyList";
 import { DocumentPane } from "./components/DocumentPane";
@@ -222,89 +223,87 @@ function DemoVerificationPage() {
     : -1;
 
   return (
-    <div className="h-full min-w-0 flex-1 overflow-y-auto">
-      <div className="mx-auto min-h-full max-w-[1780px] px-4 py-5 min-[1400px]:px-6 sm:px-6 sm:py-7">
-        <VerificationHeader
-          canCreateProtocol={canCreateProtocol}
-          fixtureNotice={mockVerificationPackage.fixtureNotice}
-          objectLabel={mockVerificationPackage.objectLabel}
-          onCreateProtocol={handleCreateProtocol}
-          onQueryChange={changeQuery}
-          pendingCount={summary.pendingCount}
-          query={query}
-          sectionLabel={mockVerificationPackage.sectionLabel}
-        />
+    <ConstrainedLayout>
+      <VerificationHeader
+        canCreateProtocol={canCreateProtocol}
+        fixtureNotice={mockVerificationPackage.fixtureNotice}
+        objectLabel={mockVerificationPackage.objectLabel}
+        onCreateProtocol={handleCreateProtocol}
+        onQueryChange={changeQuery}
+        pendingCount={summary.pendingCount}
+        query={query}
+        sectionLabel={mockVerificationPackage.sectionLabel}
+      />
 
-        <div className="mt-5 grid items-stretch gap-4 min-[1440px]:grid-cols-12">
-          <div className="grid min-w-0 gap-4 min-[840px]:grid-cols-2 min-[1440px]:col-span-8">
-            <DocumentPane
-              className="h-[680px]"
-              documentId={leftDocumentId}
-              documents={leftDocuments}
-              evidence={selectedFinding?.expectedEvidence}
-              label={leftSlot.label}
-              onDocumentChange={(document) => {
-                setLeftDocumentId(document.id);
-              }}
-              onPageChange={setLeftPage}
-              page={leftPage}
-            />
-            <DocumentPane
-              className="h-[680px]"
-              documentId={rightDocumentId}
-              documents={rightDocuments}
-              evidence={selectedFinding?.actualEvidence}
-              label={rightSlot.label}
-              onDocumentChange={(document) => {
-                setRightDocumentId(document.id);
-              }}
-              onPageChange={setRightPage}
-              page={rightPage}
-            />
-          </div>
-
-          <div className="min-w-0 min-[1440px]:col-span-4">
-            <DiscrepancyList
-              findings={visibleFindings}
-              markerFilter={markerFilter}
-              onMarkerFilterChange={changeMarkerFilter}
-              onQueryChange={changeQuery}
-              onSelect={selectFinding}
-              onSortChange={setSortBy}
-              query={query}
-              selectedId={selectedFinding?.id ?? ""}
-              sortBy={sortBy}
-              summary={summary}
-            />
-          </div>
+      <div className="mt-5 grid items-stretch gap-4 min-[1440px]:grid-cols-12">
+        <div className="grid min-w-0 gap-4 min-[840px]:grid-cols-2 min-[1440px]:col-span-8">
+          <DocumentPane
+            className="h-[680px]"
+            documentId={leftDocumentId}
+            documents={leftDocuments}
+            evidence={selectedFinding?.expectedEvidence}
+            label={leftSlot.label}
+            onDocumentChange={(document) => {
+              setLeftDocumentId(document.id);
+            }}
+            onPageChange={setLeftPage}
+            page={leftPage}
+          />
+          <DocumentPane
+            className="h-[680px]"
+            documentId={rightDocumentId}
+            documents={rightDocuments}
+            evidence={selectedFinding?.actualEvidence}
+            label={rightSlot.label}
+            onDocumentChange={(document) => {
+              setRightDocumentId(document.id);
+            }}
+            onPageChange={setRightPage}
+            page={rightPage}
+          />
         </div>
 
-        {selectedFinding && expectedDocument && actualDocument ? (
-          <div className="mt-4 pb-6">
-            <DiscrepancyDetails
-              actualDocument={actualDocument}
-              currentIndex={Math.max(selectedVisibleIndex, 0)}
-              expectedDocument={expectedDocument}
-              finding={selectedFinding}
-              onDecision={applyDecision}
-              onNext={() => navigateFinding(1)}
-              onPrevious={() => navigateFinding(-1)}
-              totalCount={visibleFindings.length}
-            />
-            <p
-              aria-live="polite"
-              className="text-copy-muted mt-2 min-h-5 text-right text-xs"
-              role="status"
-            >
-              {decisionMessage}
-            </p>
-          </div>
-        ) : (
-          <div className="border-border bg-card text-copy-muted mt-4 grid min-h-48 place-items-center rounded-[20px] border p-6 text-center text-sm">
-            Выберите другие условия поиска, чтобы открыть карточку расхождения.
-          </div>
-        )}
+        <div className="min-w-0 min-[1440px]:col-span-4">
+          <DiscrepancyList
+            findings={visibleFindings}
+            markerFilter={markerFilter}
+            onMarkerFilterChange={changeMarkerFilter}
+            onQueryChange={changeQuery}
+            onSelect={selectFinding}
+            onSortChange={setSortBy}
+            query={query}
+            selectedId={selectedFinding?.id ?? ""}
+            sortBy={sortBy}
+            summary={summary}
+          />
+        </div>
       </div>
-    </div>
+
+      {selectedFinding && expectedDocument && actualDocument ? (
+        <div className="mt-4 pb-6">
+          <DiscrepancyDetails
+            actualDocument={actualDocument}
+            currentIndex={Math.max(selectedVisibleIndex, 0)}
+            expectedDocument={expectedDocument}
+            finding={selectedFinding}
+            onDecision={applyDecision}
+            onNext={() => navigateFinding(1)}
+            onPrevious={() => navigateFinding(-1)}
+            totalCount={visibleFindings.length}
+          />
+          <p
+            aria-live="polite"
+            className="text-copy-muted mt-2 min-h-5 text-right text-xs"
+            role="status"
+          >
+            {decisionMessage}
+          </p>
+        </div>
+      ) : (
+        <div className="border-border bg-card text-copy-muted mt-4 grid min-h-48 place-items-center rounded-[20px] border p-6 text-center text-sm">
+          Выберите другие условия поиска, чтобы открыть карточку расхождения.
+        </div>
+      )}
+    </ConstrainedLayout>
   );
 }

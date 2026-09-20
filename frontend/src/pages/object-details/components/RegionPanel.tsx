@@ -1,9 +1,13 @@
 import { useEffect, useRef } from "react";
 
 import type { RenderedPage } from "@/api/types/parsing";
-import { hasVisibleDocumentContent } from "./document-blocks";
-import { qualityReasonLabel } from "./parsing-labels";
-import { methodLabels, regionKindLabels } from "./region-labels";
+import { hasVisibleDocumentContent } from "@/components/rendered-document-page/document-blocks";
+import {
+  methodLabels,
+  regionKindLabels,
+} from "@/components/rendered-document-page/region-labels";
+
+import { qualityReasonLabel } from "../lib/parsing-labels";
 import { RegionTableStatus } from "./RegionTableStatus";
 import { TableBlocksPanel } from "./TableBlocksPanel";
 
