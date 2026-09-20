@@ -2,13 +2,14 @@ import { Button } from "@heroui/react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { useClassificationStatus } from "@/api/hooks/use-classification";
-import { useExtractions } from "@/api/hooks/use-extraction";
+import { useEvidenceGroups, useExtractions } from "@/api/hooks/use-extraction";
 import { useFiles, useObject } from "@/api/hooks/use-objects";
 import { useParsingStatus } from "@/api/hooks/use-parsing";
 import type { ParsingFile } from "@/api/types/parsing";
 import { UploadIcon } from "@/components/UploadIcon";
 import routeNames from "@/routes/routeNames";
 import { ClassificationPanel } from "./ClassificationPanel";
+import { ComparisonPanel } from "./ComparisonPanel";
 import { DocumentUploader } from "./DocumentUploader";
 import { DocumentViewer, type DocumentViewState } from "./DocumentViewer";
 import { ExtractionPanel } from "./ExtractionPanel";
@@ -38,6 +39,11 @@ export function ObjectDetailsPage() {
     objectId,
     parsingData?.active ?? false,
     Boolean(data) && !parsing.isError,
+  );
+  const evidenceGroups = useEvidenceGroups(
+    objectId,
+    Boolean(data) && !parsing.isError,
+    extraction.data?.active ?? false,
   );
   const selectedFileId = params.get("file");
   const selectedFile = parsingData?.items.find(
@@ -219,6 +225,24 @@ export function ObjectDetailsPage() {
                   current.set("documentText", "normalized_text");
                   if (evidence.block_id)
                     current.set("documentBlock", evidence.block_id);
+                  else current.delete("documentBlock");
+                  current.delete("documentRegion");
+                  return current;
+                });
+              }}
+            />
+            <ComparisonPanel
+              key={`comparison:${objectId}`}
+              objectId={objectId}
+              groups={evidenceGroups}
+              extraction={extraction}
+              onOpenEvidence={(fileId, page, blockId) => {
+                setParams((current) => {
+                  current.set("file", fileId);
+                  if (page !== null) current.set("documentPage", String(page));
+                  current.set("documentView", "fragments");
+                  current.set("documentText", "normalized_text");
+                  if (blockId) current.set("documentBlock", blockId);
                   else current.delete("documentBlock");
                   current.delete("documentRegion");
                   return current;

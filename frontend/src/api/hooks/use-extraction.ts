@@ -74,11 +74,17 @@ export function useExtractions(
   });
 }
 
-export function useEvidenceGroups(objectId: string, enabled = true) {
+export function useEvidenceGroups(
+  objectId: string,
+  enabled = true,
+  polling = false,
+) {
   return useQuery({
     queryKey: queryKeys.objects.evidenceGroups(objectId),
     queryFn: ({ signal }) => getEvidenceGroups(objectId, signal),
     enabled: enabled && Boolean(objectId),
     staleTime: 5_000,
+    refetchInterval: polling ? 2_000 : false,
+    refetchIntervalInBackground: false,
   });
 }
