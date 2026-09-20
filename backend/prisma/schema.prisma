@@ -524,6 +524,8 @@ model FrameworkSet {
   version      Int
   status       FrameworkSetStatus        @default(draft)
   note         String?
+  sourceName   String?                   @map("source_name")
+  sourceSha256 String?                   @map("source_sha256") @db.Char(64)
   createdBy    String?                   @map("created_by")
   createdAt    DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
   approvedBy   String?                   @map("approved_by")
@@ -534,6 +536,7 @@ model FrameworkSet {
   packages     PackageVersion[]
 
   @@unique([version])
+  @@unique([sourceSha256])
   @@map("framework_sets")
 }
 
@@ -577,10 +580,10 @@ model FrameworkSectionMapping {
   setId         String       @map("set_id") @db.Uuid
   matrixSection String       @map("matrix_section")
   stage         String
-  code          String
+  code          String?
+  sourceText    String?      @map("source_text")
   set           FrameworkSet @relation(fields: [setId], references: [id], onDelete: Restrict)
 
-  @@unique([setId, matrixSection, stage, code])
   @@map("framework_section_mappings")
 }
 

@@ -12,6 +12,8 @@
     "extraction:worker": "bun dist/extraction-worker.js",
     "matrix:import": "bun src/matrix-import.ts import",
     "matrix:seed": "bun src/matrix-import.ts seed-rules",
+    "framework:import": "bun src/framework-import.ts import",
+    "framework:approve": "bun src/framework-import.ts approve",
     "dev": "nest start --watch",
     "build": "bun run prisma:generate && nest build --path tsconfig.build.json",
     "start": "bun dist/main.js",

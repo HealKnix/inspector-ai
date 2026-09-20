@@ -1,0 +1,175 @@
+{"kind":"meta","title":"Нормативный каркас v1: состав документации по §3–6 ТЗ (10. Мосстройнадзор.pdf)","scope":"Объекты капитального строительства производственного и непроизводственного назначения. Линейные объекты вне области v1: для них действует иной перечень разделов (п.3² Положения ПП № 87, ТЗ §3 примечание).","sources":"ТЗ §3 (ПП РФ № 87 ред. 17.01.2025); ТЗ §4 (ГОСТ Р 21.101-2020); ТЗ §5 (Приказ Минстроя № 344/пр от 16.05.2023, Приложение № 1); ТЗ §6 (таблица соответствия разделов Матрицы)"}
+{"kind":"vocabulary","vocab":"object_attribute","code":"purpose","title":"Назначение объекта","norm_ref":"ТЗ §3: перечень для объектов производственного и непроизводственного назначения","values":["production","non_production"]}
+{"kind":"vocabulary","vocab":"object_attribute","code":"linearity","title":"Линейный объект","norm_ref":"ТЗ §3 примечание: для линейных объектов иной перечень разделов","values":["nonlinear","linear"]}
+{"kind":"vocabulary","vocab":"object_attribute","code":"budget_funded","title":"Финансирование из бюджетов","norm_ref":"ТЗ §3 примечание: разделы 6, 11, 5 и 9 обязательны в полном объёме для объектов, финансируемых из бюджетов","values":["boolean"]}
+{"kind":"vocabulary","vocab":"object_attribute","code":"demolition","title":"Наличие сноса/демонтажа","norm_ref":"ТЗ §6: раздел ПОД — проект организации работ по сносу","values":["boolean"]}
+{"kind":"vocabulary","vocab":"object_attribute","code":"estimate_required","title":"Смета требуется","norm_ref":"ТЗ §3 раздел 12; ТЗ §4 п.6: сметы определяют сметную стоимость","values":["boolean"]}
+{"kind":"vocabulary","vocab":"object_attribute","code":"tx_required","title":"ТХ требуется заказчиком (непроизводственный объект)","norm_ref":"ТЗ §3 раздел 6: для непроизводственных объектов — по требованию заказчика","values":["boolean"]}
+{"kind":"vocabulary","vocab":"object_attribute","code":"engineering_systems","title":"Присутствующие инженерные системы","norm_ref":"ТЗ §3 раздел 5: подразделы ИОС1–5 по составу систем объекта","values":["list:rd_mark"]}
+{"kind":"vocabulary","vocab":"object_attribute","code":"calc_included","title":"Расчёты включены в состав РД договором","norm_ref":"ТЗ §4 п.8: расчёты не включаются, если иное не определено договором","values":["boolean"]}
+{"kind":"vocabulary","vocab":"object_attribute","code":"other_docs_required","title":"Иная документация требуется специальными нормами","norm_ref":"ТЗ §3 раздел 13: в случаях, предусмотренных законодательными и иными НПА","values":["boolean"]}
+{"kind":"vocabulary","vocab":"object_attribute","code":"remarks_issued","title":"Замечания застройщика/техзаказчика выдавались","norm_ref":"ТЗ §5 п.6: замечания входят в ИД при их наличии","values":["boolean"]}
+{"kind":"vocabulary","vocab":"list_kind","code":"project_sections","title":"Состав разделов проекта (из тома ПД)","norm_ref":"ТЗ §3; извлекается из состава проектной документации"}
+{"kind":"vocabulary","vocab":"list_kind","code":"rd_marks","title":"Марки основных комплектов рабочих чертежей","norm_ref":"ТЗ §4 п.1; извлекается из состава проекта и ведомости основных комплектов"}
+{"kind":"vocabulary","vocab":"list_kind","code":"hidden_works","title":"Перечень скрытых работ, подлежащих освидетельствованию","norm_ref":"ТЗ §5 примечание 4: перечень определяется ПД и указывается в Общих данных"}
+{"kind":"vocabulary","vocab":"list_kind","code":"structures","title":"Перечень строительных конструкций, подлежащих освидетельствованию","norm_ref":"ТЗ §5 примечание 4"}
+{"kind":"vocabulary","vocab":"list_kind","code":"network_sections","title":"Перечень участков сетей ИТО, подлежащих освидетельствованию","norm_ref":"ТЗ §5 примечание 4"}
+{"kind":"vocabulary","vocab":"pd_section","code":"ПЗ","title":"Пояснительная записка","norm_ref":"ПП РФ № 87; ТЗ §3 п.1"}
+{"kind":"vocabulary","vocab":"pd_section","code":"СПЗУ","title":"Схема планировочной организации земельного участка","norm_ref":"ПП РФ № 87; ТЗ §3 п.2"}
+{"kind":"vocabulary","vocab":"pd_section","code":"АР","title":"Объемно-планировочные и архитектурные решения","norm_ref":"ПП РФ № 87; ТЗ §3 п.3"}
+{"kind":"vocabulary","vocab":"pd_section","code":"КР","title":"Конструктивные решения","norm_ref":"ПП РФ № 87; ТЗ §3 п.4"}
+{"kind":"vocabulary","vocab":"pd_section","code":"ИОС","title":"Сведения об инженерном оборудовании, сетях и системах ИТО (подразделы ИОС1–5)","norm_ref":"ПП РФ № 87; ТЗ §3 п.5"}
+{"kind":"vocabulary","vocab":"pd_section","code":"ИОС1","title":"ИОС: электроснабжение (ЭОМ)","norm_ref":"ТЗ §3, особенности раздела 5"}
+{"kind":"vocabulary","vocab":"pd_section","code":"ИОС2","title":"ИОС: водоснабжение (ВК)","norm_ref":"ТЗ §3, особенности раздела 5"}
+{"kind":"vocabulary","vocab":"pd_section","code":"ИОС3","title":"ИОС: канализация (ВК)","norm_ref":"ТЗ §3, особенности раздела 5"}
+{"kind":"vocabulary","vocab":"pd_section","code":"ИОС4","title":"ИОС: отопление, вентиляция и кондиционирование (ОВ)","norm_ref":"ТЗ §3, особенности раздела 5"}
+{"kind":"vocabulary","vocab":"pd_section","code":"ИОС5","title":"ИОС: сети связи (СС)","norm_ref":"ТЗ §3, особенности раздела 5"}
+{"kind":"vocabulary","vocab":"pd_section","code":"ТХ","title":"Технологические решения","norm_ref":"ПП РФ № 87; ТЗ §3 п.6"}
+{"kind":"vocabulary","vocab":"pd_section","code":"ПОС","title":"Проект организации строительства","norm_ref":"ПП РФ № 87; ТЗ §3 п.7"}
+{"kind":"vocabulary","vocab":"pd_section","code":"ПОД","title":"Проект организации работ по сносу","norm_ref":"ТЗ §6 п.7"}
+{"kind":"vocabulary","vocab":"pd_section","code":"ООС","title":"Мероприятия по охране окружающей среды","norm_ref":"ПП РФ № 87; ТЗ §3 п.8"}
+{"kind":"vocabulary","vocab":"pd_section","code":"ППМ","title":"Мероприятия по обеспечению пожарной безопасности","norm_ref":"ПП РФ № 87; ТЗ §3 п.9"}
+{"kind":"vocabulary","vocab":"pd_section","code":"БЭ","title":"Требования к обеспечению безопасной эксплуатации объектов капитального строительства","norm_ref":"ПП РФ № 87; ТЗ §3 п.10"}
+{"kind":"vocabulary","vocab":"pd_section","code":"ОДИ","title":"Мероприятия по обеспечению доступа инвалидов к объекту","norm_ref":"ПП РФ № 87; ТЗ §3 п.11"}
+{"kind":"vocabulary","vocab":"pd_section","code":"СМ","title":"Смета на строительство, реконструкцию, капитальный ремонт, снос","norm_ref":"ПП РФ № 87; ТЗ §3 п.12"}
+{"kind":"vocabulary","vocab":"pd_section","code":"ИН","title":"Иная документация в случаях, предусмотренных НПА","norm_ref":"ПП РФ № 87; ТЗ §3 п.13"}
+{"kind":"vocabulary","vocab":"pd_section","code":"ЗУ","title":"Мероприятия по энергоэффективности","norm_ref":"ТЗ §6 п.11"}
+{"kind":"vocabulary","vocab":"rd_mark","code":"АР","title":"Основной комплект: архитектурные решения","norm_ref":"ГОСТ Р 21.101-2020; ТЗ §4 п.1"}
+{"kind":"vocabulary","vocab":"rd_mark","code":"КЖ","title":"Основной комплект: конструкции железобетонные","norm_ref":"ГОСТ Р 21.101-2020; ТЗ §4 п.1"}
+{"kind":"vocabulary","vocab":"rd_mark","code":"КМ","title":"Основной комплект: конструкции металлические","norm_ref":"ГОСТ Р 21.101-2020; ТЗ §4 п.1"}
+{"kind":"vocabulary","vocab":"rd_mark","code":"КК","title":"Основной комплект: конструкции комплексные/каменные","norm_ref":"ТЗ §6 п.5"}
+{"kind":"vocabulary","vocab":"rd_mark","code":"ЭОМ","title":"Основной комплект: электрооборудование","norm_ref":"ГОСТ Р 21.101-2020; ТЗ §4 п.1"}
+{"kind":"vocabulary","vocab":"rd_mark","code":"ВК","title":"Основной комплект: водоснабжение и канализация","norm_ref":"ГОСТ Р 21.101-2020; ТЗ §4 п.1"}
+{"kind":"vocabulary","vocab":"rd_mark","code":"ОВ","title":"Основной комплект: отопление и вентиляция","norm_ref":"ГОСТ Р 21.101-2020; ТЗ §4 п.1"}
+{"kind":"vocabulary","vocab":"rd_mark","code":"СС","title":"Основной комплект: сети связи","norm_ref":"ГОСТ Р 21.101-2020; ТЗ §4 п.1"}
+{"kind":"vocabulary","vocab":"rd_mark","code":"ГП","title":"Основной комплект: генеральный план","norm_ref":"ТЗ §6 п.2"}
+{"kind":"vocabulary","vocab":"rd_mark","code":"ПП","title":"Основной комплект: планировочные решения/благоустройство","norm_ref":"ТЗ §6 п.2"}
+{"kind":"vocabulary","vocab":"rd_component","code":"SET","title":"Основной комплект рабочих чертежей (шаблон генератора; конкретная марка подставляется из перечня rd_marks)","norm_ref":"ГОСТ Р 21.101-2020; ТЗ §4 п.1"}
+{"kind":"vocabulary","vocab":"rd_component","code":"СО","title":"Спецификация оборудования, изделий и материалов","norm_ref":"ГОСТ 21.110; ТЗ §4 п.3"}
+{"kind":"vocabulary","vocab":"rd_component","code":"ВО","title":"Ведомость основных комплектов рабочих чертежей","norm_ref":"ТЗ §4 п.4"}
+{"kind":"vocabulary","vocab":"rd_component","code":"ВС","title":"Ведомость ссылочных и прилагаемых документов","norm_ref":"ТЗ §4 п.4"}
+{"kind":"vocabulary","vocab":"rd_component","code":"ВР","title":"Ведомость рабочих чертежей","norm_ref":"ТЗ §4 п.4"}
+{"kind":"vocabulary","vocab":"rd_component","code":"ОД","title":"Общие данные (перечень скрытых работ, нормативные документы, виды работ)","norm_ref":"ТЗ §4 п.5; ТЗ §5 примечание 4"}
+{"kind":"vocabulary","vocab":"rd_component","code":"СМ","title":"Сметы локальные и объектные","norm_ref":"ТЗ §4 п.6"}
+{"kind":"vocabulary","vocab":"rd_component","code":"ОЛ","title":"Опросные листы","norm_ref":"ТЗ §4 п.7"}
+{"kind":"vocabulary","vocab":"rd_component","code":"ГЧ","title":"Габаритные чертежи","norm_ref":"ТЗ §4 п.7"}
+{"kind":"vocabulary","vocab":"rd_component","code":"РР","title":"Расчёты","norm_ref":"ТЗ §4 п.8"}
+{"kind":"vocabulary","vocab":"rd_component","code":"ПД","title":"Прилагаемые документы","norm_ref":"ТЗ §4 п.9"}
+{"kind":"vocabulary","vocab":"rd_component","code":"ППР","title":"Проект производства работ (в т.ч. на демонтаж)","norm_ref":"ТЗ §6 п.6–7"}
+{"kind":"vocabulary","vocab":"rd_component","code":"ТР","title":"Технологический регламент (обращение с отходами)","norm_ref":"ТЗ §6 п.8"}
+{"kind":"vocabulary","vocab":"id_kind","code":"ACT_GEO_BASE","title":"Акт освидетельствования геодезической разбивочной основы","norm_ref":"Приказ № 344/пр, прил.1 п.1; ТЗ §5"}
+{"kind":"vocabulary","vocab":"id_kind","code":"ACT_AXES","title":"Акт разбивки осей объекта на местности","norm_ref":"Приказ № 344/пр, прил.1 п.2; ТЗ §5"}
+{"kind":"vocabulary","vocab":"id_kind","code":"AOSR","title":"Акт освидетельствования скрытых работ","norm_ref":"Приказ № 344/пр, прил.1 п.3; ТЗ §5"}
+{"kind":"vocabulary","vocab":"id_kind","code":"ACT_STRUCT","title":"Акт освидетельствования строительных конструкций","norm_ref":"Приказ № 344/пр, прил.1 п.4; ТЗ §5"}
+{"kind":"vocabulary","vocab":"id_kind","code":"ACT_NETWORK","title":"Акт освидетельствования участка сетей инженерно-технического обеспечения","norm_ref":"Приказ № 344/пр, прил.1 п.5; ТЗ §5"}
+{"kind":"vocabulary","vocab":"id_kind","code":"REMARK","title":"Замечания застройщика / технического заказчика","norm_ref":"Приказ № 344/пр, прил.1 п.6; ТЗ §5"}
+{"kind":"vocabulary","vocab":"id_kind","code":"RD_MARKED","title":"Комплект рабочих чертежей с отметками о соответствии выполненных работ","norm_ref":"Приказ № 344/пр, прил.1 п.7–8; ТЗ §5 примечание 3"}
+{"kind":"vocabulary","vocab":"id_kind","code":"GEO_SCHEME","title":"Исполнительная геодезическая схема (чертеж)","norm_ref":"Приказ № 344/пр, прил.1 п.9; ТЗ §5"}
+{"kind":"vocabulary","vocab":"id_kind","code":"NET_SCHEME","title":"Исполнительная схема участка сетей инженерно-технического обеспечения","norm_ref":"Приказ № 344/пр, прил.1 п.10; ТЗ §5"}
+{"kind":"vocabulary","vocab":"id_kind","code":"TEST_ACT","title":"Акт испытания технических устройств и систем ИТО","norm_ref":"Приказ № 344/пр, прил.1 п.11; ТЗ §5"}
+{"kind":"vocabulary","vocab":"id_kind","code":"EXAM_RESULT","title":"Результаты экспертиз, обследований, лабораторных и иных испытаний","norm_ref":"Приказ № 344/пр, прил.1; ТЗ §5 п.11"}
+{"kind":"vocabulary","vocab":"id_kind","code":"MAT_QUALITY","title":"Документы, подтверждающие качество строительных материалов (паспорта, сертификаты, декларации)","norm_ref":"Приказ № 344/пр, прил.1 п.12; ТЗ §5"}
+{"kind":"vocabulary","vocab":"id_kind","code":"JOURNAL","title":"Общий и специальные журналы работ","norm_ref":"Приказ № 344/пр, прил.1 п.13; ТЗ §5"}
+{"kind":"vocabulary","vocab":"id_kind","code":"EXEC_DRAWING","title":"Исполнительные чертежи (поэтажные планы, благоустройство)","norm_ref":"ТЗ §6 п.2–3"}
+{"kind":"vocabulary","vocab":"matrix_section","code":"ПЗ","title":"Пояснительная записка","norm_ref":"ТЗ §6 п.1"}
+{"kind":"vocabulary","vocab":"matrix_section","code":"СПЗУ","title":"Схема планировочной организации земельного участка","norm_ref":"ТЗ §6 п.2"}
+{"kind":"vocabulary","vocab":"matrix_section","code":"АР","title":"Архитектурные решения","norm_ref":"ТЗ §6 п.3"}
+{"kind":"vocabulary","vocab":"matrix_section","code":"КР","title":"Конструктивные решения","norm_ref":"ТЗ §6 п.4"}
+{"kind":"vocabulary","vocab":"matrix_section","code":"ИОС","title":"Инженерное оборудование (ИОС1–5)","norm_ref":"ТЗ §6 п.5"}
+{"kind":"vocabulary","vocab":"matrix_section","code":"ПОС","title":"Проект организации строительства","norm_ref":"ТЗ §6 п.6"}
+{"kind":"vocabulary","vocab":"matrix_section","code":"ПОД","title":"Проект организации работ по сносу","norm_ref":"ТЗ §6 п.7"}
+{"kind":"vocabulary","vocab":"matrix_section","code":"ООС","title":"Мероприятия по охране окружающей среды","norm_ref":"ТЗ §6 п.8"}
+{"kind":"vocabulary","vocab":"matrix_section","code":"ППМ","title":"Мероприятия по обеспечению пожарной безопасности","norm_ref":"ТЗ §6 п.9"}
+{"kind":"vocabulary","vocab":"matrix_section","code":"ОДИ","title":"Мероприятия по обеспечению доступа инвалидов","norm_ref":"ТЗ §6 п.10"}
+{"kind":"vocabulary","vocab":"matrix_section","code":"ЗУ","title":"Мероприятия по энергоэффективности","norm_ref":"ТЗ §6 п.11"}
+{"kind":"vocabulary","vocab":"matrix_section","code":"СМ","title":"Смета на строительство","norm_ref":"ТЗ §6 п.12"}
+{"kind":"requirement","code":"PD-PZ","stage":"PD","kind_code":"ПЗ","title":"Раздел ПД: пояснительная записка","norm_ref":"ТЗ §3 п.1","quantity":{"min":1}}
+{"kind":"requirement","code":"PD-SPZU","stage":"PD","kind_code":"СПЗУ","title":"Раздел ПД: схема планировочной организации земельного участка","norm_ref":"ТЗ §3 п.2","quantity":{"min":1}}
+{"kind":"requirement","code":"PD-AR","stage":"PD","kind_code":"АР","title":"Раздел ПД: объемно-планировочные и архитектурные решения","norm_ref":"ТЗ §3 п.3","quantity":{"min":1}}
+{"kind":"requirement","code":"PD-KR","stage":"PD","kind_code":"КР","title":"Раздел ПД: конструктивные решения","norm_ref":"ТЗ §3 п.4","quantity":{"min":1}}
+{"kind":"requirement","code":"PD-IOS","stage":"PD","kind_code":"ИОС","title":"Раздел ПД: сведения об инженерном оборудовании и сетях ИТО; состав подразделов ИОС1–5 соответствует атрибуту engineering_systems","norm_ref":"ТЗ §3 п.5","quantity":{"min":1}}
+{"kind":"requirement","code":"PD-TX","stage":"PD","kind_code":"ТХ","title":"Раздел ПД: технологические решения","norm_ref":"ТЗ §3 п.6","applicability":{"any":[{"attr":"purpose","op":"eq","value":"production"},{"attr":"tx_required","op":"eq","value":true}]},"quantity":{"min":1}}
+{"kind":"requirement","code":"PD-POS","stage":"PD","kind_code":"ПОС","title":"Раздел ПД: проект организации строительства","norm_ref":"ТЗ §3 п.7","quantity":{"min":1}}
+{"kind":"requirement","code":"PD-POD","stage":"PD","kind_code":"ПОД","title":"Раздел ПД: проект организации работ по сносу","norm_ref":"ТЗ §6 п.7","applicability":{"attr":"demolition","op":"eq","value":true},"quantity":{"min":1}}
+{"kind":"requirement","code":"PD-OOS","stage":"PD","kind_code":"ООС","title":"Раздел ПД: мероприятия по охране окружающей среды","norm_ref":"ТЗ §3 п.8","quantity":{"min":1}}
+{"kind":"requirement","code":"PD-PPM","stage":"PD","kind_code":"ППМ","title":"Раздел ПД: мероприятия по обеспечению пожарной безопасности","norm_ref":"ТЗ §3 п.9","quantity":{"min":1}}
+{"kind":"requirement","code":"PD-BE","stage":"PD","kind_code":"БЭ","title":"Раздел ПД: требования к обеспечению безопасной эксплуатации","norm_ref":"ТЗ §3 п.10","quantity":{"min":1}}
+{"kind":"requirement","code":"PD-ODI","stage":"PD","kind_code":"ОДИ","title":"Раздел ПД: мероприятия по обеспечению доступа инвалидов","norm_ref":"ТЗ §3 п.11","quantity":{"min":1}}
+{"kind":"requirement","code":"PD-SM","stage":"PD","kind_code":"СМ","title":"Раздел ПД: смета на строительство","norm_ref":"ТЗ §3 п.12","applicability":{"attr":"estimate_required","op":"eq","value":true},"quantity":{"min":1}}
+{"kind":"requirement","code":"PD-IN","stage":"PD","kind_code":"ИН","title":"Раздел ПД: иная документация по специальным нормам","norm_ref":"ТЗ §3 п.13","applicability":{"attr":"other_docs_required","op":"eq","value":true},"quantity":{"min":1}}
+{"kind":"requirement","code":"PD-ZU","stage":"PD","kind_code":"ЗУ","title":"Раздел ПД: мероприятия по энергоэффективности","norm_ref":"ТЗ §6 п.11","applicability":{"attr":"budget_funded","op":"eq","value":true},"quantity":{"min":1}}
+{"kind":"requirement","code":"RD-OD","stage":"RD","kind_code":"ОД","title":"РД: общие данные (источник перечней скрытых работ, конструкций и участков сетей)","norm_ref":"ТЗ §4 п.5; ТЗ §5 примечание 4","quantity":{"min":1}}
+{"kind":"requirement","code":"RD-SET","stage":"RD","kind_code":"SET","title":"Основной комплект рабочих чертежей — по каждой марке из перечня rd_marks","norm_ref":"ТЗ §4 п.1; ГОСТ Р 21.101-2020","quantity":{"min":1,"per":"rd_marks"}}
+{"kind":"requirement","code":"RD-SO","stage":"RD","kind_code":"СО","title":"РД: спецификация оборудования, изделий и материалов","norm_ref":"ТЗ §4 п.3; ГОСТ 21.110","quantity":{"min":1}}
+{"kind":"requirement","code":"RD-VR","stage":"RD","kind_code":"ВР","title":"РД: ведомость рабочих чертежей","norm_ref":"ТЗ §4 п.4","quantity":{"min":1}}
+{"kind":"requirement","code":"RD-VS","stage":"RD","kind_code":"ВС","title":"РД: ведомость ссылочных и прилагаемых документов","norm_ref":"ТЗ §4 п.4","quantity":{"min":1}}
+{"kind":"requirement","code":"RD-VO","stage":"RD","kind_code":"ВО","title":"РД: ведомость основных комплектов рабочих чертежей","norm_ref":"ТЗ §4 п.4","quantity":{"min":1}}
+{"kind":"requirement","code":"RD-SM","stage":"RD","kind_code":"СМ","title":"РД: сметы локальные и объектные","norm_ref":"ТЗ §4 п.6","applicability":{"attr":"estimate_required","op":"eq","value":true},"quantity":{"min":1}}
+{"kind":"requirement","code":"RD-OL-GCH","stage":"RD","kind_code":"ОЛ","title":"РД: опросные листы и габаритные чертежи (для серийно изготовляемого оборудования)","norm_ref":"ТЗ §4 п.7","alternatives":{"any":["ОЛ","ГЧ"]},"quantity":{"min":1}}
+{"kind":"requirement","code":"RD-RR","stage":"RD","kind_code":"РР","title":"РД: расчёты — если предусмотрены договором","norm_ref":"ТЗ §4 п.8","applicability":{"attr":"calc_included","op":"eq","value":true},"quantity":{"min":1}}
+{"kind":"requirement","code":"RD-PDOC","stage":"RD","kind_code":"ПД","title":"РД: прилагаемые документы (типовые чертежи, передаваемые заказчику)","norm_ref":"ТЗ §4 п.9","quantity":{"min":0}}
+{"kind":"requirement","code":"ID-GEO-BASE","stage":"ID","kind_code":"ACT_GEO_BASE","title":"ИД: акт освидетельствования геодезической разбивочной основы","norm_ref":"Приказ № 344/пр, прил.1 п.1","quantity":{"min":1}}
+{"kind":"requirement","code":"ID-AXES","stage":"ID","kind_code":"ACT_AXES","title":"ИД: акты разбивки осей объекта на местности","norm_ref":"Приказ № 344/пр, прил.1 п.2","quantity":{"min":1}}
+{"kind":"requirement","code":"ID-AOSR","stage":"ID","kind_code":"AOSR","title":"ИД: АОСР — по каждому виду скрытых работ из перечня hidden_works","norm_ref":"Приказ № 344/пр, прил.1 п.3; ТЗ §5 примечание 4","quantity":{"min":1,"per":"hidden_works"}}
+{"kind":"requirement","code":"ID-ACT-STRUCT","stage":"ID","kind_code":"ACT_STRUCT","title":"ИД: акт освидетельствования конструкции — по каждой позиции перечня structures","norm_ref":"Приказ № 344/пр, прил.1 п.4; ТЗ §5 примечание 4","quantity":{"min":1,"per":"structures"}}
+{"kind":"requirement","code":"ID-ACT-NET","stage":"ID","kind_code":"ACT_NETWORK","title":"ИД: акт освидетельствования участка сетей — по каждой позиции перечня network_sections","norm_ref":"Приказ № 344/пр, прил.1 п.5; ТЗ §5 примечание 4","quantity":{"min":1,"per":"network_sections"}}
+{"kind":"requirement","code":"ID-REMARK","stage":"ID","kind_code":"REMARK","title":"ИД: замечания застройщика/технического заказчика — если выдавались","norm_ref":"Приказ № 344/пр, прил.1 п.6","applicability":{"attr":"remarks_issued","op":"eq","value":true},"quantity":{"min":1}}
+{"kind":"requirement","code":"ID-RD-MARKED","stage":"ID","kind_code":"RD_MARKED","title":"ИД: комплект рабочих чертежей со штампами «В производство работ» и «Выполнено согласно проекту» — по каждой марке из rd_marks","norm_ref":"Приказ № 344/пр, прил.1 п.7–8; ТЗ §5 примечание 3","quantity":{"min":1,"per":"rd_marks"}}
+{"kind":"requirement","code":"ID-GEO-SCHEME","stage":"ID","kind_code":"GEO_SCHEME","title":"ИД: исполнительные геодезические схемы","norm_ref":"Приказ № 344/пр, прил.1 п.9","quantity":{"min":1}}
+{"kind":"requirement","code":"ID-NET-SCHEME","stage":"ID","kind_code":"NET_SCHEME","title":"ИД: исполнительная схема участка сетей — по каждой позиции перечня network_sections","norm_ref":"Приказ № 344/пр, прил.1 п.10","quantity":{"min":1,"per":"network_sections"}}
+{"kind":"requirement","code":"ID-TEST-ACT","stage":"ID","kind_code":"TEST_ACT","title":"ИД: акты испытания технических устройств и систем ИТО","norm_ref":"Приказ № 344/пр, прил.1 п.11","applicability":{"attr":"engineering_systems","op":"nonempty"},"quantity":{"min":1}}
+{"kind":"requirement","code":"ID-EXAM","stage":"ID","kind_code":"EXAM_RESULT","title":"ИД: результаты экспертиз, обследований, лабораторных и иных испытаний","norm_ref":"Приказ № 344/пр, прил.1; ТЗ §5 п.11","quantity":{"min":1}}
+{"kind":"requirement","code":"ID-MAT-QUALITY","stage":"ID","kind_code":"MAT_QUALITY","title":"ИД: документы о качестве материалов — паспорт, сертификат или декларация на материал","norm_ref":"Приказ № 344/пр, прил.1 п.12","quantity":{"min":1}}
+{"kind":"requirement","code":"ID-JOURNAL","stage":"ID","kind_code":"JOURNAL","title":"ИД: общий журнал работ и специальные журналы","norm_ref":"Приказ № 344/пр, прил.1 п.13","quantity":{"min":1}}
+{"kind":"mapping","matrix_section":"ПЗ","stage":"PD","code":"ПЗ","source_text":"Пояснительная записка"}
+{"kind":"mapping","matrix_section":"ПЗ","stage":"RD","code":"ОД","source_text":"Общие данные (ОД)"}
+{"kind":"mapping","matrix_section":"СПЗУ","stage":"PD","code":"СПЗУ","source_text":"Схема планировочной организации земельного участка"}
+{"kind":"mapping","matrix_section":"СПЗУ","stage":"RD","code":"ГП","source_text":"Рабочие чертежи ГП/ПП"}
+{"kind":"mapping","matrix_section":"СПЗУ","stage":"RD","code":"ПП","source_text":"Рабочие чертежи ГП/ПП"}
+{"kind":"mapping","matrix_section":"СПЗУ","stage":"ID","code":"EXEC_DRAWING","source_text":"Исполнительная схема благоустройства"}
+{"kind":"mapping","matrix_section":"СПЗУ","stage":"ID","code":"AOSR","source_text":"Акты освидетельствования"}
+{"kind":"mapping","matrix_section":"АР","stage":"PD","code":"АР","source_text":"Архитектурные решения"}
+{"kind":"mapping","matrix_section":"АР","stage":"RD","code":"АР","source_text":"Основной комплект АР"}
+{"kind":"mapping","matrix_section":"АР","stage":"ID","code":"EXEC_DRAWING","source_text":"Исполнительные поэтажные планы"}
+{"kind":"mapping","matrix_section":"АР","stage":"ID","code":"AOSR","source_text":"Акты освидетельствования"}
+{"kind":"mapping","matrix_section":"КР","stage":"PD","code":"КР","source_text":"Конструктивные решения"}
+{"kind":"mapping","matrix_section":"КР","stage":"RD","code":"КЖ","source_text":"Основные комплекты КЖ, КМ, КК"}
+{"kind":"mapping","matrix_section":"КР","stage":"RD","code":"КМ","source_text":"Основные комплекты КЖ, КМ, КК"}
+{"kind":"mapping","matrix_section":"КР","stage":"RD","code":"КК","source_text":"Основные комплекты КЖ, КМ, КК"}
+{"kind":"mapping","matrix_section":"КР","stage":"ID","code":"AOSR","source_text":"Акты освидетельствования скрытых работ"}
+{"kind":"mapping","matrix_section":"КР","stage":"ID","code":"ACT_STRUCT","source_text":"Акты освидетельствования строительных конструкций"}
+{"kind":"mapping","matrix_section":"КР","stage":"ID","code":"JOURNAL","source_text":"Журналы бетонных работ"}
+{"kind":"mapping","matrix_section":"ИОС","stage":"PD","code":"ИОС","source_text":"Инженерное оборудование"}
+{"kind":"mapping","matrix_section":"ИОС","stage":"RD","code":"ЭОМ","source_text":"Основные комплекты ЭОМ, ВК, ОВ, СС"}
+{"kind":"mapping","matrix_section":"ИОС","stage":"RD","code":"ВК","source_text":"Основные комплекты ЭОМ, ВК, ОВ, СС"}
+{"kind":"mapping","matrix_section":"ИОС","stage":"RD","code":"ОВ","source_text":"Основные комплекты ЭОМ, ВК, ОВ, СС"}
+{"kind":"mapping","matrix_section":"ИОС","stage":"RD","code":"СС","source_text":"Основные комплекты ЭОМ, ВК, ОВ, СС"}
+{"kind":"mapping","matrix_section":"ИОС","stage":"ID","code":"TEST_ACT","source_text":"Акты испытания технических устройств"}
+{"kind":"mapping","matrix_section":"ИОС","stage":"ID","code":"NET_SCHEME","source_text":"Исполнительные схемы сетей"}
+{"kind":"mapping","matrix_section":"ПОС","stage":"PD","code":"ПОС","source_text":"Проект организации строительства"}
+{"kind":"mapping","matrix_section":"ПОС","stage":"RD","code":"ППР","source_text":"ППР"}
+{"kind":"mapping","matrix_section":"ПОС","stage":"ID","code":"JOURNAL","source_text":"Общий журнал работ (ОЖР)"}
+{"kind":"mapping","matrix_section":"ПОД","stage":"PD","code":"ПОД","source_text":"Проект организации работ по сносу"}
+{"kind":"mapping","matrix_section":"ПОД","stage":"RD","code":"ППР","source_text":"ППР на демонтаж"}
+{"kind":"mapping","matrix_section":"ПОД","stage":"ID","code":"EXAM_RESULT","source_text":"Акты обследования"}
+{"kind":"mapping","matrix_section":"ПОД","stage":"ID","code":"EXEC_DRAWING","source_text":"Исполнительные схемы"}
+{"kind":"mapping","matrix_section":"ООС","stage":"PD","code":"ООС","source_text":"Мероприятия по охране окружающей среды"}
+{"kind":"mapping","matrix_section":"ООС","stage":"RD","code":"ТР","source_text":"Технологический регламент"}
+{"kind":"mapping","matrix_section":"ООС","stage":"ID","code":null,"source_text":"Электронный паспорт в АИС ОСИГ, талоны утилизации"}
+{"kind":"mapping","matrix_section":"ППМ","stage":"PD","code":"ППМ","source_text":"Мероприятия по обеспечению пожарной безопасности"}
+{"kind":"mapping","matrix_section":"ППМ","stage":"RD","code":"АР","source_text":"Рабочие чертежи АР/ОВ/ЭОМ"}
+{"kind":"mapping","matrix_section":"ППМ","stage":"RD","code":"ОВ","source_text":"Рабочие чертежи АР/ОВ/ЭОМ"}
+{"kind":"mapping","matrix_section":"ППМ","stage":"RD","code":"ЭОМ","source_text":"Рабочие чертежи АР/ОВ/ЭОМ"}
+{"kind":"mapping","matrix_section":"ППМ","stage":"ID","code":"MAT_QUALITY","source_text":"Паспорта на двери, сертификаты"}
+{"kind":"mapping","matrix_section":"ППМ","stage":"ID","code":"TEST_ACT","source_text":"Акты испытаний ВПВ"}
+{"kind":"mapping","matrix_section":"ОДИ","stage":"PD","code":"ОДИ","source_text":"Мероприятия по обеспечению доступа инвалидов"}
+{"kind":"mapping","matrix_section":"ОДИ","stage":"RD","code":"АР","source_text":"Рабочие чертежи АР"}
+{"kind":"mapping","matrix_section":"ОДИ","stage":"ID","code":"ACT_STRUCT","source_text":"Акты освидетельствования на устройство пандусов, поручней, тактильных плит"}
+{"kind":"mapping","matrix_section":"ЗУ","stage":"PD","code":"ЗУ","source_text":"Мероприятия по энергоэффективности"}
+{"kind":"mapping","matrix_section":"ЗУ","stage":"RD","code":"АР","source_text":"Рабочие чертежи АР/ОВ"}
+{"kind":"mapping","matrix_section":"ЗУ","stage":"RD","code":"ОВ","source_text":"Рабочие чертежи АР/ОВ"}
+{"kind":"mapping","matrix_section":"ЗУ","stage":"ID","code":null,"source_text":"Энергетический паспорт"}
+{"kind":"mapping","matrix_section":"ЗУ","stage":"ID","code":"TEST_ACT","source_text":"Акты допуска приборов учёта"}
+{"kind":"mapping","matrix_section":"СМ","stage":"PD","code":"СМ","source_text":"Смета на строительство"}
+{"kind":"mapping","matrix_section":"СМ","stage":"RD","code":"СМ","source_text":"Локальные/объектные сметы"}
+{"kind":"mapping","matrix_section":"СМ","stage":"ID","code":null,"source_text":"Справки КС-2, КС-3"}
