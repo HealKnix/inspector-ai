@@ -170,7 +170,12 @@ export async function classifyWithLlm(
       body: JSON.stringify({
         model: config.model,
         temperature: 0,
-        max_tokens: 1600,
+        // Reasoning models (e.g. qwen3) burn the completion budget on
+        // chain-of-thought; 1600 truncates them at finish_reason=length with
+        // empty content. Low effort keeps classification inside the timeout;
+        // providers without the knob ignore it.
+        max_tokens: 8000,
+        reasoning: { effort: "low" },
         response_format:
           config.responseFormat === "json_schema"
             ? {
