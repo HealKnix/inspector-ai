@@ -7,10 +7,7 @@ import {
   useGeneratePackage,
 } from "@/api/hooks/use-completeness";
 import type { ExpectedPackage } from "@/api/types/completeness";
-import {
-  DocumentStage,
-  type UploadRow,
-} from "@/pages/document-upload/types";
+import { DocumentStage, type UploadRow } from "@/pages/document-upload/types";
 
 import { UploadIcon } from "@/components/UploadIcon";
 
@@ -89,7 +86,9 @@ export function CompletenessPanel({ objectId, rows }: CompletenessPanelProps) {
                 : "bg-warning/15 text-warning"
             }`}
           >
-            {pkg.status === "confirmed" ? "Состав подтверждён" : "Состав предложен"}
+            {pkg.status === "confirmed"
+              ? "Состав подтверждён"
+              : "Состав предложен"}
           </span>
         )}
       </div>
