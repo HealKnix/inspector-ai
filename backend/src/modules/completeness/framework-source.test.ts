@@ -88,10 +88,9 @@ describe("источник нормативного каркаса", () => {
       if (row.kind !== "requirement") continue;
       // quantity/alternatives/applicability — структурные поля, не текст.
       for (const field of ["quantity", "alternatives", "applicability"]) {
-        expect(
-          typeof row[field],
-          `${String(row.code)}.${field}`,
-        ).not.toBe("string");
+        expect(typeof row[field], `${String(row.code)}.${field}`).not.toBe(
+          "string",
+        );
       }
     }
   });
@@ -101,11 +100,15 @@ describe("источник нормативного каркаса", () => {
     for (const [name, codes] of vocab) allCodes.set(name, codes);
     for (const row of rows) {
       if (row.kind !== "mapping") continue;
-      expect(vocab.get("matrix_section")?.has(row.matrix_section as string))
-        .toBe(true);
+      expect(
+        vocab.get("matrix_section")?.has(row.matrix_section as string),
+      ).toBe(true);
       const stage = row.stage as string;
       if (row.code === null) {
-        expect(row.source_text, `mapping ${String(row.matrix_section)}`).toBeTruthy();
+        expect(
+          row.source_text,
+          `mapping ${String(row.matrix_section)}`,
+        ).toBeTruthy();
       } else {
         const ok = (stageVocabs[stage] ?? []).some((v) =>
           vocab.get(v)?.has(row.code as string),

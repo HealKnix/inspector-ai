@@ -101,7 +101,7 @@ async function main() {
             createdBy: actor.login,
           },
         });
-        let counts = { vocab: 0, requirements: 0, mappings: 0 };
+        const counts = { vocab: 0, requirements: 0, mappings: 0 };
         for (const row of rows) {
           if (row.kind === "vocabulary") {
             await tx.frameworkVocabulary.create({
