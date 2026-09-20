@@ -84,7 +84,8 @@ class ValidationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "input"
             source.write_bytes(b"%PDF-synthetic-input")
-            for marker in ("/JavaScript", "/OpenAction", "/Launch", "/EmbeddedFiles"):
+            for marker in ("/JavaScript", "/Launch", "/EmbeddedFiles", "/XFA",
+                           "/RichMedia", "/GoToR", "/SubmitForm", "/ImportData", "/JS"):
                 def qpdf(arguments, **options):
                     if "--json" in arguments:
                         options["stdout"].write(json.dumps({"pages": [{}], "objects": {marker: {}}}).encode())
@@ -92,6 +93,52 @@ class ValidationTests(unittest.TestCase):
                 with self.subTest(marker=marker), patch.object(validator.subprocess, "run", side_effect=qpdf) as run:
                     self.assertEqual(validator.inspect_result(source), {"error": "unsafe_format"})
                     self.assertEqual(run.call_count, 2)
+
+    def test_automatic_pdf_actions_are_rejected_but_destinations_pass(self):
+        objects = {"obj:1 0 R": {"value": {"/Type": "/Page"}}}
+        rejected = [
+            # Dangerous action types under auto-firing containers.
+            {"pages": [{}], "qpdf": [{}, {**objects, "obj:9 0 R": {"value": {"/OpenAction": {"/S": "/JavaScript", "/JS": "u:app.alert()"}}}}]},
+            {"pages": [{}], "qpdf": [{}, {**objects, "obj:9 0 R": {"value": {"/OpenAction": {"/S": "/URI", "/URI": "u:https://invalid"}}}}]},
+            {"pages": [{}], "qpdf": [{}, {**objects, "obj:9 0 R": {"value": {"/OpenAction": {"/S": "/Launch"}}}}]},
+            {"pages": [{}], "qpdf": [{}, {**objects, "obj:9 0 R": {"value": {"/AA": {"/O": {"/S": "/SubmitForm"}}}}}]},
+            {"pages": [{}], "qpdf": [{}, {**objects, "obj:9 0 R": {"value": {"/AA": {"/D": {"/S": "/ImportData"}}}}}]},
+            # Indirect reference to a dangerous action.
+            {"pages": [{}], "qpdf": [{}, {**objects, "obj:9 0 R": {"value": {"/OpenAction": "10 0 R"}}, "obj:10 0 R": {"value": {"/S": "/JavaScript"}}}]},
+            # /Next chain ending in a dangerous action.
+            {"pages": [{}], "qpdf": [{}, {**objects, "obj:9 0 R": {"value": {"/OpenAction": {"/S": "/GoTo", "/Next": {"/S": "/Launch"}}}}}]},
+            {"pages": [{}], "qpdf": [{}, {**objects, "obj:9 0 R": {"value": {"/OpenAction": {"/S": "/GoTo", "/Next": [{"/S": "/GoTo"}, {"/S": "/URI"}]}}}}]},
+        ]
+        accepted = [
+            # Destination array — the shape emitted by real generators.
+            {"pages": [{}], "qpdf": [{}, {**objects, "obj:9 0 R": {"value": {"/OpenAction": ["1 0 R", "/XYZ", None, None, 0]}}}]},
+            # Named destination.
+            {"pages": [{}], "qpdf": [{}, {**objects, "obj:9 0 R": {"value": {"/OpenAction": "u:Chapter1"}}}]},
+            # In-document navigation action, direct and indirect.
+            {"pages": [{}], "qpdf": [{}, {**objects, "obj:9 0 R": {"value": {"/OpenAction": {"/S": "/GoTo", "/D": ["1 0 R", "/Fit"]}}}}]},
+            {"pages": [{}], "qpdf": [{}, {**objects, "obj:9 0 R": {"value": {"/OpenAction": "10 0 R"}}, "obj:10 0 R": {"value": ["1 0 R", "/Fit"]}}]},
+            # /AA with an in-document trigger action.
+            {"pages": [{}], "qpdf": [{}, {**objects, "obj:9 0 R": {"value": {"/AA": {"/O": {"/S": "/GoTo", "/D": ["1 0 R", "/Fit"]}}}}}]},
+            # A user-clicked external link stays a user choice.
+            {"pages": [{}], "qpdf": [{}, {**objects, "obj:9 0 R": {"value": {"/A": {"/S": "/URI", "/URI": "u:https://invalid"}}}}]},
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "input"
+            source.write_bytes(b"%PDF-synthetic-input")
+            for payload in rejected:
+                def qpdf(arguments, **options):
+                    if "--json" in arguments:
+                        options["stdout"].write(json.dumps(payload).encode())
+                    return subprocess.CompletedProcess(arguments, 0)
+                with self.subTest(payload=payload), patch.object(validator.subprocess, "run", side_effect=qpdf):
+                    self.assertEqual(validator.inspect_result(source), {"error": "unsafe_format"})
+            for payload in accepted:
+                def qpdf(arguments, **options):
+                    if "--json" in arguments:
+                        options["stdout"].write(json.dumps(payload).encode())
+                    return subprocess.CompletedProcess(arguments, 0)
+                with self.subTest(payload=payload), patch.object(validator.subprocess, "run", side_effect=qpdf):
+                    self.assertEqual(validator.inspect_result(source), {"format": "PDF"})
 
     def test_work_finishing_after_deadline_is_not_accepted(self):
         with patch.object(validator, "inspect", return_value="PDF"), \

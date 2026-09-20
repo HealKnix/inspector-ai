@@ -80,13 +80,65 @@ def inspect(path):
                 raise DocumentRejected("PDF structure limit")
             output.seek(0)
             pdf = json.load(output)
-        forbidden = {"/JS", "/JavaScript", "/AA", "/OpenAction", "/Launch", "/EmbeddedFiles", "/RichMedia", "/XFA", "/GoToR", "/SubmitForm", "/ImportData"}
+        forbidden = {"/JS", "/JavaScript", "/Launch", "/EmbeddedFiles", "/RichMedia", "/XFA", "/GoToR", "/SubmitForm", "/ImportData"}
+        # /OpenAction and /AA are containers, not content: they may hold an inert
+        # destination or an action firing without user input. Only actions that
+        # stay inside the document are allowed there; the rest is rejected.
+        inert_actions = {"/GoTo", "/Named", "/SetOCGState"}
+        objects = {}
+        for section in pdf.get("qpdf", []):
+            if isinstance(section, dict):
+                for key, entry in section.items():
+                    if key.startswith("obj:") and isinstance(entry, dict):
+                        objects[key[4:]] = entry.get("value")
+
+        def dereference(value, depth=0):
+            while isinstance(value, str) and depth < 8 and value in objects:
+                value, depth = objects[value], depth + 1
+            return value
+
+        def automatic(value, depth=0):
+            value = dereference(value)
+            if isinstance(value, list):
+                walk(value)
+                return
+            if not isinstance(value, dict):
+                return
+            if depth > 64:
+                raise DocumentRejected("Active PDF action")
+            subtype = dereference(value.get("/S"))
+            if subtype is None:
+                walk(value)
+                return
+            if subtype not in inert_actions:
+                raise DocumentRejected("Active PDF action")
+            for key, item in value.items():
+                if key == "/Next":
+                    item = dereference(item)
+                    if isinstance(item, list):
+                        for action in item:
+                            automatic(action, depth + 1)
+                    else:
+                        automatic(item, depth + 1)
+                else:
+                    walk(item)
+
         def walk(value):
             if isinstance(value, dict):
                 if forbidden.intersection(value):
                     raise DocumentRejected("Active PDF content")
-                for item in value.values():
-                    walk(item)
+                for key, item in value.items():
+                    if key == "/OpenAction":
+                        automatic(item)
+                    elif key == "/AA":
+                        triggers = dereference(item)
+                        if isinstance(triggers, dict):
+                            for trigger in triggers.values():
+                                automatic(trigger)
+                        else:
+                            walk(triggers)
+                    else:
+                        walk(item)
             elif isinstance(value, list):
                 for item in value:
                     walk(item)
