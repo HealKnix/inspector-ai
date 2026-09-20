@@ -48,8 +48,8 @@ function StructurePopover() {
             <dd className="text-copy-muted">Исполнительная документация</dd>
           </dl>
           <p className="text-copy-muted border-border mt-3 border-t pt-3 text-xs leading-5">
-            Эталонный состав задаётся атрибутами объекта и подтверждается
-            инспектором в панели «Комплектность документации».
+            Эталонный состав задаётся атрибутами при создании объекта; плашка
+            «Комплектность» показывает загруженную долю по стадиям.
           </p>
         </Popover.Dialog>
       </Popover.Content>

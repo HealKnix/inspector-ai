@@ -27,7 +27,7 @@ const quantity: SchemaObject = {
   additionalProperties: false,
   required: ["min", "per"],
   properties: {
-    min: { type: "integer", minimum: 1 },
+    min: { type: "integer", minimum: 0 },
     per: {
       type: "string",
       enum: ["object", "list_item"],

@@ -3,15 +3,18 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 import {
-  confirmExpectedPackage,
   generateExpectedPackage,
-  getCompletenessResult,
   getExpectedPackage,
 } from "@/api/endpoints/completeness";
-import type {
-  CompletenessResult,
-  ExpectedPackageResponse,
-} from "@/api/types/completeness";
+import { ApiError } from "@/api/errors";
+import type { ExpectedPackageResponse } from "@/api/types/completeness";
+import {
+  DocumentStage,
+  UploadRowOrigin,
+  UploadRowStatus,
+  type UploadRow,
+} from "@/pages/document-upload/types";
+
 import { CompletenessPanel } from "./CompletenessPanel";
 
 vi.mock("@/api/endpoints/completeness", () => ({
@@ -25,6 +28,30 @@ beforeEach(() => vi.resetAllMocks());
 
 const objectId = "88888888-8888-4888-8888-888888888888";
 
+function uploadRow(stage: DocumentStage): UploadRow {
+  return {
+    id: `row-${stage}-${Math.random()}`,
+    origin: UploadRowOrigin.REMOTE,
+    name: `${stage}.pdf`,
+    extension: "pdf",
+    sizeBytes: 100,
+    clientFileId: null,
+    fileId: `file-${stage}-${Math.random()}`,
+    sha256: null,
+    integrityError: false,
+    pageCount: null,
+    declaredStage: stage,
+    detectedStage: stage,
+    stage,
+    stageMismatch: false,
+    status: UploadRowStatus.READY,
+    statusDetail: null,
+    needsReview: false,
+    retryKind: null,
+    existingFileId: null,
+  };
+}
+
 const proposedPackage: ExpectedPackageResponse = {
   schema_version: 1,
   object_id: objectId,
@@ -32,7 +59,7 @@ const proposedPackage: ExpectedPackageResponse = {
     version: 2,
     status: "proposed",
     framework_version: 1,
-    attributes: { demolition: true },
+    attributes: {},
     confirmed_by: null,
     confirmed_at: null,
     basis: null,
@@ -45,37 +72,53 @@ const proposedPackage: ExpectedPackageResponse = {
         kind_code: "ПЗ",
         title: "Пояснительная записка",
         scope: null,
-        quantity: { min: 1, per: "object" },
+        quantity: { min: 2, per: "object" },
         alternatives: null,
         origin: "framework",
         excluded: false,
         exclusion_reason: null,
         source: { norm_ref: "ТЗ §3 п.1" },
       },
+      {
+        id: "22222222-2222-4222-8222-222222222222",
+        code: "RD-KR",
+        stage: "RD",
+        kind_code: "КР",
+        title: "Комплект КР",
+        scope: null,
+        quantity: { min: 1, per: "object" },
+        alternatives: null,
+        origin: "framework",
+        excluded: true,
+        exclusion_reason: "Не применимо",
+        source: null,
+      },
+      {
+        id: "33333333-3333-4333-8333-333333333333",
+        code: "ID-JOURNAL",
+        stage: "ID",
+        kind_code: "JOURNAL",
+        title: "Общий журнал работ",
+        scope: null,
+        quantity: { min: 1, per: "object" },
+        alternatives: null,
+        origin: "framework",
+        excluded: false,
+        exclusion_reason: null,
+        source: null,
+      },
     ],
-    requirements_total: 1,
+    requirements_total: 3,
   },
   package_absent_reason: null,
 };
 
-const emptyResult: CompletenessResult = {
-  schema_version: 1,
-  object_id: objectId,
-  process_id: null,
-  run_id: null,
-  package_version: null,
-  framework_version: null,
-  evaluated_at: null,
-  evaluation: null,
-  evaluation_absent_reason: "not_evaluated",
-};
-
-function renderPanel() {
+function renderPanel(rows: UploadRow[] = []) {
   const client = new QueryClient();
   const rendered = render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
-        <CompletenessPanel objectId={objectId} />
+        <CompletenessPanel objectId={objectId} rows={rows} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -90,7 +133,6 @@ describe("completeness panel", () => {
       package: null,
       package_absent_reason: "package_not_generated",
     });
-    vi.mocked(getCompletenessResult).mockResolvedValue(emptyResult);
     vi.mocked(generateExpectedPackage).mockResolvedValue({
       schema_version: 1,
       object_id: objectId,
@@ -98,7 +140,7 @@ describe("completeness panel", () => {
     });
     const { client, unmount } = renderPanel();
     const button = await screen.findByRole("button", {
-      name: "Сформировать предложение",
+      name: "Сформировать состав",
     });
     fireEvent.click(button);
     await waitFor(() =>
@@ -110,97 +152,33 @@ describe("completeness panel", () => {
     client.clear();
   });
 
-  it("не подтверждает предложение без основания", async () => {
+  it("показывает загружено из ожидаемого по стадиям", async () => {
     vi.mocked(getExpectedPackage).mockResolvedValue(proposedPackage);
-    vi.mocked(getCompletenessResult).mockResolvedValue(emptyResult);
-    const { client, unmount } = renderPanel();
-    const button = await screen.findByRole("button", {
-      name: "Подтвердить состав v2",
-    });
-    expect(button).toBeDisabled();
-    unmount();
-    client.clear();
-  });
-
-  it("подтверждает состав с версией, основанием и ключом идемпотентности", async () => {
-    vi.mocked(getExpectedPackage).mockResolvedValue(proposedPackage);
-    vi.mocked(getCompletenessResult).mockResolvedValue(emptyResult);
-    vi.mocked(confirmExpectedPackage).mockResolvedValue({
-      schema_version: 1,
-      object_id: objectId,
-      package_version: 3,
-    });
-    const { client, unmount } = renderPanel();
-    const basis = await screen.findByLabelText("Основание подтверждения");
-    fireEvent.change(basis, { target: { value: "Сверено с ПЗ" } });
-    fireEvent.click(
-      screen.getByRole("button", { name: "Подтвердить состав v2" }),
-    );
-    await waitFor(() =>
-      expect(confirmExpectedPackage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          objectId,
-          expectedVersion: 2,
-          basis: "Сверено с ПЗ",
-          requestId: expect.any(String) as string,
-        }),
-      ),
-    );
-    unmount();
-    client.clear();
-  });
-
-  it("показывает серверные агрегаты и причины незакрытых требований", async () => {
-    vi.mocked(getExpectedPackage).mockResolvedValue(proposedPackage);
-    vi.mocked(getCompletenessResult).mockResolvedValue({
-      ...emptyResult,
-      run_id: "44444444-4444-4444-8444-444444444444",
-      package_version: 2,
-      evaluated_at: "2026-09-20T15:00:00.000Z",
-      evaluation_absent_reason: null,
-      evaluation: {
-        stages: {
-          PD: {
-            status: "MISSING",
-            applicable: 1,
-            fulfilled: 0,
-            missing: 1,
-            unverifiable: 0,
-          },
-          RD: null,
-          ID: null,
-        },
-        scenario: "PARTIALLY_LOADED",
-        requirements: [
-          {
-            requirement_id: "11111111-1111-4111-8111-111111111111",
-            code: "PD-PZ",
-            title: "Пояснительная записка",
-            stage: "PD",
-            scope: null,
-            outcome: "missing",
-            reasons: ["required_document_missing"],
-            matched: [],
-            missing_parts: ["нет документа вида ПЗ"],
-          },
-        ],
-        counts: {
-          applicable: 1,
-          fulfilled: 0,
-          missing: 1,
-          unverifiable: 0,
-          not_applicable: 0,
-        },
-      },
-    });
-    const { client, unmount } = renderPanel();
-    await screen.findByText("Результат комплектности");
-    expect(screen.getByText("Комплект загружен частично")).toBeInTheDocument();
-    expect(screen.getByText("Отсутствует")).toBeInTheDocument();
+    const { client, unmount } = renderPanel([
+      uploadRow(DocumentStage.PD),
+      uploadRow(DocumentStage.ID),
+    ]);
+    expect(await screen.findByText("1 из 2")).toBeInTheDocument();
+    expect(screen.getByText("0 из 0")).toBeInTheDocument();
+    expect(screen.getByText("1 из 1")).toBeInTheDocument();
     expect(
-      screen.getByText(/обязательный документ отсутствует/),
+      screen.getByText(/Загружено 2 из 3 документов эталонного состава/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Применимо 1/)).toBeInTheDocument();
+    expect(screen.getByText("Состав предложен")).toBeInTheDocument();
+    unmount();
+    client.clear();
+  });
+
+  it("сообщает об ошибке загрузки состава и предлагает повторить", async () => {
+    vi.mocked(getExpectedPackage).mockRejectedValue(
+      new ApiError("Нет доступа", { status: 403 }),
+    );
+    const { client, unmount } = renderPanel();
+    const retry = await screen.findByRole("button", { name: "Повторить" });
+    expect(
+      screen.getByText(/Нет доступа к комплектности объекта/),
+    ).toBeInTheDocument();
+    fireEvent.click(retry);
     unmount();
     client.clear();
   });

@@ -411,10 +411,10 @@ export function DocumentUploadPage() {
           </div>
 
           <div className="min-[1100px]:col-span-4">
-            <MetadataAssistant needsReviewCount={summary.needsReviewCount} />
+            <CompletenessPanel objectId={objectId} rows={rows} />
           </div>
 
-          <div className="min-w-0 min-[1100px]:col-span-12">
+          <div className="min-w-0 min-[1100px]:col-span-8">
             {mismatchCount > 0 && (
               <div
                 role="alert"
@@ -455,8 +455,8 @@ export function DocumentUploadPage() {
             )}
           </div>
 
-          <div className="min-[1100px]:col-span-12">
-            <CompletenessPanel objectId={objectId} />
+          <div className="min-[1100px]:col-span-4">
+            <MetadataAssistant needsReviewCount={summary.needsReviewCount} />
           </div>
         </div>
       </div>

@@ -306,7 +306,7 @@ describe("DocumentUploadPage", () => {
       0,
     );
     expect(
-      await screen.findByText(/Ожидаемый состав ещё не сформирован/),
+      await screen.findByText(/Эталонный состав не задан/),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Загрузить документы" }),

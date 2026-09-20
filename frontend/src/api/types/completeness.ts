@@ -17,7 +17,7 @@ const packageRequirementSchema = z.object({
   title: z.string(),
   scope: z.record(z.string(), z.unknown()).nullable(),
   quantity: z.object({
-    min: z.number().int().positive(),
+    min: z.number().int().nonnegative(),
     per: z.enum(["object", "list_item"]).nullable(),
   }),
   alternatives: z.record(z.string(), z.unknown()).nullable(),
