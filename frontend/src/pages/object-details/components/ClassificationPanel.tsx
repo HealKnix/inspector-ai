@@ -9,13 +9,13 @@ import type {
   ClassificationFile,
 } from "@/api/types/classification";
 import type { ParsingFile } from "@/api/types/parsing";
-import { RetryClassificationButton } from "./RetryClassificationButton";
 import {
   classificationFailureLabel,
   classificationReasonLabel,
   classificationStageLabels,
   classificationStateLabels,
-} from "./classification-labels";
+} from "../lib/classification-labels";
+import { RetryClassificationButton } from "./RetryClassificationButton";
 
 export function ClassificationPanel({
   objectId,

@@ -11,7 +11,7 @@ import type {
 import {
   extractionStageLabels,
   extractionStatusLabels,
-} from "./extraction-labels";
+} from "../lib/extraction-labels";
 
 function formatValue(item: ExtractionItem) {
   if (item.value === null || item.value === undefined) return "—";
