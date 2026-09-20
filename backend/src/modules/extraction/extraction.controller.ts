@@ -44,7 +44,7 @@ export class ExtractionController {
   @ApiResponse({
     status: 200,
     description:
-      "Группы доказательств по параметрам: expected — из ПД, actual — из РД/ИД; без сравнения значений",
+      "Группы доказательств по параметрам: expected — из ПД, actual — из РД/ИД; verdict — предварительный итог сравнения (match/discrepancy/*_missing/*_ambiguous/not_comparable/no_comparison), не решение инспектора",
   })
   groups(
     @Req() request: AuthenticatedRequest,

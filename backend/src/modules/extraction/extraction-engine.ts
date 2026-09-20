@@ -13,6 +13,10 @@ import {
   type TableGrid,
 } from "./block-search.js";
 import {
+  COMPARISON_ENGINE_VERSION,
+  type ComparisonSpec,
+} from "./comparison-contract.js";
+import {
   EXTRACTION_ENGINE_VERSION,
   type EvidenceLocator,
   type ExtractionAlternative,
@@ -27,14 +31,16 @@ export interface ApprovedRule {
   rule_version_id: string;
   version: number;
   plan: ExtractionPlan;
+  comparison: ComparisonSpec | null;
 }
 
-/** Approved ruleset + engine version: a new approved version starts a new cycle. */
+/** Approved ruleset + engine versions: a new approved version starts a new cycle. */
 export function rulesetFingerprint(rules: ApprovedRule[]): string {
   return createHash("sha256")
     .update(
       JSON.stringify({
         engine: EXTRACTION_ENGINE_VERSION,
+        comparison_engine: COMPARISON_ENGINE_VERSION,
         rules: rules
           .map((rule) => `${rule.rule_version_id}:${rule.version}`)
           .sort(),

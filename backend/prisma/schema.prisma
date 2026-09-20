@@ -501,6 +501,7 @@ model EvidenceGroup {
   scopeKey      String   @default("") @map("scope_key")
   rulesetHash   String   @map("ruleset_hash") @db.Char(64)
   members       Json
+  verdict       Json?
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 

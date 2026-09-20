@@ -140,6 +140,7 @@ const RULE: ApprovedRule = {
   rule_version_id: "00000000-0000-4000-8000-000000000001",
   version: 1,
   plan: { kind: "regex", anchors: ["x"], pattern: "x" },
+  comparison: null,
 };
 
 function planRule(plan: ExtractionPlan): ApprovedRule {

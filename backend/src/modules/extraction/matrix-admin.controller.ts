@@ -55,20 +55,24 @@ export class MatrixAdminController {
     schema: {
       type: "object",
       required: ["plan"],
-      properties: { plan: { type: "object" }, note: { type: "string" } },
+      properties: {
+        plan: { type: "object" },
+        comparison: { type: "object" },
+        note: { type: "string" },
+      },
     },
   })
   createDraft(
     @Req() request: AuthenticatedRequest,
     @Param("parameterCode") parameterCode: string,
-    @Body() body: { plan?: unknown; note?: string },
+    @Body() body: { plan?: unknown; comparison?: unknown; note?: string },
   ) {
     if (body.plan === undefined)
       throw new BadRequestException("plan: объект плана обязателен");
     return this.matrix.createDraft(
       { userId: request.user.id, requestId: randomUUID(), ip: request.ip },
       parameterCode,
-      { plan: body.plan, note: body.note },
+      { plan: body.plan, comparison: body.comparison, note: body.note },
     );
   }
 
