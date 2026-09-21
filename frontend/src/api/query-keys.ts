@@ -40,4 +40,7 @@ export const queryKeys = {
     rules: (parameterCode: string) =>
       ["admin", "matrix", "rules", parameterCode] as const,
   },
+  users: {
+    all: ["admin", "users"] as const,
+  },
 } as const;

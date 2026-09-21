@@ -57,6 +57,11 @@ const AdminMatrixPage = lazy(() =>
     default: module.AdminMatrixPage,
   })),
 );
+const UsersPage = lazy(() =>
+  import("@/pages/users/UsersPage").then((module) => ({
+    default: module.UsersPage,
+  })),
+);
 
 export function AppRoutes() {
   const currentUserQuery = useCurrentUser();
@@ -149,6 +154,7 @@ export function AppRoutes() {
                 element={<AdminMatrixPage />}
                 path={routeNames.ADMIN_MATRIX}
               />
+              <Route element={<UsersPage />} path={routeNames.ADMIN_USERS} />
             </Route>
           </Route>
         </Route>

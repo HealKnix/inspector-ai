@@ -14,6 +14,12 @@ export const roleSchema = z.enum([
   Role.ML_ENGINEER,
 ]);
 
+export const roleLabels: Record<Role, string> = {
+  [Role.ADMINISTRATOR]: "Администратор",
+  [Role.INSPECTOR]: "Инспектор",
+  [Role.ML_ENGINEER]: "ML-инженер",
+};
+
 export const userSchema = z.object({
   id: z.string().uuid(),
   login: z.string().min(1),

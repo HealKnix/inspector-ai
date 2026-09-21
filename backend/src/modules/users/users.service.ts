@@ -35,6 +35,16 @@ export interface CreateUserData {
   passwordHash: string;
   patronymic?: string;
   phone?: string;
+  role?: Role;
+}
+
+export interface UpdateUserData {
+  email?: string | null;
+  firstName?: string;
+  lastName?: string;
+  patronymic?: string | null;
+  phone?: string | null;
+  role?: Role | null;
 }
 
 export interface UserCredentials extends PublicUser {
@@ -62,10 +72,25 @@ export class UsersService {
     });
   }
 
+  list(): Promise<PublicUser[]> {
+    return this.prisma.user.findMany({
+      orderBy: { createdAt: "desc" },
+      select: publicUserSelection,
+    });
+  }
+
   create(data: CreateUserData): Promise<PublicUser> {
     return this.prisma.user.create({
       data,
       select: publicUserSelection,
+    });
+  }
+
+  update(id: string, data: UpdateUserData): Promise<PublicUser> {
+    return this.prisma.user.update({
+      data,
+      select: publicUserSelection,
+      where: { id },
     });
   }
 }

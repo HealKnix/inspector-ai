@@ -4,6 +4,7 @@ export type UploadIconName =
   | "download"
   | "check"
   | "chevron-right"
+  | "close"
   | "file"
   | "folder"
   | "info"
@@ -14,6 +15,7 @@ export type UploadIconName =
   | "template"
   | "trash"
   | "upload"
+  | "user"
   | "warning"
   | "pdf"
   | "docx"
@@ -36,6 +38,8 @@ function IconPaths({ name }: Pick<UploadIconProps, "name">) {
       return <path d="m5 12 4 4L19 6" />;
     case "chevron-right":
       return <path d="m9 18 6-6-6-6" />;
+    case "close":
+      return <path d="M6 6l12 12M18 6 6 18" />;
     case "file":
       return (
         <>
@@ -96,6 +100,13 @@ function IconPaths({ name }: Pick<UploadIconProps, "name">) {
         <>
           <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5" />
           <path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
+        </>
+      );
+    case "user":
+      return (
+        <>
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4.5 21a7.5 7.5 0 0 1 15 0" />
         </>
       );
     case "warning":

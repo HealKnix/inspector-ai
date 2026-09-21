@@ -12,6 +12,7 @@ import { HealthModule } from "./modules/health/health.module.js";
 import { ClassificationModule } from "./modules/identification/classification.module.js";
 import { ObjectsModule } from "./modules/objects/objects.module.js";
 import { ParsingModule } from "./modules/parsing/parsing.module.js";
+import { UsersAdminModule } from "./modules/users/users-admin.module.js";
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ParsingModule } from "./modules/parsing/parsing.module.js";
     ParsingModule,
     ClassificationModule,
     ExtractionModule,
+    UsersAdminModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

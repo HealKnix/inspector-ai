@@ -11,29 +11,16 @@ import {
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { Role, type UserDto } from "@/api/types/auth";
+import { Role, roleLabels, type UserDto } from "@/api/types/auth";
 import { BrandMark } from "@/components/BrandMark";
 
 import { LogoutConfirmationDialog } from "@/components/LogoutConfirmationDialog";
+import { fallbackAvatars } from "@/lib/fallback-avatars";
 import { cn } from "@/lib/utils";
 import routeNames from "@/routes/routeNames";
 import { DashboardIcon, type DashboardIconName } from "./DashboardIcon";
 import { SystemStatusPopover } from "./SystemStatusPopover";
 import { ThemeSwitcher } from "./ThemeSwitcher";
-
-import AvatarBlue from "@/assets/images/avatar-fallback/blue.jpg";
-import AvatarGreen from "@/assets/images/avatar-fallback/green.jpg";
-import AvatarOrange from "@/assets/images/avatar-fallback/orange.jpg";
-import AvatarPurple from "@/assets/images/avatar-fallback/purple.jpg";
-import AvatarRed from "@/assets/images/avatar-fallback/red.jpg";
-
-const fallbackAvatars = [
-  AvatarBlue,
-  AvatarRed,
-  AvatarGreen,
-  AvatarOrange,
-  AvatarPurple,
-];
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "inspector-ai:sidebar-collapsed:v1";
 
@@ -97,15 +84,15 @@ const primaryItems: readonly NavigationItem[] = [
     label: "Протоколы",
     roles: [Role.INSPECTOR],
   },
+  {
+    href: routeNames.ADMIN_USERS,
+    icon: "user",
+    label: "Пользователи",
+    roles: [Role.ADMINISTRATOR],
+  },
 ];
 
 const secondaryItems: readonly NavigationItem[] = [];
-
-const roleLabels: Record<Role, string> = {
-  [Role.ADMINISTRATOR]: "Администратор",
-  [Role.INSPECTOR]: "Инспектор",
-  [Role.ML_ENGINEER]: "ML-инженер",
-};
 
 interface SidebarSharedProps {
   isLoggingOut: boolean;
