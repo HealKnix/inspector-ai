@@ -77,7 +77,7 @@ export function FilesTable({
                     <div className="flex items-center gap-3 py-2">
                       <span className="bg-surface-high grid size-10 shrink-0 place-items-center rounded-xl">
                         <UploadIcon
-                          className="size-6 stroke-0"
+                          className="size-6"
                           name={formatIcons[file.format]}
                         />
                       </span>

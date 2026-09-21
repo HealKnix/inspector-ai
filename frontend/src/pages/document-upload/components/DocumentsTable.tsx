@@ -318,10 +318,7 @@ export function DocumentsTable({
                     </Table.Cell>
                     <Table.Cell>
                       <div className="flex min-w-0 items-center gap-3">
-                        <UploadIcon
-                          name={document.extension}
-                          className="stroke-0"
-                        />
+                        <UploadIcon name={document.extension} />
                         <span className="max-w-[280px] truncate text-sm font-medium">
                           {document.name}
                         </span>
@@ -375,7 +372,7 @@ export function DocumentsTable({
                     toggleDocument(document.id, isSelected)
                   }
                 />
-                <UploadIcon name={document.extension} className="stroke-0" />
+                <UploadIcon name={document.extension} />
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{document.name}</p>
