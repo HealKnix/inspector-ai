@@ -3,7 +3,7 @@ import { BrandMark } from "@/components/BrandMark";
 
 export function AuthVisual() {
   return (
-    <aside className="text-accent-foreground relative isolate m-2 min-h-[680px] overflow-hidden rounded-[clamp(20px,2vw,34px)] max-[760px]:min-h-[270px]">
+    <aside className="text-accent-foreground relative isolate m-2 hidden min-h-[680px] overflow-hidden rounded-[clamp(20px,2vw,34px)] max-[760px]:min-h-[270px] min-[760px]:block">
       <img
         alt=""
         className="absolute inset-0 z-[-2] size-full object-cover object-center"
