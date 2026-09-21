@@ -38,6 +38,7 @@ export interface EvidenceGroupRow {
   scope_key: string;
   ruleset_hash: string;
   members: unknown;
+  verdict: unknown;
   updated_at: Date;
 }
 
@@ -133,14 +134,18 @@ export class ExtractionService {
     });
   }
 
-  /** Parameter-level groups: expected (PD) vs actual (RD/ID) members. */
+  /**
+   * Parameter-level groups: expected (PD) vs actual (RD/ID) members plus the
+   * persisted preliminary verdict computed at rebuild time. A verdict is
+   * review input, never an inspector's decision.
+   */
   async groups(userId: string, objectId: string) {
     return this.prisma.$transaction(async (tx) => {
       await this.access.lock(tx, objectId);
       await this.access.requireAccess(tx, userId, objectId);
       const items = await tx.$queryRaw<EvidenceGroupRow[]>`
         SELECT g.id, g.parameter_code, g.scope_key, g.ruleset_hash, g.members,
-               g.updated_at
+               g.verdict, g.updated_at
         FROM evidence_groups g
         WHERE g.object_id = ${objectId}::uuid
           AND g.process_id = (SELECT id FROM processes WHERE object_id = ${objectId}::uuid ORDER BY created_at DESC LIMIT 1)

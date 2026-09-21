@@ -5,6 +5,8 @@ import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import type { ClassificationResult } from "../identification/classification-contract.js";
 import { ObjectAccessService } from "../objects/object-access.service.js";
 import { ArtifactStorageService } from "../parsing/artifact-storage.service.js";
+import { validateComparisonSpec } from "./comparison-contract.js";
+import { evaluateGroup } from "./comparison-engine.js";
 import {
   validateExtractionPlan,
   type ExtractionOutcome,
@@ -52,6 +54,10 @@ export class ExtractionJobsService {
           rule_version_id: version.id,
           version: version.version,
           plan: validateExtractionPlan(version.plan),
+          comparison:
+            version.comparison === null
+              ? null
+              : validateComparisonSpec(version.comparison),
         });
       } catch {
         continue;
@@ -124,7 +130,26 @@ export class ExtractionJobsService {
         WHERE t.state='succeeded' AND r.version=p.version AND p.status IN ('PENDING','PARSING','READY','VERIFYING')
           AND f.corrupted_at IS NULL AND a.source_sha256=f.sha256
           AND NOT EXISTS (SELECT 1 FROM parsing_tasks newer WHERE newer.run_id=t.run_id AND newer.file_id=t.file_id AND newer.cycle>t.cycle)
-          AND (e.fingerprint IS NULL OR e.fingerprint <> ${fingerprint})
+          AND (
+            e.fingerprint IS NULL OR e.fingerprint <> ${fingerprint}
+            OR EXISTS (
+              SELECT 1 FROM extraction_tasks lt
+              JOIN extractions x ON x.task_id = lt.id
+              JOIN LATERAL (
+                SELECT c.result->>'stage' AS stage
+                FROM classification_tasks c
+                WHERE c.artifact_id = a.id AND c.state = 'succeeded'
+                ORDER BY c.cycle DESC LIMIT 1
+              ) cls ON true
+              WHERE lt.artifact_id = a.id
+                AND lt.state = 'succeeded'
+                AND lt.cycle = (
+                  SELECT MAX(prev.cycle) FROM extraction_tasks prev
+                  WHERE prev.artifact_id = a.id AND prev.state = 'succeeded'
+                )
+                AND cls.stage IS DISTINCT FROM x.stage
+            )
+          )
         ORDER BY a.created_at LIMIT 25`;
       for (const { id } of missing) {
         await this.prisma.$transaction(async (tx) => {
@@ -135,7 +160,14 @@ export class ExtractionJobsService {
             where: { artifactId: id },
             orderBy: { cycle: "desc" },
           });
-          if (previous?.fingerprint === fingerprint) return;
+          // An in-flight cycle with the current fingerprint already reads the
+          // fresh stage at persist time; only a finished divergent one needs
+          // a follow-up cycle.
+          if (previous?.fingerprint === fingerprint) {
+            const terminal =
+              previous.state === "succeeded" || previous.state === "failed";
+            if (!terminal || !(await this.stageDiverged(tx, id))) return;
+          }
           const next = await tx.extractionTask.create({
             data: {
               artifactId: id,
@@ -215,6 +247,24 @@ export class ExtractionJobsService {
     });
     const result = classified?.result as ClassificationResult | null;
     return result?.stage ?? null;
+  }
+
+  // Classification may land after extraction; the stored stage snapshot then
+  // diverges from the terminal classification and a fresh cycle re-aligns it.
+  private async stageDiverged(
+    tx: Prisma.TransactionClient,
+    artifactId: string,
+  ): Promise<boolean> {
+    const latest = await tx.extractionTask.findFirst({
+      where: { artifactId, state: "succeeded" },
+      orderBy: { cycle: "desc" },
+      include: { extractions: { take: 1, select: { stage: true } } },
+    });
+    if (!latest || latest.extractions.length === 0) return false;
+    return (
+      latest.extractions[0]!.stage !==
+      (await this.artifactStage(tx, artifactId))
+    );
   }
 
   async execute(taskId: string, signal?: AbortSignal) {
@@ -392,6 +442,7 @@ export class ExtractionJobsService {
         parameterCodes: [
           ...new Set(outcomes.map((item) => item.parameter_code)),
         ],
+        rules,
       });
       await tx.outbox.create({
         data: {
@@ -422,6 +473,7 @@ export class ExtractionJobsService {
       processId: string;
       rulesetHash: string;
       parameterCodes: string[];
+      rules: ApprovedRule[];
     },
   ) {
     for (const parameterCode of scope.parameterCodes) {
@@ -458,16 +510,23 @@ export class ExtractionJobsService {
         stage: row.stage,
         role:
           row.stage === "PD"
-            ? "expected"
+            ? ("expected" as const)
             : row.stage === null
-              ? "unknown"
-              : "actual",
+              ? ("unknown" as const)
+              : ("actual" as const),
         status: row.status,
-        value: row.value,
+        value: row.value as number | string | null,
         value_raw: row.value_raw,
         unit: row.unit,
         rule_version_id: row.rule_version_id,
       }));
+      const rule = scope.rules.find(
+        (item) => item.parameter_code === parameterCode,
+      );
+      const verdict = evaluateGroup(members, rule?.comparison ?? null);
+      const verdictJson = JSON.parse(
+        JSON.stringify(verdict),
+      ) as Prisma.InputJsonValue;
       await tx.evidenceGroup.upsert({
         where: {
           objectId_processId_parameterCode_scopeKey: {
@@ -484,10 +543,12 @@ export class ExtractionJobsService {
           scopeKey: "",
           rulesetHash: scope.rulesetHash,
           members: JSON.parse(JSON.stringify(members)) as Prisma.InputJsonValue,
+          verdict: verdictJson,
         },
         update: {
           rulesetHash: scope.rulesetHash,
           members: JSON.parse(JSON.stringify(members)) as Prisma.InputJsonValue,
+          verdict: verdictJson,
         },
       });
     }

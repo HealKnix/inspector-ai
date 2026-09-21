@@ -81,12 +81,68 @@ const evidenceMemberSchema = z.object({
   rule_version_id: z.uuid(),
 });
 
+const comparisonSpecSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("equals") }),
+  z.object({
+    kind: z.literal("numeric_delta"),
+    tolerance_abs: z.number().optional(),
+    tolerance_pct: z.number().optional(),
+  }),
+  z.object({ kind: z.literal("no_decrease") }),
+  z.object({ kind: z.literal("no_increase") }),
+  z.object({
+    kind: z.literal("threshold"),
+    min: z.number().optional(),
+    max: z.number().optional(),
+  }),
+]);
+
+const verdictStatusSchema = z.enum([
+  "match",
+  "discrepancy",
+  "expected_missing",
+  "actual_missing",
+  "expected_ambiguous",
+  "actual_ambiguous",
+  "not_comparable",
+  "no_comparison",
+]);
+
+const verdictMemberSchema = z.object({
+  extraction_id: z.uuid(),
+  file_id: z.uuid(),
+  value: z.union([z.number(), z.string()]),
+  value_raw: z.string().nullable(),
+  unit: z.string().nullable(),
+});
+
+const comparisonPairSchema = z.object({
+  expected_extraction_id: z.uuid().nullable(),
+  actual_extraction_id: z.uuid().nullable(),
+  result: z.enum(["match", "mismatch", "not_comparable"]),
+  delta: z.number().nullable(),
+  delta_pct: z.number().nullable(),
+  detail: z.string().nullable(),
+});
+
+const groupVerdictSchema = z.object({
+  engine: z.string(),
+  status: verdictStatusSchema,
+  spec: comparisonSpecSchema.nullable(),
+  expected: z.array(verdictMemberSchema).nullable(),
+  actual: z.array(verdictMemberSchema).nullable(),
+  pairs: z.array(comparisonPairSchema),
+  warnings: z.array(z.string()),
+  evaluated_at: z.string(),
+});
+
 export const evidenceGroupSchema = z.object({
   id: z.uuid(),
   parameter_code: z.string(),
   scope_key: z.string(),
   ruleset_hash: z.string(),
   members: z.array(evidenceMemberSchema),
+  verdict: groupVerdictSchema.nullable(),
   updated_at: z.string(),
 });
 
@@ -101,3 +157,7 @@ export type ExtractionTask = z.infer<typeof extractionTaskSchema>;
 export type ExtractionStatus = z.infer<typeof extractionStatusSchema>;
 export type EvidenceMember = z.infer<typeof evidenceMemberSchema>;
 export type EvidenceGroup = z.infer<typeof evidenceGroupSchema>;
+export type GroupVerdict = z.infer<typeof groupVerdictSchema>;
+export type VerdictStatus = z.infer<typeof verdictStatusSchema>;
+export type ComparisonPair = z.infer<typeof comparisonPairSchema>;
+export type VerdictMember = z.infer<typeof verdictMemberSchema>;

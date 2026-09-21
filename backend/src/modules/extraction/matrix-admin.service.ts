@@ -13,6 +13,11 @@ import { ArtifactStorageService } from "../parsing/artifact-storage.service.js";
 import type { ParseArtifactData } from "../parsing/parsing-contract.js";
 import { contextWindows } from "./block-search.js";
 import {
+  ComparisonValidationError,
+  validateComparisonSpec,
+  type ComparisonSpec,
+} from "./comparison-contract.js";
+import {
   PlanValidationError,
   validateExtractionPlan,
   type ExtractionPlan,
@@ -90,7 +95,7 @@ export class MatrixAdminService {
   async createDraft(
     context: { userId: string; requestId: string; ip?: string },
     parameterCode: string,
-    input: { plan: unknown; note?: string },
+    input: { plan: unknown; comparison?: unknown; note?: string },
   ) {
     let plan: ExtractionPlan;
     try {
@@ -101,6 +106,18 @@ export class MatrixAdminService {
           ? error.message
           : "Некорректный план",
       );
+    }
+    let comparison: ComparisonSpec | null = null;
+    if (input.comparison !== undefined && input.comparison !== null) {
+      try {
+        comparison = validateComparisonSpec(input.comparison);
+      } catch (error) {
+        throw new BadRequestException(
+          error instanceof ComparisonValidationError
+            ? error.message
+            : "Некорректная спека сравнения",
+        );
+      }
     }
     return this.prisma.$transaction(async (tx) => {
       const row = await tx.matrixRow.findFirst({
@@ -119,6 +136,12 @@ export class MatrixAdminService {
           version: (last?.version ?? 0) + 1,
           status: "draft",
           plan: JSON.parse(JSON.stringify(plan)) as Prisma.InputJsonValue,
+          comparison:
+            comparison === null
+              ? undefined
+              : (JSON.parse(
+                  JSON.stringify(comparison),
+                ) as Prisma.InputJsonValue),
           note: input.note?.slice(0, 2000),
           createdBy: context.userId,
         },
@@ -132,6 +155,7 @@ export class MatrixAdminService {
             parameter_code: parameterCode,
             rule_version_id: draft.id,
             version: draft.version,
+            has_comparison: comparison !== null,
           },
         },
       });
@@ -167,6 +191,7 @@ export class MatrixAdminService {
         rule_version_id: rule.id,
         version: rule.version,
         plan,
+        comparison: null,
       }),
     }));
     return { schema_version: 1, rule_id: rule.id, results };
@@ -315,6 +340,7 @@ export class MatrixAdminService {
         throw new ConflictException("Утвердить можно только черновик");
       try {
         validateExtractionPlan(rule.plan);
+        if (rule.comparison !== null) validateComparisonSpec(rule.comparison);
       } catch {
         throw new UnprocessableEntityException(
           "Сохранённый план не проходит валидацию",
@@ -341,6 +367,7 @@ export class MatrixAdminService {
             parameter_code: rule.parameterCode,
             rule_version_id: rule.id,
             version: rule.version,
+            has_comparison: rule.comparison !== null,
           },
         },
       });

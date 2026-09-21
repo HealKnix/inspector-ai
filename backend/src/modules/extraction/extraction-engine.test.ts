@@ -140,6 +140,7 @@ const RULE: ApprovedRule = {
   rule_version_id: "00000000-0000-4000-8000-000000000001",
   version: 1,
   plan: { kind: "regex", anchors: ["x"], pattern: "x" },
+  comparison: null,
 };
 
 function planRule(plan: ExtractionPlan): ApprovedRule {
@@ -286,6 +287,42 @@ describe("regex executor", () => {
     const outcome = executePlan(doc, plan, planRule(plan));
     expect(outcome.status).toBe("extracted");
     expect(outcome.value).toBe(25);
+  });
+
+  it("merges a unitless hit into the same-valued group", () => {
+    const doc = artifact([
+      textBlock("t1", "Отметка 0,000 = 159,95 м"),
+      textBlock("t2", "Абсолютная отметка: 159,95"),
+    ]);
+    const plan: ExtractionPlan = {
+      kind: "regex",
+      anchors: ["0,000", "абсолютная"],
+      pattern: "(\\d{3}[,.]\\d{2})",
+      type: "number",
+      unit: ["м"],
+    };
+    const outcome = executePlan(doc, plan, planRule(plan));
+    expect(outcome.status).toBe("extracted");
+    expect(outcome.value).toBe(159.95);
+    expect(outcome.unit).toBe("m");
+  });
+
+  it("stays ambiguous when units genuinely differ", () => {
+    const doc = artifact([
+      textBlock("t1", "Отметка 0,000 = 159,95 м"),
+      textBlock("t2", "Повтор в км: 159,95 км"),
+    ]);
+    const plan: ExtractionPlan = {
+      kind: "regex",
+      anchors: ["0,000", "повтор"],
+      pattern: "(\\d{3}[,.]\\d{2})",
+      type: "number",
+      // Longest unit first: "км" must win over the "м" substring.
+      unit: ["км", "м"],
+    };
+    const outcome = executePlan(doc, plan, planRule(plan));
+    expect(outcome.status).toBe("ambiguous");
+    expect(outcome.alternatives?.map((item) => item.unit)).toEqual(["m", "km"]);
   });
 });
 

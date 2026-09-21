@@ -13,6 +13,10 @@ import {
   type TableGrid,
 } from "./block-search.js";
 import {
+  COMPARISON_ENGINE_VERSION,
+  type ComparisonSpec,
+} from "./comparison-contract.js";
+import {
   EXTRACTION_ENGINE_VERSION,
   type EvidenceLocator,
   type ExtractionAlternative,
@@ -27,14 +31,16 @@ export interface ApprovedRule {
   rule_version_id: string;
   version: number;
   plan: ExtractionPlan;
+  comparison: ComparisonSpec | null;
 }
 
-/** Approved ruleset + engine version: a new approved version starts a new cycle. */
+/** Approved ruleset + engine versions: a new approved version starts a new cycle. */
 export function rulesetFingerprint(rules: ApprovedRule[]): string {
   return createHash("sha256")
     .update(
       JSON.stringify({
         engine: EXTRACTION_ENGINE_VERSION,
+        comparison_engine: COMPARISON_ENGINE_VERSION,
         rules: rules
           .map((rule) => `${rule.rule_version_id}:${rule.version}`)
           .sort(),
@@ -138,12 +144,27 @@ function collect(values: FoundValue[], rule: ApprovedRule): ExtractionOutcome {
     parameter_code: rule.parameter_code,
     rule_version_id: rule.rule_version_id,
   };
+  // Missing unit is not a disagreement: a unitless hit merges into the
+  // same-valued bucket (adopting its unit); genuinely different units stay
+  // distinct.
   const distinct = new Map<string, FoundValue[]>();
   for (const found of values) {
-    const key = `${typeof found.value}:${String(found.value)}:${found.unit ?? ""}`;
-    const list = distinct.get(key) ?? [];
+    const valueKey = `${typeof found.value}:${String(found.value)}`;
+    let target: string | null = null;
+    for (const key of distinct.keys()) {
+      if (!key.startsWith(`${valueKey}:`)) continue;
+      const unit = key.slice(valueKey.length + 1);
+      if (unit === (found.unit ?? "") || unit === "" || !found.unit) {
+        target = key;
+        break;
+      }
+    }
+    const list = (target && distinct.get(target)) || [];
     list.push(found);
-    distinct.set(key, list);
+    if (target) distinct.delete(target);
+    const unit = target?.slice(valueKey.length + 1) || found.unit || "";
+    if (unit) for (const item of list) item.unit ??= unit;
+    distinct.set(`${valueKey}:${unit}`, list);
   }
   if (distinct.size === 0)
     return {
