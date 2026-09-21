@@ -31,6 +31,8 @@ describe("auth schemas", () => {
       login: "inspector.ivanov",
       password: "short",
       passwordConfirmation: "short",
+      lastName: "Иванов",
+      firstName: "Иван",
     });
 
     expect(result.success).toBe(false);
@@ -41,6 +43,20 @@ describe("auth schemas", () => {
       login: "inspector.ivanov",
       password: "correct-horse-2026",
       passwordConfirmation: "another-password-2026",
+      lastName: "Иванов",
+      firstName: "Иван",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("требует фамилию и имя при регистрации", () => {
+    const result = registerSchema.safeParse({
+      login: "inspector.ivanov",
+      password: "correct-horse-2026",
+      passwordConfirmation: "correct-horse-2026",
+      lastName: "",
+      firstName: "  ",
     });
 
     expect(result.success).toBe(false);

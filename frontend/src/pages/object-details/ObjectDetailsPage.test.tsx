@@ -131,6 +131,8 @@ beforeEach(() => {
     user: {
       id: "77777777-7777-4777-8777-777777777777",
       login: "synthetic-inspector",
+      lastName: "Иванов",
+      firstName: "Иван",
       role: Role.INSPECTOR,
       createdAt: "2026-09-20T00:00:00.000Z",
     },

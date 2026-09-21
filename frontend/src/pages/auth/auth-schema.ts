@@ -18,6 +18,40 @@ const passwordField = z
   .min(12, "Пароль должен содержать не менее 12 символов")
   .max(128, "Пароль должен содержать не более 128 символов");
 
+const nameField = z
+  .string()
+  .trim()
+  .max(100, "Введите не более 100 символов")
+  .transform((value) => value.normalize("NFC") || undefined);
+
+const requiredNameField = (label: string) =>
+  z
+    .string()
+    .trim()
+    .min(1, `Укажите ${label}`)
+    .max(100, "Введите не более 100 символов")
+    .transform((value) => value.normalize("NFC"));
+
+const phoneField = z
+  .string()
+  .trim()
+  .max(32, "Введите не более 32 символов")
+  .refine(
+    (value) => value === "" || /^\+?[0-9][0-9\s()-]{4,30}$/.test(value),
+    "Введите корректный номер телефона",
+  )
+  .transform((value) => value || undefined);
+
+const emailField = z
+  .string()
+  .trim()
+  .max(320, "Введите не более 320 символов")
+  .refine(
+    (value) => value === "" || z.email().safeParse(value).success,
+    "Введите корректный email",
+  )
+  .transform((value) => value || undefined);
+
 export const loginSchema = z.object({
   login: loginField,
   password: z
@@ -31,6 +65,11 @@ export const registerSchema = z
     login: loginField,
     password: passwordField,
     passwordConfirmation: z.string(),
+    lastName: requiredNameField("фамилию"),
+    firstName: requiredNameField("имя"),
+    patronymic: nameField,
+    phone: phoneField,
+    email: emailField,
   })
   .refine((values) => values.password === values.passwordConfirmation, {
     message: "Пароли не совпадают",
@@ -39,3 +78,4 @@ export const registerSchema = z
 
 export type LoginFormValues = z.input<typeof loginSchema>;
 export type RegisterFormValues = z.input<typeof registerSchema>;
+export type RegisterSubmitValues = z.output<typeof registerSchema>;

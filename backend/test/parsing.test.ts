@@ -62,9 +62,12 @@ let parserMode:
 let holdResponse: (() => Promise<void>) | undefined;
 
 async function account(role: "INSPECTOR" | "ADMINISTRATOR") {
-  const session = await app
-    .get(AuthService)
-    .register("par-" + randomUUID().slice(0, 8), "Synthetic-password-123!");
+  const session = await app.get(AuthService).register({
+    login: "par-" + randomUUID().slice(0, 8),
+    password: "Synthetic-password-123!",
+    lastName: "Тестов",
+    firstName: "Инспектор",
+  });
   await prisma.user.update({ where: { id: session.user.id }, data: { role } });
   return { id: session.user.id, token: session.accessToken };
 }

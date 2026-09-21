@@ -47,6 +47,11 @@ describe("AuthController", () => {
     id: "8c15a0d2-4328-4d6d-8426-49f10b0f679c",
     login: "inspector.ivanov",
     role: null,
+    lastName: "Иванов",
+    firstName: "Иван",
+    patronymic: null,
+    phone: null,
+    email: null,
     createdAt: new Date("2026-09-15T12:00:00.000Z"),
   };
   const session = {
@@ -147,7 +152,12 @@ describe("AuthController", () => {
     await request(httpServer)
       .post("/auth/register")
       .set(AUTH_REQUEST_HEADER, AUTH_REQUEST_HEADER_VALUE)
-      .send({ login: "Inspector.Ivanov", password: "correct-horse-2026" })
+      .send({
+        login: "Inspector.Ivanov",
+        password: "correct-horse-2026",
+        lastName: "Иванов",
+        firstName: "Иван",
+      })
       .expect(201)
       .expect(
         "set-cookie",
@@ -159,8 +169,12 @@ describe("AuthController", () => {
       });
 
     expect(authService.register).toHaveBeenCalledWith(
-      "inspector.ivanov",
-      "correct-horse-2026",
+      expect.objectContaining({
+        login: "inspector.ivanov",
+        password: "correct-horse-2026",
+        lastName: "Иванов",
+        firstName: "Иван",
+      }),
     );
   });
 

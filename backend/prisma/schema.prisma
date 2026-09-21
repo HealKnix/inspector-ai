@@ -19,6 +19,11 @@ model User {
   login               String               @unique @db.VarChar(64)
   passwordHash        String               @map("password_hash")
   role                Role?                @default(INSPECTOR)
+  lastName            String               @map("last_name") @db.VarChar(100)
+  firstName           String               @map("first_name") @db.VarChar(100)
+  patronymic          String?              @db.VarChar(100)
+  phone               String?              @db.VarChar(32)
+  email               String?              @db.VarChar(320)
   createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
   authSessions        AuthSession[]
@@ -284,17 +289,17 @@ model ParsingTask {
 }
 
 model ParseArtifact {
-  id                  String      @id @default(uuid()) @db.Uuid
-  taskId              String      @unique @map("task_id") @db.Uuid
-  sourceSha256        String      @map("source_sha256") @db.Char(64)
-  pipelineFingerprint String      @map("pipeline_fingerprint") @db.Char(64)
-  storageKey          String      @map("storage_key") @db.Uuid
-  artifactSha256      String      @map("artifact_sha256") @db.Char(64)
+  id                  String               @id @default(uuid()) @db.Uuid
+  taskId              String               @unique @map("task_id") @db.Uuid
+  sourceSha256        String               @map("source_sha256") @db.Char(64)
+  pipelineFingerprint String               @map("pipeline_fingerprint") @db.Char(64)
+  storageKey          String               @map("storage_key") @db.Uuid
+  artifactSha256      String               @map("artifact_sha256") @db.Char(64)
   quality             String
   reasons             String[]
-  pagesTotal          Int         @map("pages_total")
-  createdAt           DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
-  task                ParsingTask @relation(fields: [taskId], references: [id], onDelete: Restrict)
+  pagesTotal          Int                  @map("pages_total")
+  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  task                ParsingTask          @relation(fields: [taskId], references: [id], onDelete: Restrict)
   classifications     ClassificationTask[]
   extractions         ExtractionTask[]
 
@@ -305,21 +310,21 @@ model ParseArtifact {
 // A classification is bound to one immutable parser result. Retrying or changing
 // the classifier creates a new cycle, preserving the previous machine result.
 model ClassificationTask {
-  id          String   @id @default(uuid()) @db.Uuid
-  artifactId  String   @map("artifact_id") @db.Uuid
-  cycle       Int      @default(1)
-  fingerprint String   @db.Char(64)
-  state       String   @default("queued")
-  attempts    Int      @default(0)
-  availableAt DateTime @default(now()) @map("available_at") @db.Timestamptz(3)
-  dispatchedAt DateTime? @map("dispatched_at") @db.Timestamptz(3)
-  leaseUntil  DateTime? @map("lease_until") @db.Timestamptz(3)
-  leaseToken  String?   @map("lease_token") @db.Uuid
-  errorCode   String?   @map("error_code")
-  result      Json?
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  completedAt DateTime? @map("completed_at") @db.Timestamptz(3)
-  artifact    ParseArtifact @relation(fields: [artifactId], references: [id], onDelete: Restrict)
+  id            String                       @id @default(uuid()) @db.Uuid
+  artifactId    String                       @map("artifact_id") @db.Uuid
+  cycle         Int                          @default(1)
+  fingerprint   String                       @db.Char(64)
+  state         String                       @default("queued")
+  attempts      Int                          @default(0)
+  availableAt   DateTime                     @default(now()) @map("available_at") @db.Timestamptz(3)
+  dispatchedAt  DateTime?                    @map("dispatched_at") @db.Timestamptz(3)
+  leaseUntil    DateTime?                    @map("lease_until") @db.Timestamptz(3)
+  leaseToken    String?                      @map("lease_token") @db.Uuid
+  errorCode     String?                      @map("error_code")
+  result        Json?
+  createdAt     DateTime                     @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt   DateTime?                    @map("completed_at") @db.Timestamptz(3)
+  artifact      ParseArtifact                @relation(fields: [artifactId], references: [id], onDelete: Restrict)
   retryReceipts ClassificationRetryReceipt[]
 
   @@unique([artifactId, cycle])
@@ -328,11 +333,11 @@ model ClassificationTask {
 }
 
 model ClassificationRetryReceipt {
-  userId    String @map("user_id")
-  objectId  String @map("object_id") @db.Uuid
-  requestId String @map("request_id") @db.Uuid
-  taskId    String @map("task_id") @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  userId    String             @map("user_id")
+  objectId  String             @map("object_id") @db.Uuid
+  requestId String             @map("request_id") @db.Uuid
+  taskId    String             @map("task_id") @db.Uuid
+  createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
   task      ClassificationTask @relation(fields: [taskId], references: [id], onDelete: Restrict)
 
   @@id([userId, objectId, requestId])
@@ -368,21 +373,21 @@ model MatrixImport {
 }
 
 model MatrixRow {
-  id            String        @id @default(uuid()) @db.Uuid
-  importId      String        @map("import_id") @db.Uuid
-  parameterId   Int           @map("parameter_id")
-  parameterCode String        @map("parameter_code") @db.VarChar(32)
-  pdSection     String        @map("pd_section")
+  id            String       @id @default(uuid()) @db.Uuid
+  importId      String       @map("import_id") @db.Uuid
+  parameterId   Int          @map("parameter_id")
+  parameterCode String       @map("parameter_code") @db.VarChar(32)
+  pdSection     String       @map("pd_section")
   name          String
   unit          String?
-  sourcePd      String?       @map("source_pd")
-  sourceRd      String?       @map("source_rd")
-  sourceId      String?       @map("source_id")
-  triggerText   String        @map("trigger_text")
+  sourcePd      String?      @map("source_pd")
+  sourceRd      String?      @map("source_rd")
+  sourceId      String?      @map("source_id")
+  triggerText   String       @map("trigger_text")
   criticality   String?
-  matrixRow     Int           @map("matrix_row")
+  matrixRow     Int          @map("matrix_row")
   raw           Json
-  import        MatrixImport  @relation(fields: [importId], references: [id], onDelete: Restrict)
+  import        MatrixImport @relation(fields: [importId], references: [id], onDelete: Restrict)
 
   @@unique([importId, parameterId])
   @@unique([importId, parameterCode])
@@ -422,19 +427,19 @@ model RuleVersion {
 // Same lifecycle as ClassificationTask: one task per artifact per ruleset
 // fingerprint; a changed approved ruleset starts a new cycle.
 model ExtractionTask {
-  id           String       @id @default(uuid()) @db.Uuid
-  artifactId   String       @map("artifact_id") @db.Uuid
-  cycle        Int          @default(1)
-  fingerprint  String       @db.Char(64)
-  state        String       @default("queued")
-  attempts     Int          @default(0)
-  availableAt  DateTime     @default(now()) @map("available_at") @db.Timestamptz(3)
-  dispatchedAt DateTime?    @map("dispatched_at") @db.Timestamptz(3)
-  leaseUntil   DateTime?    @map("lease_until") @db.Timestamptz(3)
-  leaseToken   String?      @map("lease_token") @db.Uuid
-  errorCode    String?      @map("error_code")
-  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
-  completedAt  DateTime?    @map("completed_at") @db.Timestamptz(3)
+  id           String        @id @default(uuid()) @db.Uuid
+  artifactId   String        @map("artifact_id") @db.Uuid
+  cycle        Int           @default(1)
+  fingerprint  String        @db.Char(64)
+  state        String        @default("queued")
+  attempts     Int           @default(0)
+  availableAt  DateTime      @default(now()) @map("available_at") @db.Timestamptz(3)
+  dispatchedAt DateTime?     @map("dispatched_at") @db.Timestamptz(3)
+  leaseUntil   DateTime?     @map("lease_until") @db.Timestamptz(3)
+  leaseToken   String?       @map("lease_token") @db.Uuid
+  errorCode    String?       @map("error_code")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt  DateTime?     @map("completed_at") @db.Timestamptz(3)
   artifact     ParseArtifact @relation(fields: [artifactId], references: [id], onDelete: Restrict)
   extractions  Extraction[]
 
@@ -446,24 +451,24 @@ model ExtractionTask {
 // One extracted value (or an explicit negative outcome) for one parameter in
 // one artifact. Extractions are facts only: they never carry a verdict.
 model Extraction {
-  id            String          @id @default(uuid()) @db.Uuid
-  taskId        String          @map("task_id") @db.Uuid
-  artifactId    String          @map("artifact_id") @db.Uuid
-  fileId        String          @map("file_id") @db.Uuid
-  objectId      String          @map("object_id") @db.Uuid
-  processId     String          @map("process_id") @db.Uuid
-  runId         String          @map("run_id") @db.Uuid
-  parameterCode String          @map("parameter_code") @db.VarChar(32)
-  ruleVersionId String          @map("rule_version_id") @db.Uuid
+  id            String             @id @default(uuid()) @db.Uuid
+  taskId        String             @map("task_id") @db.Uuid
+  artifactId    String             @map("artifact_id") @db.Uuid
+  fileId        String             @map("file_id") @db.Uuid
+  objectId      String             @map("object_id") @db.Uuid
+  processId     String             @map("process_id") @db.Uuid
+  runId         String             @map("run_id") @db.Uuid
+  parameterCode String             @map("parameter_code") @db.VarChar(32)
+  ruleVersionId String             @map("rule_version_id") @db.Uuid
   status        String
   stage         String?
-  valueRaw      String?         @map("value_raw")
+  valueRaw      String?            @map("value_raw")
   value         Json?
   unit          String?
   alternatives  Json?
   reason        String?
-  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
-  task          ExtractionTask  @relation(fields: [taskId], references: [id], onDelete: Restrict)
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  task          ExtractionTask     @relation(fields: [taskId], references: [id], onDelete: Restrict)
   evidence      EvidenceFragment[]
 
   @@index([taskId])

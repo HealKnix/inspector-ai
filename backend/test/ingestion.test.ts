@@ -68,9 +68,12 @@ function isHttpServer(value: unknown): value is Server {
 async function account(
   role: "INSPECTOR" | "ADMINISTRATOR" | "ML_ENGINEER" | null,
 ) {
-  const session = await app
-    .get(AuthService)
-    .register("synthetic-" + randomUUID().slice(0, 8), "Test-password-123!");
+  const session = await app.get(AuthService).register({
+    login: "synthetic-" + randomUUID().slice(0, 8),
+    password: "Test-password-123!",
+    lastName: "Тестов",
+    firstName: "Инспектор",
+  });
   await prisma.user.update({
     where: { id: session.user.id },
     data: { role },

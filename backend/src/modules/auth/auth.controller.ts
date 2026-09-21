@@ -80,7 +80,7 @@ export class AuthController {
     @Body() dto: RegisterDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<AuthResponseDto> {
-    const session = await this.authService.register(dto.login, dto.password);
+    const session = await this.authService.register(dto);
     return this.completeAuthentication(response, session);
   }
 

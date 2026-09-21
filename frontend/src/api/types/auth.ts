@@ -18,6 +18,11 @@ export const userSchema = z.object({
   id: z.string().uuid(),
   login: z.string().min(1),
   role: roleSchema.nullable(),
+  lastName: z.string().min(1),
+  firstName: z.string().min(1),
+  patronymic: z.string().nullish(),
+  phone: z.string().nullish(),
+  email: z.string().nullish(),
   createdAt: z.string().datetime(),
 });
 
@@ -37,4 +42,10 @@ export interface LoginRequest {
   password: string;
 }
 
-export type RegisterRequest = LoginRequest;
+export interface RegisterRequest extends LoginRequest {
+  email?: string;
+  firstName: string;
+  lastName: string;
+  patronymic?: string;
+  phone?: string;
+}

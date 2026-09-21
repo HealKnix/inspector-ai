@@ -20,6 +20,8 @@ const user = {
   id: "27b43d75-2f24-4ff0-8bd8-d4758cfbd3cb",
   login: "inspector",
   role: "INSPECTOR",
+  lastName: "Иванов",
+  firstName: "Иван",
   createdAt: "2026-09-16T08:00:00.000Z",
 } satisfies UserDto;
 

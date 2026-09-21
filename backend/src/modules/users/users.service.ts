@@ -7,6 +7,11 @@ const publicUserSelection = {
   id: true,
   login: true,
   role: true,
+  lastName: true,
+  firstName: true,
+  patronymic: true,
+  phone: true,
+  email: true,
   createdAt: true,
 } as const;
 
@@ -14,7 +19,22 @@ export interface PublicUser {
   id: string;
   login: string;
   role: Role | null;
+  lastName: string;
+  firstName: string;
+  patronymic: string | null;
+  phone: string | null;
+  email: string | null;
   createdAt: Date;
+}
+
+export interface CreateUserData {
+  email?: string;
+  firstName: string;
+  lastName: string;
+  login: string;
+  passwordHash: string;
+  patronymic?: string;
+  phone?: string;
 }
 
 export interface UserCredentials extends PublicUser {
@@ -42,9 +62,9 @@ export class UsersService {
     });
   }
 
-  create(login: string, passwordHash: string): Promise<PublicUser> {
+  create(data: CreateUserData): Promise<PublicUser> {
     return this.prisma.user.create({
-      data: { login, passwordHash },
+      data,
       select: publicUserSelection,
     });
   }
