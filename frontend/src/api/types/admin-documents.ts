@@ -40,7 +40,31 @@ export const adminObjectListSchema = z.object({
   items: z.array(z.object({ id: z.uuid(), name: z.string() })),
 });
 
+export const adminDocumentStatsSchema = z.object({
+  range: z.enum(["1d", "3m", "30d", "7d"]),
+  totals: z.object({
+    files: z.number().int(),
+    succeeded: z.number().int(),
+    in_progress: z.number().int(),
+    failed: z.number().int(),
+    integrity_errors: z.number().int(),
+  }),
+  uploads: z.object({
+    current: z.number().int(),
+    previous: z.number().int(),
+    delta_percent: z.number().nullable(),
+  }),
+  series: z.array(
+    z.object({
+      date: z.string(),
+      uploads: z.number().int(),
+    }),
+  ),
+});
+
 export type AdminDocument = z.infer<typeof adminDocumentSchema>;
+export type AdminDocumentStats = z.infer<typeof adminDocumentStatsSchema>;
+export type AdminDocumentStatsRange = AdminDocumentStats["range"];
 export type AdminObject = z.infer<
   typeof adminObjectListSchema
 >["items"][number];

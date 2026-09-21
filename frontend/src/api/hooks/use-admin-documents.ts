@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import {
   getAdminDocuments,
+  getAdminDocumentStats,
   getAdminObjects,
   getAdminParseResult,
   getAdminRenderedPage,
@@ -10,6 +11,7 @@ import { queryKeys } from "@/api/query-keys";
 import type {
   AdminDocument,
   AdminDocumentFilters,
+  AdminDocumentStatsRange,
 } from "@/api/types/admin-documents";
 
 export function useAdminDocuments(filters: AdminDocumentFilters) {
@@ -17,6 +19,15 @@ export function useAdminDocuments(filters: AdminDocumentFilters) {
     queryKey: queryKeys.admin.documents(filters),
     queryFn: ({ signal }) => getAdminDocuments(filters, signal),
     staleTime: 10_000,
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useAdminDocumentStats(range: AdminDocumentStatsRange) {
+  return useQuery({
+    queryKey: queryKeys.admin.documentStats(range),
+    queryFn: ({ signal }) => getAdminDocumentStats(range, signal),
+    staleTime: 30_000,
     placeholderData: (previous) => previous,
   });
 }

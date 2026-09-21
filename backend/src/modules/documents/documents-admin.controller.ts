@@ -14,7 +14,7 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
-import { IsOptional, IsString, IsUUID, MaxLength } from "class-validator";
+import { IsIn, IsOptional, IsString, IsUUID, MaxLength } from "class-validator";
 import type { Response } from "express";
 
 import { Roles } from "../../common/decorators/roles.decorator.js";
@@ -55,6 +55,33 @@ export class AdminDocumentsQueryDto extends PageQueryDto {
   @MaxLength(200)
   q?: string;
 }
+
+export type AdminDocumentStatsRange = "1d" | "3m" | "30d" | "7d";
+
+export class AdminDocumentStatsQueryDto {
+  @ApiPropertyOptional({
+    enum: ["1d", "3m", "30d", "7d"],
+    default: "3m",
+    description:
+      "Диапазон аналитики: сутки (почасово), 3 месяца, 30 или 7 дней",
+  })
+  @IsOptional()
+  @IsIn(["1d", "3m", "30d", "7d"])
+  range?: AdminDocumentStatsRange;
+}
+
+const STATS_RANGE_DAYS: Record<
+  Exclude<AdminDocumentStatsRange, "1d">,
+  number
+> = {
+  "3m": 90,
+  "30d": 30,
+  "7d": 7,
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+const STATS_1D_HOURS = 24;
 
 @ApiTags("admin-documents")
 @ApiBearerAuth("access-token")
@@ -190,6 +217,127 @@ export class DocumentsAdminController {
       total,
       page: query.page,
       limit: query.limit,
+    };
+  }
+
+  @Get("stats")
+  @ApiResponse({
+    status: 200,
+    description:
+      "Сводная аналитика документов: итоги, дельта загрузок и дневная серия",
+  })
+  async stats(@Query() query: AdminDocumentStatsQueryDto) {
+    const range = query.range ?? "3m";
+    const to = new Date();
+    const hourly = range === "1d";
+    const from = hourly
+      ? new Date(
+          Math.floor(to.getTime() / HOUR_MS) * HOUR_MS -
+            (STATS_1D_HOURS - 1) * HOUR_MS,
+        )
+      : new Date(
+          Date.UTC(
+            to.getUTCFullYear(),
+            to.getUTCMonth(),
+            to.getUTCDate() - (STATS_RANGE_DAYS[range] - 1),
+          ),
+        );
+    const previousFrom = hourly
+      ? new Date(from.getTime() - STATS_1D_HOURS * HOUR_MS)
+      : new Date(from.getTime() - STATS_RANGE_DAYS[range] * DAY_MS);
+
+    const [
+      filesTotal,
+      integrityErrors,
+      uploadsCurrent,
+      uploadsPrevious,
+      stateRows,
+      bucketRows,
+    ] = await this.prisma.$transaction([
+      this.prisma.file.count(),
+      this.prisma.file.count({ where: { corruptedAt: { not: null } } }),
+      this.prisma.file.count({ where: { createdAt: { gte: from } } }),
+      this.prisma.file.count({
+        where: { createdAt: { gte: previousFrom, lt: from } },
+      }),
+      this.prisma.$queryRaw<{ state: string; count: number }[]>`
+        SELECT COALESCE(t.state, 'none') AS state, count(*)::int AS count
+        FROM files f
+        LEFT JOIN LATERAL (
+          SELECT pt.state
+          FROM parsing_tasks pt
+          WHERE pt.file_id = f.id
+          ORDER BY pt.cycle DESC
+          LIMIT 1
+        ) t ON TRUE
+        GROUP BY 1
+      `,
+      hourly
+        ? this.prisma.$queryRaw<{ bucket: string; uploads: number }[]>`
+            SELECT to_char(date_trunc('hour', f.created_at AT TIME ZONE 'UTC'), 'YYYY-MM-DD"T"HH24') AS bucket,
+                   count(*)::int AS uploads
+            FROM files f
+            WHERE f.created_at >= ${from}
+            GROUP BY 1
+            ORDER BY 1
+          `
+        : this.prisma.$queryRaw<{ bucket: string; uploads: number }[]>`
+            SELECT to_char(date_trunc('day', f.created_at AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS bucket,
+                   count(*)::int AS uploads
+            FROM files f
+            WHERE f.created_at >= ${from}
+            GROUP BY 1
+            ORDER BY 1
+          `,
+    ]);
+
+    const stateCounts = new Map(stateRows.map((row) => [row.state, row.count]));
+    const uploadsByBucket = new Map(
+      bucketRows.map((row) => [row.bucket, row.uploads]),
+    );
+    const series: { date: string; uploads: number }[] = [];
+    if (hourly) {
+      for (let hour = 0; hour < STATS_1D_HOURS; hour += 1) {
+        const slot = new Date(from.getTime() + hour * HOUR_MS);
+        const key = slot.toISOString().slice(0, 13);
+        series.push({
+          date: slot.toISOString(),
+          uploads: uploadsByBucket.get(key) ?? 0,
+        });
+      }
+    } else {
+      for (
+        const day = new Date(from);
+        day.getTime() <= to.getTime();
+        day.setUTCDate(day.getUTCDate() + 1)
+      ) {
+        const date = day.toISOString().slice(0, 10);
+        series.push({ date, uploads: uploadsByBucket.get(date) ?? 0 });
+      }
+    }
+
+    return {
+      range,
+      totals: {
+        files: filesTotal,
+        succeeded: stateCounts.get("succeeded") ?? 0,
+        in_progress:
+          (stateCounts.get("queued") ?? 0) +
+          (stateCounts.get("processing") ?? 0),
+        failed: stateCounts.get("failed") ?? 0,
+        integrity_errors: integrityErrors,
+      },
+      uploads: {
+        current: uploadsCurrent,
+        previous: uploadsPrevious,
+        delta_percent:
+          uploadsPrevious > 0
+            ? Math.round(
+                ((uploadsCurrent - uploadsPrevious) / uploadsPrevious) * 1000,
+              ) / 10
+            : null,
+      },
+      series,
     };
   }
 

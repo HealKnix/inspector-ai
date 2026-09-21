@@ -86,6 +86,7 @@ describe("DocumentsAdminController", () => {
   };
   const prisma = {
     $transaction: vi.fn((queries: Promise<unknown>[]) => Promise.all(queries)),
+    $queryRaw: vi.fn(),
     file: { findMany: vi.fn(), count: vi.fn() },
   };
   const parsingService = {
@@ -263,6 +264,90 @@ describe("DocumentsAdminController", () => {
         where: expect.objectContaining({ OR: expect.any(Array) }),
       }),
     );
+  });
+
+  it("отдаёт администратору сводную аналитику документов", async () => {
+    prisma.file.count
+      .mockResolvedValueOnce(40) // files total
+      .mockResolvedValueOnce(2) // integrity errors
+      .mockResolvedValueOnce(10) // uploads current
+      .mockResolvedValueOnce(5); // uploads previous
+    prisma.$queryRaw
+      .mockResolvedValueOnce([
+        { state: "succeeded", count: 30 },
+        { state: "queued", count: 4 },
+        { state: "processing", count: 2 },
+        { state: "failed", count: 3 },
+      ])
+      .mockResolvedValueOnce([{ bucket: "2026-09-20", uploads: 3 }]);
+    const token = await signAccessToken(admin.id);
+
+    await request(httpServer)
+      .get("/v1/admin/documents/stats?range=30d")
+      .auth(token, { type: "bearer" })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.range).toBe("30d");
+        expect(response.body.totals).toEqual({
+          files: 40,
+          succeeded: 30,
+          in_progress: 6,
+          failed: 3,
+          integrity_errors: 2,
+        });
+        expect(response.body.uploads).toEqual({
+          current: 10,
+          previous: 5,
+          delta_percent: 100,
+        });
+        expect(response.body.series).toHaveLength(30);
+        expect(response.body.series.at(-1)?.date).toBe(
+          new Date().toISOString().slice(0, 10),
+        );
+        expect(
+          response.body.series.find(
+            (p: { date: string }) => p.date === "2026-09-20",
+          )?.uploads,
+        ).toBe(3);
+      });
+  });
+
+  it("отдаёт почасовую серию за сутки", async () => {
+    const currentHourKey = new Date().toISOString().slice(0, 13);
+    prisma.file.count
+      .mockResolvedValueOnce(40)
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(4)
+      .mockResolvedValueOnce(1);
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ state: "succeeded", count: 30 }])
+      .mockResolvedValueOnce([{ bucket: currentHourKey, uploads: 2 }]);
+    const token = await signAccessToken(admin.id);
+
+    await request(httpServer)
+      .get("/v1/admin/documents/stats?range=1d")
+      .auth(token, { type: "bearer" })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.range).toBe("1d");
+        expect(response.body.series).toHaveLength(24);
+        expect(response.body.series.at(-1)?.date).toMatch(
+          /^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/,
+        );
+        expect(response.body.series.at(-1)?.uploads).toBe(2);
+        expect(response.body.series[0]?.uploads).toBe(0);
+      });
+  });
+
+  it("отклоняет неизвестный диапазон аналитики", async () => {
+    const token = await signAccessToken(admin.id);
+
+    await request(httpServer)
+      .get("/v1/admin/documents/stats?range=year")
+      .auth(token, { type: "bearer" })
+      .expect(400);
+
+    expect(prisma.file.count).not.toHaveBeenCalled();
   });
 
   it("отклоняет фильтры с не-uuid значениями", async () => {

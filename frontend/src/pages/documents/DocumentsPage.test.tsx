@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 
 import {
   getAdminDocuments,
+  getAdminDocumentStats,
   getAdminObjects,
   getAdminParseResult,
   getAdminRenderedPage,
@@ -16,6 +17,7 @@ import { DocumentsPage } from "./DocumentsPage";
 
 vi.mock("@/api/endpoints/admin-documents", () => ({
   getAdminDocuments: vi.fn(),
+  getAdminDocumentStats: vi.fn(),
   getAdminObjects: vi.fn(),
   getAdminParseResult: vi.fn(),
   getAdminRenderedPage: vi.fn(),
@@ -83,6 +85,23 @@ const queuedDocument: AdminDocument = {
   },
 };
 
+const documentStats = {
+  range: "3m" as const,
+  totals: {
+    files: 12,
+    succeeded: 7,
+    in_progress: 3,
+    failed: 1,
+    integrity_errors: 1,
+  },
+  uploads: { current: 9, previous: 6, delta_percent: 50 },
+  series: [
+    { date: "2026-09-18", uploads: 2 },
+    { date: "2026-09-19", uploads: 3 },
+    { date: "2026-09-20", uploads: 4 },
+  ],
+};
+
 function renderPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -107,6 +126,7 @@ beforeEach(() => {
     page: 1,
     limit: 20,
   });
+  vi.mocked(getAdminDocumentStats).mockResolvedValue(documentStats);
   vi.mocked(getAdminParseResult).mockResolvedValue(parseResult);
   vi.mocked(getAdminRenderedPage).mockResolvedValue(
     new Blob([new Uint8Array([0x89, 0x50])], { type: "image/png" }),
@@ -126,6 +146,37 @@ describe("DocumentsPage", () => {
     expect(screen.getAllByText("inspector.ivanov").length).toBeGreaterThan(0);
     expect(screen.getByText("Обработан")).toBeInTheDocument();
     expect(screen.getByText("В очереди")).toBeInTheDocument();
+  });
+
+  it("показывает аналитику над таблицей", async () => {
+    renderPage();
+
+    const analytics = await screen.findByRole("region", {
+      name: "Аналитика документов",
+    });
+    await waitFor(() => {
+      expect(analytics).toHaveTextContent("12");
+    });
+    expect(analytics).toHaveTextContent("Всего документов");
+    expect(analytics).toHaveTextContent("Обработано");
+    expect(analytics).toHaveTextContent("В обработке");
+    expect(analytics).toHaveTextContent("Ошибки");
+    expect(analytics).toHaveTextContent("Загрузки растут");
+    expect(getAdminDocumentStats).toHaveBeenCalledWith("3m", expect.anything());
+  });
+
+  it("запрашивает аналитику за выбранный период", async () => {
+    renderPage();
+    await screen.findByRole("region", { name: "Аналитика документов" });
+
+    fireEvent.click(screen.getByRole("button", { name: "7 дней" }));
+
+    await waitFor(() => {
+      expect(getAdminDocumentStats).toHaveBeenLastCalledWith(
+        "7d",
+        expect.anything(),
+      );
+    });
   });
 
   it("запрашивает документы с фильтром по объекту", async () => {

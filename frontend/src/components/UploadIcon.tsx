@@ -1,9 +1,11 @@
 import {
   Add01Icon,
   Alert02Icon,
+  ArrowDownRight01Icon,
   ArrowLeft01Icon,
   ArrowLeft02Icon,
   ArrowRight01Icon,
+  ArrowUpRight01Icon,
   Cancel01Icon,
   CheckIcon,
   Delete02Icon,
@@ -52,6 +54,8 @@ export type UploadIconName =
   | "sparkles"
   | "template"
   | "trash"
+  | "trend-down"
+  | "trend-up"
   | "upload"
   | "user"
   | "warning"
@@ -71,6 +75,8 @@ interface UploadIconProps {
 const icons: Record<UploadIconName, IconSvgElement> = {
   plus: Add01Icon,
   "arrow-left": ArrowLeft02Icon,
+  "trend-down": ArrowDownRight01Icon,
+  "trend-up": ArrowUpRight01Icon,
   download: Download01Icon,
   edit: Edit02Icon,
   eye: EyeIcon,

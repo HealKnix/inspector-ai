@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import routeNames from "@/routes/routeNames";
 
 import { AdminDocumentViewer } from "./components/AdminDocumentViewer";
+import { DocumentsAnalytics } from "./components/DocumentsAnalytics";
 
 const ALL = "all";
 
@@ -98,6 +99,8 @@ export function DocumentsPage() {
         description="Все загруженные документы с указанием пользователя и объекта. Доступен просмотр опубликованных результатов обработки."
         title="Документы"
       />
+
+      <DocumentsAnalytics />
 
       <section
         className="border-border bg-card min-w-0 overflow-hidden rounded-[20px] border shadow-sm"

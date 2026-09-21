@@ -2,8 +2,10 @@ import { apiClient } from "@/api/client";
 import { ApiError } from "@/api/errors";
 import {
   adminDocumentListSchema,
+  adminDocumentStatsSchema,
   adminObjectListSchema,
   type AdminDocumentFilters,
+  type AdminDocumentStatsRange,
 } from "@/api/types/admin-documents";
 import { parseResultSchema } from "@/api/types/parsing";
 
@@ -21,6 +23,17 @@ export async function getAdminDocuments(
     signal,
   });
   return adminDocumentListSchema.parse(response.data);
+}
+
+export async function getAdminDocumentStats(
+  range: AdminDocumentStatsRange,
+  signal?: AbortSignal,
+) {
+  const response = await apiClient.get<unknown>("/v1/admin/documents/stats", {
+    params: { range },
+    signal,
+  });
+  return adminDocumentStatsSchema.parse(response.data);
 }
 
 export async function getAdminObjects(signal?: AbortSignal) {

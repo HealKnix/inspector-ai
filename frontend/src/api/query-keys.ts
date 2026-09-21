@@ -51,6 +51,8 @@ export const queryKeys = {
       q?: string;
       userId?: string;
     }) => ["admin", "documents", filters] as const,
+    documentStats: (range: string) =>
+      ["admin", "documents", "stats", range] as const,
     parse: (fileId: string, artifactId: string) =>
       ["admin", "documents", "parse", fileId, artifactId] as const,
     renderedPage: (fileId: string, artifactId: string, page: number) =>
