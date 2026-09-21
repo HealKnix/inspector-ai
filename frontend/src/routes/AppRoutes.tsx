@@ -62,6 +62,11 @@ const UsersPage = lazy(() =>
     default: module.UsersPage,
   })),
 );
+const DocumentsPage = lazy(() =>
+  import("@/pages/documents/DocumentsPage").then((module) => ({
+    default: module.DocumentsPage,
+  })),
+);
 
 export function AppRoutes() {
   const currentUserQuery = useCurrentUser();
@@ -155,6 +160,10 @@ export function AppRoutes() {
                 path={routeNames.ADMIN_MATRIX}
               />
               <Route element={<UsersPage />} path={routeNames.ADMIN_USERS} />
+              <Route
+                element={<DocumentsPage />}
+                path={routeNames.ADMIN_DOCUMENTS}
+              />
             </Route>
           </Route>
         </Route>

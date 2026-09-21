@@ -33,12 +33,13 @@ import {
   REFRESH_TOKEN_COOKIE_NAME,
   REFRESH_TOKEN_SECURITY_NAME,
 } from "../../common/const/auth.constants.js";
+import { Public } from "../../common/decorators/public.decorator.js";
 import { AuthRequestGuard } from "./auth-request.guard.js";
 import { AuthService, type SessionResult } from "./auth.service.js";
 import { AuthResponseDto, UserResponseDto } from "./dto/auth-response.dto.js";
 import { LoginDto } from "./dto/login.dto.js";
 import { RegisterDto } from "./dto/register.dto.js";
-import { type AuthenticatedRequest, JwtAuthGuard } from "./jwt-auth.guard.js";
+import { type AuthenticatedRequest } from "./jwt-auth.guard.js";
 
 function getRefreshToken(request: Request): string | undefined {
   const cookies: unknown = request.cookies;
@@ -63,6 +64,7 @@ export class AuthController {
     private readonly configService: ConfigService,
   ) {}
 
+  @Public()
   @Post("register")
   @UseGuards(AuthRequestGuard)
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
@@ -84,6 +86,7 @@ export class AuthController {
     return this.completeAuthentication(response, session);
   }
 
+  @Public()
   @Post("login")
   @UseGuards(AuthRequestGuard)
   @HttpCode(HttpStatus.OK)
@@ -106,6 +109,7 @@ export class AuthController {
     return this.completeAuthentication(response, session);
   }
 
+  @Public()
   @Post("refresh")
   @UseGuards(AuthRequestGuard)
   @HttpCode(HttpStatus.OK)
@@ -132,7 +136,6 @@ export class AuthController {
   }
 
   @Get("me")
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth("access-token")
   @ApiOkResponse({ type: UserResponseDto })
   @ApiUnauthorizedResponse({
@@ -142,6 +145,7 @@ export class AuthController {
     return { user: request.user };
   }
 
+  @Public()
   @Post("logout")
   @UseGuards(AuthRequestGuard)
   @HttpCode(HttpStatus.NO_CONTENT)

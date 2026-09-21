@@ -90,6 +90,12 @@ const primaryItems: readonly NavigationItem[] = [
     label: "Пользователи",
     roles: [Role.ADMINISTRATOR],
   },
+  {
+    href: routeNames.ADMIN_DOCUMENTS,
+    icon: "file",
+    label: "Документы",
+    roles: [Role.ADMINISTRATOR],
+  },
 ];
 
 const secondaryItems: readonly NavigationItem[] = [];

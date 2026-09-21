@@ -106,6 +106,7 @@ export function useRenderedPage(
   objectId: string,
   file: ParsingFile,
   page: number,
+  enabled = true,
 ) {
   return useQuery({
     queryKey: queryKeys.objects.renderedPage(
@@ -117,7 +118,7 @@ export function useRenderedPage(
     ),
     queryFn: ({ signal }) =>
       getRenderedPage(objectId, file.file_id, file.artifact_id!, page, signal),
-    enabled: Boolean(file.artifact_id) && page > 0,
+    enabled: enabled && Boolean(file.artifact_id) && page > 0,
     retry: false,
     staleTime: 0,
     refetchOnWindowFocus: false,

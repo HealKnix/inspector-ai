@@ -1,6 +1,7 @@
 import {
   Add01Icon,
   Alert02Icon,
+  ArrowLeft01Icon,
   ArrowLeft02Icon,
   ArrowRight01Icon,
   Cancel01Icon,
@@ -9,7 +10,9 @@ import {
   Doc01Icon,
   Download01Icon,
   File02Icon,
+  FitToScreenIcon,
   Folder01Icon,
+  FullScreenIcon,
   InformationCircleIcon,
   Layers01Icon,
   LayoutTemplateIcon,
@@ -21,6 +24,8 @@ import {
   Upload04Icon,
   UserIcon,
   Xml01Icon,
+  ZoomInIcon,
+  ZoomOutIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 
@@ -29,9 +34,12 @@ export type UploadIconName =
   | "arrow-left"
   | "download"
   | "check"
+  | "chevron-left"
   | "chevron-right"
   | "close"
+  | "expand"
   | "file"
+  | "fit"
   | "folder"
   | "info"
   | "layers"
@@ -44,6 +52,8 @@ export type UploadIconName =
   | "user"
   | "warning"
   | "share"
+  | "zoom-in"
+  | "zoom-out"
   | "pdf"
   | "docx"
   | "xml";
@@ -59,9 +69,12 @@ const icons: Record<UploadIconName, IconSvgElement> = {
   "arrow-left": ArrowLeft02Icon,
   download: Download01Icon,
   check: CheckIcon,
+  "chevron-left": ArrowLeft01Icon,
   "chevron-right": ArrowRight01Icon,
   close: Cancel01Icon,
+  expand: FullScreenIcon,
   file: File02Icon,
+  fit: FitToScreenIcon,
   folder: Folder01Icon,
   info: InformationCircleIcon,
   layers: Layers01Icon,
@@ -74,6 +87,8 @@ const icons: Record<UploadIconName, IconSvgElement> = {
   user: UserIcon,
   warning: Alert02Icon,
   share: Share01Icon,
+  "zoom-in": ZoomInIcon,
+  "zoom-out": ZoomOutIcon,
   pdf: Pdf01Icon,
   docx: Doc01Icon,
   xml: Xml01Icon,

@@ -10,7 +10,6 @@ import {
   Query,
   Req,
   Res,
-  UseGuards,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
@@ -21,10 +20,7 @@ import {
 import { IsOptional, IsUUID } from "class-validator";
 import type { Response } from "express";
 import { randomUUID } from "node:crypto";
-import {
-  JwtAuthGuard,
-  type AuthenticatedRequest,
-} from "../auth/jwt-auth.guard.js";
+import { type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { apiErrorSchema } from "../documents/upload-contract.js";
 import { parseArtifactSchema } from "./parsing-openapi.js";
 import { PARSING_PHASES } from "./parsing-progress.js";
@@ -72,7 +68,6 @@ export class ParsingPageQueryDto {
   schema: apiErrorSchema,
   description: "Сохранённый результат недоступен или повреждён",
 })
-@UseGuards(JwtAuthGuard)
 @Controller("v1/objects/:objectId")
 export class ParsingController {
   constructor(private readonly parsing: ParsingService) {}

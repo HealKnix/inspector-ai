@@ -5,14 +5,10 @@ import {
   ParseUUIDPipe,
   Req,
   Res,
-  UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
-import {
-  JwtAuthGuard,
-  type AuthenticatedRequest,
-} from "../auth/jwt-auth.guard.js";
+import { type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { apiErrorSchema } from "../documents/upload-contract.js";
 import { ExtractionService } from "./extraction.service.js";
 
@@ -20,7 +16,6 @@ import { ExtractionService } from "./extraction.service.js";
 @ApiBearerAuth("access-token")
 @ApiResponse({ status: 401, schema: apiErrorSchema })
 @ApiResponse({ status: 403, schema: apiErrorSchema })
-@UseGuards(JwtAuthGuard)
 @Controller("v1/objects/:objectId")
 export class ExtractionController {
   constructor(private readonly extraction: ExtractionService) {}

@@ -3,9 +3,12 @@ import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 
+import { RolesGuard } from "./common/guards/roles.guard.js";
 import { validateEnvironment } from "./config/environment.js";
 import { PrismaModule } from "./infrastructure/prisma/prisma.module.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
+import { JwtAuthGuard } from "./modules/auth/jwt-auth.guard.js";
+import { DocumentsAdminModule } from "./modules/documents/documents-admin.module.js";
 import { DocumentsModule } from "./modules/documents/documents.module.js";
 import { ExtractionModule } from "./modules/extraction/extraction.module.js";
 import { HealthModule } from "./modules/health/health.module.js";
@@ -27,7 +30,12 @@ import { UsersAdminModule } from "./modules/users/users-admin.module.js";
     ClassificationModule,
     ExtractionModule,
     UsersAdminModule,
+    DocumentsAdminModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
+  ],
 })
 export class AppModule {}

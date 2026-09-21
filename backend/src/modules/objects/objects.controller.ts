@@ -7,7 +7,6 @@ import {
   Post,
   Query,
   Req,
-  UseGuards,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
@@ -17,10 +16,7 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { randomUUID } from "node:crypto";
-import {
-  JwtAuthGuard,
-  type AuthenticatedRequest,
-} from "../auth/jwt-auth.guard.js";
+import { type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import {
   CreateObjectDto,
   ObjectDto,
@@ -48,7 +44,6 @@ import { ObjectsService } from "./objects.service.js";
     },
   },
 })
-@UseGuards(JwtAuthGuard)
 @Controller("v1/objects")
 export class ObjectsController {
   constructor(private readonly objects: ObjectsService) {}

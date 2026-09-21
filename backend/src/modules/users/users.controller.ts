@@ -10,18 +10,13 @@ import {
   Patch,
   Post,
   Req,
-  UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiResponse, ApiTags } from "@nestjs/swagger";
 
 import { Roles } from "../../common/decorators/roles.decorator.js";
-import { RolesGuard } from "../../common/guards/roles.guard.js";
-import { apiErrorSchema } from "../documents/upload-contract.js";
-import {
-  type AuthenticatedRequest,
-  JwtAuthGuard,
-} from "../auth/jwt-auth.guard.js";
+import { type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { PasswordService } from "../auth/password.service.js";
+import { apiErrorSchema } from "../documents/upload-contract.js";
 import { CreateUserDto } from "./dto/create-user.dto.js";
 import { UpdateUserDto } from "./dto/update-user.dto.js";
 import { UsersService } from "./users.service.js";
@@ -39,7 +34,6 @@ function isPrismaError(error: unknown, code: string): boolean {
 @ApiBearerAuth("access-token")
 @ApiResponse({ status: 401, schema: apiErrorSchema })
 @ApiResponse({ status: 403, schema: apiErrorSchema })
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Roles("ADMINISTRATOR")
 @Controller("v1/admin/users")
 export class UsersController {

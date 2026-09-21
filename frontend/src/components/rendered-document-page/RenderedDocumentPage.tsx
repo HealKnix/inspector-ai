@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 
+import { useAdminRenderedPage } from "@/api/hooks/use-admin-documents";
 import { parsingErrorMessage, useRenderedPage } from "@/api/hooks/use-parsing";
 import type { ParsingFile, RenderedPage, TextBlock } from "@/api/types/parsing";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,7 @@ function blockRectangle(bbox: TextBlock["bbox"]) {
 }
 
 export interface RenderedDocumentPageProps {
+  admin?: boolean;
   className?: string;
   objectId: string;
   file: ParsingFile;
@@ -68,6 +70,7 @@ export interface RenderedDocumentPageProps {
 }
 
 export function RenderedDocumentPage({
+  admin = false,
   className,
   objectId,
   file,
@@ -80,7 +83,19 @@ export function RenderedDocumentPage({
   selectedRegionId = null,
   onRegionSelect,
 }: RenderedDocumentPageProps) {
-  const query = useRenderedPage(objectId, file, page.page_number);
+  const inspectorQuery = useRenderedPage(
+    objectId,
+    file,
+    page.page_number,
+    !admin,
+  );
+  const adminQuery = useAdminRenderedPage(
+    file.file_id,
+    file.artifact_id,
+    page.page_number,
+    admin,
+  );
+  const query = admin ? adminQuery : inspectorQuery;
   const blob = query.isError ? undefined : query.data;
   const selectedRef = useRef<HTMLButtonElement>(null);
 

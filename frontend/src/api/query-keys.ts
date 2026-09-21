@@ -43,4 +43,25 @@ export const queryKeys = {
   users: {
     all: ["admin", "users"] as const,
   },
+  admin: {
+    objects: ["admin", "objects"] as const,
+    documents: (filters: {
+      objectId?: string;
+      page?: number;
+      q?: string;
+      userId?: string;
+    }) => ["admin", "documents", filters] as const,
+    parse: (fileId: string, artifactId: string) =>
+      ["admin", "documents", "parse", fileId, artifactId] as const,
+    renderedPage: (fileId: string, artifactId: string, page: number) =>
+      [
+        "admin",
+        "documents",
+        "parse",
+        fileId,
+        artifactId,
+        "page",
+        page,
+      ] as const,
+  },
 } as const;

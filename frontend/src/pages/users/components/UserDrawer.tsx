@@ -126,14 +126,19 @@ function UserProfileFields({
           >
             <Label>Роль</Label>
             <Select.Trigger>
-              <Select.Value />
+              <Select.Value className="max-w-full truncate" />
               <Select.Indicator />
             </Select.Trigger>
-            <Select.Popover>
+            <Select.Popover className="not-sm:max-w-0">
               <ListBox>
                 {allowEmptyRole ? (
-                  <ListBox.Item id={EMPTY_ROLE_KEY} textValue="Без роли">
+                  <ListBox.Item
+                    id={EMPTY_ROLE_KEY}
+                    textValue="Без роли"
+                    className="data-selected:text-accent data-selected:bg-accent/10 flex gap-2 data-selected:[&>p]:pr-4"
+                  >
                     Без роли
+                    <ListBox.ItemIndicator className="text-accent" />
                   </ListBox.Item>
                 ) : null}
                 {(
@@ -147,8 +152,10 @@ function UserProfileFields({
                     key={role}
                     id={role}
                     textValue={roleLabels[role]}
+                    className="data-selected:text-accent data-selected:bg-accent/10 flex gap-2 data-selected:[&>p]:pr-4"
                   >
                     {roleLabels[role]}
+                    <ListBox.ItemIndicator className="text-accent" />
                   </ListBox.Item>
                 ))}
               </ListBox>
@@ -423,6 +430,7 @@ export function UserDrawer({ currentUserId, state, user }: UserDrawerProps) {
 
   return (
     <Drawer state={state}>
+      <Drawer.Trigger className="hidden" />
       <Drawer.Backdrop>
         <Drawer.Content placement="right">
           <Drawer.Dialog

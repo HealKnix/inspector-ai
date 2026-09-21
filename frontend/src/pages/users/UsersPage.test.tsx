@@ -87,6 +87,32 @@ describe("UsersPage", () => {
     expect(screen.getByText("Иванов Иван Иванович")).toBeInTheDocument();
   });
 
+  it("ищет пользователей по имени, логину и контактам", async () => {
+    renderPage();
+    await screen.findByText("Иванов Иван Иванович");
+
+    fireEvent.change(screen.getByPlaceholderText("Имя, логин или контакты…"), {
+      target: { value: "ivanov" },
+    });
+
+    expect(
+      screen.queryByText("Администраторов Администратор"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Иванов Иван Иванович")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText("Имя, логин или контакты…"), {
+      target: { value: "ivanov@example.ru" },
+    });
+    expect(screen.getByText("Иванов Иван Иванович")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText("Имя, логин или контакты…"), {
+      target: { value: "" },
+    });
+    expect(
+      screen.getByText("Администраторов Администратор"),
+    ).toBeInTheDocument();
+  });
+
   it("создаёт пользователя через drawer", async () => {
     renderPage();
     await screen.findByText("Иванов Иван Иванович");

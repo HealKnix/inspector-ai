@@ -1,6 +1,7 @@
 import type { INestApplication } from "@nestjs/common";
 import { ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { APP_GUARD } from "@nestjs/core";
 import { JwtModule, JwtService } from "@nestjs/jwt";
 import { Test } from "@nestjs/testing";
 import { Server } from "node:http";
@@ -68,10 +69,9 @@ describe("UsersController", () => {
     hash: vi.fn(),
   };
   const configService = {
-    get: (key: string) =>
-      ({ JWT_SECRET: ACCESS_SECRET })[key],
+    get: (key: string) => ({ JWT_SECRET: ACCESS_SECRET })[key],
     getOrThrow: (key: string) => {
-      const value = ({ JWT_SECRET: ACCESS_SECRET })[key];
+      const value = { JWT_SECRET: ACCESS_SECRET }[key];
 
       if (value === undefined) {
         throw new Error(`Missing test config: ${key}`);
@@ -107,8 +107,8 @@ describe("UsersController", () => {
       imports: [JwtModule.register({})],
       controllers: [UsersController],
       providers: [
-        JwtAuthGuard,
-        RolesGuard,
+        { provide: APP_GUARD, useClass: JwtAuthGuard },
+        { provide: APP_GUARD, useClass: RolesGuard },
         { provide: AuthSessionsService, useValue: authSessionsService },
         { provide: ConfigService, useValue: configService },
         { provide: PasswordService, useValue: passwordService },

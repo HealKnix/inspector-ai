@@ -1,4 +1,12 @@
-import { Avatar, Button, Spinner, Table, useOverlayState } from "@heroui/react";
+import {
+  Avatar,
+  Button,
+  Label,
+  SearchField,
+  Spinner,
+  Table,
+  useOverlayState,
+} from "@heroui/react";
 import { useState } from "react";
 
 import { useUsers } from "@/api/hooks/use-users";
@@ -31,14 +39,21 @@ export function UsersPage() {
   const data = query.isError ? undefined : query.data;
   const currentUserId = useAuthSessionStore((state) => state.user?.id);
   const [roleFilter, setRoleFilter] = useState<Role | null>(null);
+  const [search, setSearch] = useState("");
   const [editedUser, setEditedUser] = useState<UserDto | null>(null);
   const drawerState = useOverlayState();
 
   const users = data ?? [];
-  const filteredUsers =
-    roleFilter === null
-      ? users
-      : users.filter((user) => user.role === roleFilter);
+  const normalizedSearch = search.trim().toLocaleLowerCase("ru-RU");
+  const filteredUsers = users.filter(
+    (user) =>
+      (roleFilter === null || user.role === roleFilter) &&
+      (!normalizedSearch ||
+        [fullName(user), user.login, user.phone ?? "", user.email ?? ""].some(
+          (value) =>
+            value.toLocaleLowerCase("ru-RU").includes(normalizedSearch),
+        )),
+  );
 
   const openCreate = () => {
     setEditedUser(null);
@@ -83,30 +98,48 @@ export function UsersPage() {
               </span>
             )}
           </div>
-          <div
-            aria-label="Фильтр по роли"
-            className="flex flex-wrap gap-2"
-            role="group"
-          >
-            {roleFilters.map((role) => {
-              const isActive = roleFilter === role;
-              return (
-                <Button
-                  key={role ?? "all"}
-                  aria-pressed={isActive}
-                  className={cn(
-                    "rounded-xl",
-                    isActive &&
-                      "bg-accent/10 text-accent data-[hovered=true]:bg-accent/15",
-                  )}
-                  size="sm"
-                  variant={isActive ? "secondary" : "outline"}
-                  onPress={() => setRoleFilter(role)}
-                >
-                  {role === null ? "Все роли" : roleLabels[role]}
-                </Button>
-              );
-            })}
+          <div className="flex flex-wrap items-center gap-3">
+            <SearchField
+              aria-label="Поиск пользователей"
+              className="w-64"
+              onChange={setSearch}
+              value={search}
+            >
+              <Label className="sr-only">Поиск</Label>
+              <SearchField.Group className="rounded-xl">
+                <SearchField.SearchIcon />
+                <SearchField.Input
+                  placeholder="Имя, логин или контакты…"
+                  type="search"
+                />
+                <SearchField.ClearButton aria-label="Очистить поиск" />
+              </SearchField.Group>
+            </SearchField>
+            <div
+              aria-label="Фильтр по роли"
+              className="flex flex-wrap gap-2"
+              role="group"
+            >
+              {roleFilters.map((role) => {
+                const isActive = roleFilter === role;
+                return (
+                  <Button
+                    key={role ?? "all"}
+                    aria-pressed={isActive}
+                    className={cn(
+                      "rounded-xl",
+                      isActive &&
+                        "bg-accent/10 text-accent data-[hovered=true]:bg-accent/15",
+                    )}
+                    size="sm"
+                    variant={isActive ? "secondary" : "outline"}
+                    onPress={() => setRoleFilter(role)}
+                  >
+                    {role === null ? "Все роли" : roleLabels[role]}
+                  </Button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -153,12 +186,12 @@ export function UsersPage() {
                       <h3 className="text-lg font-medium">
                         {users.length === 0
                           ? "Пока нет пользователей"
-                          : "Нет пользователей с такой ролью"}
+                          : "Никого не найдено"}
                       </h3>
                       <p className="text-copy-muted mt-2 text-sm">
                         {users.length === 0
                           ? "Создайте первую учётную запись."
-                          : "Измените фильтр, чтобы увидеть других пользователей."}
+                          : "Измените фильтр или поисковый запрос."}
                       </p>
                     </div>
                   )}

@@ -104,7 +104,7 @@ describe("AuthController", () => {
       controllers: [AuthController],
       providers: [
         AuthRequestGuard,
-        JwtAuthGuard,
+        { provide: APP_GUARD, useClass: JwtAuthGuard },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
         { provide: AuthService, useValue: authService },
         { provide: AuthSessionsService, useValue: authSessionsService },

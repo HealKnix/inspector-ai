@@ -104,15 +104,19 @@ export function ProtocolsPage() {
               value={objectId || ALL_OBJECTS_KEY}
             >
               <Label>Объект</Label>
-              <Select.Trigger className="rounded-xl">
+              <Select.Trigger>
                 <Select.Value className="max-w-full truncate" />
                 <Select.Indicator />
               </Select.Trigger>
               <Select.Popover className="not-sm:max-w-0">
                 <ListBox>
-                  <ListBox.Item id={ALL_OBJECTS_KEY} textValue="Все объекты">
+                  <ListBox.Item
+                    id={ALL_OBJECTS_KEY}
+                    textValue="Все объекты"
+                    className="data-selected:text-accent data-selected:bg-accent/10 flex gap-2 data-selected:[&>p]:pr-4"
+                  >
                     Все объекты
-                    <ListBox.ItemIndicator />
+                    <ListBox.ItemIndicator className="text-accent" />
                   </ListBox.Item>
                   {objects.map((object) => (
                     <ListBox.Item
