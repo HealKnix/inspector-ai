@@ -1,9 +1,10 @@
-import { Alert, FieldError, Input, Label, TextField } from "@heroui/react";
+import { Alert } from "@heroui/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
 import { useLogin } from "@/api/hooks/use-auth";
+import { Input } from "@/components/input/Input";
 import { loginSchema, type LoginFormValues } from "@/pages/auth/auth-schema";
 import routeNames from "@/routes/routeNames";
 import { SubmitButton } from "./SubmitButton";
@@ -51,20 +52,16 @@ export function LoginForm() {
         control={control}
         name="login"
         render={({ field, fieldState }) => (
-          <TextField
+          <Input
+            {...field}
+            autoComplete="username"
+            errorMessage={fieldState.error?.message}
             fullWidth
             isInvalid={fieldState.invalid}
             isRequired
-            name={field.name}
-          >
-            <Label>Логин</Label>
-            <Input
-              {...field}
-              autoComplete="username"
-              placeholder="Введите логин"
-            />
-            <FieldError>{fieldState.error?.message}</FieldError>
-          </TextField>
+            label="Логин"
+            placeholder="Введите логин"
+          />
         )}
       />
 
@@ -72,21 +69,17 @@ export function LoginForm() {
         control={control}
         name="password"
         render={({ field, fieldState }) => (
-          <TextField
+          <Input
+            {...field}
+            autoComplete="current-password"
+            errorMessage={fieldState.error?.message}
             fullWidth
             isInvalid={fieldState.invalid}
             isRequired
-            name={field.name}
+            label="Пароль"
+            placeholder="Введите пароль"
             type="password"
-          >
-            <Label>Пароль</Label>
-            <Input
-              {...field}
-              autoComplete="current-password"
-              placeholder="Введите пароль"
-            />
-            <FieldError>{fieldState.error?.message}</FieldError>
-          </TextField>
+          />
         )}
       />
 

@@ -1,7 +1,8 @@
 import { useCreateObject } from "@/api/hooks/use-objects";
+import { Input } from "@/components/input/Input";
 import { UploadIcon } from "@/components/UploadIcon";
 import routeNames from "@/routes/routeNames";
-import { Button, FieldError, Input, Label, TextField } from "@heroui/react";
+import { Button } from "@heroui/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -46,16 +47,16 @@ export function CreateObjectForm() {
         control={control}
         name="name"
         render={({ field, fieldState }) => (
-          <TextField isRequired isInvalid={fieldState.invalid}>
-            <Label>Название объекта</Label>
-            <Input
-              {...field}
-              className="rounded-xl"
-              maxLength={300}
-              placeholder="Например, жилой корпус 1"
-            />
-            <FieldError>{fieldState.error?.message}</FieldError>
-          </TextField>
+          <Input
+            {...field}
+            errorMessage={fieldState.error?.message}
+            inputClassName="rounded-xl"
+            isInvalid={fieldState.invalid}
+            isRequired
+            label="Название объекта"
+            maxLength={300}
+            placeholder="Например, жилой корпус 1"
+          />
         )}
       />
       {mutation.error && (

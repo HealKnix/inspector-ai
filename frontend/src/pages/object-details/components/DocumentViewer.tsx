@@ -1,8 +1,9 @@
-import { Button, Input } from "@heroui/react";
+import { Button } from "@heroui/react";
 import { useEffect, useRef, useState } from "react";
 
 import { parsingErrorMessage, useParseResult } from "@/api/hooks/use-parsing";
 import type { ParseResult, ParsingFile } from "@/api/types/parsing";
+import { Input } from "@/components/input/Input";
 import { isVisibleDocumentBlock } from "@/components/rendered-document-page/document-blocks";
 import { RenderedDocumentPage } from "@/components/rendered-document-page/RenderedDocumentPage";
 
@@ -326,6 +327,7 @@ function DocumentContent({
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Найти текст в основных фрагментах"
           className="min-w-40 flex-1"
+          fullWidth
         />
         {term && (
           <>

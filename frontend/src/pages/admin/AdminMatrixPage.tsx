@@ -1,11 +1,10 @@
 import {
   Alert,
   Button,
-  Input,
+  TextField as HeroTextField,
   Label,
   Spinner,
   TextArea,
-  TextField,
 } from "@heroui/react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -20,6 +19,7 @@ import {
   useRejectMatrixRule,
 } from "@/api/hooks/use-matrix";
 import type { DryRunResult, MatrixRow } from "@/api/types/matrix";
+import { Input } from "@/components/input/Input";
 import routeNames from "@/routes/routeNames";
 
 const ruleStatusLabels: Record<string, string> = {
@@ -240,28 +240,20 @@ function RuleEditor({ row }: { row: MatrixRow }) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <TextField>
-          <Label>ID объекта для прогона</Label>
-          <Input
-            placeholder="uuid объекта"
-            value={objectId}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-              setObjectId(event.target.value)
-            }
-          />
-        </TextField>
-        <TextField>
-          <Label>ID файла (необязательно)</Label>
-          <Input
-            placeholder="uuid файла"
-            value={fileId}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-              setFileId(event.target.value)
-            }
-          />
-        </TextField>
+        <Input
+          label="ID объекта для прогона"
+          onChange={(event) => setObjectId(event.target.value)}
+          placeholder="uuid объекта"
+          value={objectId}
+        />
+        <Input
+          label="ID файла (необязательно)"
+          onChange={(event) => setFileId(event.target.value)}
+          placeholder="uuid файла"
+          value={fileId}
+        />
       </div>
-      <TextField>
+      <HeroTextField>
         <Label>Поисковые термины для LLM-черновика (по строке на термин)</Label>
         <TextArea
           placeholder="общая площадь&#10;технико-экономические"
@@ -270,7 +262,7 @@ function RuleEditor({ row }: { row: MatrixRow }) {
             setTerms(event.target.value)
           }
         />
-      </TextField>
+      </HeroTextField>
       <div className="flex flex-wrap gap-2">
         <Button
           size="sm"
@@ -307,7 +299,7 @@ function RuleEditor({ row }: { row: MatrixRow }) {
 
       <div>
         <h4 className="text-sm font-semibold">Новый черновик вручную</h4>
-        <TextField className="mt-2">
+        <HeroTextField className="mt-2">
           <Label>План (JSON)</Label>
           <TextArea
             placeholder='{"kind":"table_lookup","signature":{"any":["показател"]},"row":{"anchors":["общая площадь"]},"value":{"column":"last_numeric"}}'
@@ -317,21 +309,18 @@ function RuleEditor({ row }: { row: MatrixRow }) {
             }
             rows={4}
           />
-        </TextField>
+        </HeroTextField>
         {planError && (
           <p role="alert" className="text-danger mt-1 text-xs">
             {planError}
           </p>
         )}
-        <TextField className="mt-2">
-          <Label>Комментарий</Label>
-          <Input
-            value={note}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-              setNote(event.target.value)
-            }
-          />
-        </TextField>
+        <Input
+          className="mt-2"
+          label="Комментарий"
+          onChange={(event) => setNote(event.target.value)}
+          value={note}
+        />
         <Button
           className="mt-2"
           size="sm"

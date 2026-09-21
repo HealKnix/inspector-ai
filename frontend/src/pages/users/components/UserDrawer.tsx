@@ -4,12 +4,10 @@ import {
   Description,
   Drawer,
   FieldError,
-  Input,
   Label,
   ListBox,
   ScrollShadow,
   Select,
-  TextField,
   type UseOverlayStateReturn,
 } from "@heroui/react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,6 +20,7 @@ import {
 
 import { useCreateUser, useUpdateUser } from "@/api/hooks/use-users";
 import { Role, roleLabels, type UserDto } from "@/api/types/auth";
+import { Input } from "@/components/input/Input";
 import { UploadIcon } from "@/components/UploadIcon";
 import {
   createUserSchema,
@@ -59,36 +58,32 @@ function UserProfileFields({
           control={control}
           name="lastName"
           render={({ field, fieldState }) => (
-            <TextField
+            <Input
+              {...field}
+              autoComplete="family-name"
+              errorMessage={fieldState.error?.message}
               fullWidth
               isInvalid={fieldState.invalid}
               isRequired
-              name={field.name}
-            >
-              <Label>Фамилия</Label>
-              <Input
-                {...field}
-                autoComplete="family-name"
-                placeholder="Иванов"
-              />
-              <FieldError>{fieldState.error?.message}</FieldError>
-            </TextField>
+              label="Фамилия"
+              placeholder="Иванов"
+            />
           )}
         />
         <Controller
           control={control}
           name="firstName"
           render={({ field, fieldState }) => (
-            <TextField
+            <Input
+              {...field}
+              autoComplete="given-name"
+              errorMessage={fieldState.error?.message}
               fullWidth
               isInvalid={fieldState.invalid}
               isRequired
-              name={field.name}
-            >
-              <Label>Имя</Label>
-              <Input {...field} autoComplete="given-name" placeholder="Иван" />
-              <FieldError>{fieldState.error?.message}</FieldError>
-            </TextField>
+              label="Имя"
+              placeholder="Иван"
+            />
           )}
         />
       </div>
@@ -97,15 +92,15 @@ function UserProfileFields({
         control={control}
         name="patronymic"
         render={({ field, fieldState }) => (
-          <TextField fullWidth isInvalid={fieldState.invalid} name={field.name}>
-            <Label>Отчество</Label>
-            <Input
-              {...field}
-              autoComplete="additional-name"
-              placeholder="Иванович"
-            />
-            <FieldError>{fieldState.error?.message}</FieldError>
-          </TextField>
+          <Input
+            {...field}
+            autoComplete="additional-name"
+            errorMessage={fieldState.error?.message}
+            fullWidth
+            isInvalid={fieldState.invalid}
+            label="Отчество"
+            placeholder="Иванович"
+          />
         )}
       />
 
@@ -175,16 +170,16 @@ function UserProfileFields({
         control={control}
         name="phone"
         render={({ field, fieldState }) => (
-          <TextField fullWidth isInvalid={fieldState.invalid} name={field.name}>
-            <Label>Номер телефона</Label>
-            <Input
-              {...field}
-              autoComplete="tel"
-              placeholder="+7 900 123-45-67"
-              type="tel"
-            />
-            <FieldError>{fieldState.error?.message}</FieldError>
-          </TextField>
+          <Input
+            {...field}
+            autoComplete="tel"
+            errorMessage={fieldState.error?.message}
+            fullWidth
+            isInvalid={fieldState.invalid}
+            label="Номер телефона"
+            placeholder="+7 900 123-45-67"
+            type="tel"
+          />
         )}
       />
 
@@ -192,16 +187,16 @@ function UserProfileFields({
         control={control}
         name="email"
         render={({ field, fieldState }) => (
-          <TextField fullWidth isInvalid={fieldState.invalid} name={field.name}>
-            <Label>Почта</Label>
-            <Input
-              {...field}
-              autoComplete="email"
-              placeholder="ivanov@example.ru"
-              type="email"
-            />
-            <FieldError>{fieldState.error?.message}</FieldError>
-          </TextField>
+          <Input
+            {...field}
+            autoComplete="email"
+            errorMessage={fieldState.error?.message}
+            fullWidth
+            isInvalid={fieldState.invalid}
+            label="Почта"
+            placeholder="ivanov@example.ru"
+            type="email"
+          />
         )}
       />
     </>
@@ -269,20 +264,16 @@ function CreateUserForm({ onSuccess }: { onSuccess: () => void }) {
           control={form.control}
           name="login"
           render={({ field, fieldState }) => (
-            <TextField
+            <Input
+              {...field}
+              autoComplete="off"
+              errorMessage={fieldState.error?.message}
               fullWidth
               isInvalid={fieldState.invalid}
               isRequired
-              name={field.name}
-            >
-              <Label>Логин</Label>
-              <Input
-                {...field}
-                autoComplete="off"
-                placeholder="inspector.ivanov"
-              />
-              <FieldError>{fieldState.error?.message}</FieldError>
-            </TextField>
+              label="Логин"
+              placeholder="inspector.ivanov"
+            />
           )}
         />
 
@@ -291,42 +282,34 @@ function CreateUserForm({ onSuccess }: { onSuccess: () => void }) {
             control={form.control}
             name="password"
             render={({ field, fieldState }) => (
-              <TextField
+              <Input
+                {...field}
+                autoComplete="new-password"
+                description="Не менее 12 символов"
+                errorMessage={fieldState.error?.message}
                 fullWidth
                 isInvalid={fieldState.invalid}
                 isRequired
-                name={field.name}
+                label="Пароль"
+                placeholder="Придумайте пароль"
                 type="password"
-              >
-                <Label>Пароль</Label>
-                <Input
-                  {...field}
-                  autoComplete="new-password"
-                  placeholder="Придумайте пароль"
-                />
-                {fieldState.error ? (
-                  <FieldError>{fieldState.error.message}</FieldError>
-                ) : (
-                  <Description>Не менее 12 символов</Description>
-                )}
-              </TextField>
+              />
             )}
           />
           <Controller
             control={form.control}
             name="passwordConfirmation"
             render={({ field, fieldState }) => (
-              <TextField
+              <Input
+                {...field}
+                autoComplete="new-password"
+                errorMessage={fieldState.error?.message}
                 fullWidth
                 isInvalid={fieldState.invalid}
                 isRequired
-                name={field.name}
+                label="Повторите пароль"
                 type="password"
-              >
-                <Label>Повторите пароль</Label>
-                <Input {...field} autoComplete="new-password" />
-                <FieldError>{fieldState.error?.message}</FieldError>
-              </TextField>
+              />
             )}
           />
         </div>
@@ -396,11 +379,14 @@ function EditUserForm({
       >
         <FormError message={updateMutation.error?.message} />
 
-        <TextField fullWidth isReadOnly name="login">
-          <Label>Логин</Label>
-          <Input value={user.login} readOnly />
-          <Description>Логин и пароль меняются отдельно</Description>
-        </TextField>
+        <Input
+          description="Логин и пароль меняются отдельно"
+          fullWidth
+          isReadOnly
+          label="Логин"
+          name="login"
+          value={user.login}
+        />
 
         <UserProfileFields allowEmptyRole isRoleDisabled={isSelf} />
 

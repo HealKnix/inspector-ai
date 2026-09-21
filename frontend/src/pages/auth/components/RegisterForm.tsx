@@ -1,16 +1,10 @@
-import {
-  Alert,
-  Description,
-  FieldError,
-  Input,
-  Label,
-  TextField,
-} from "@heroui/react";
+import { Alert } from "@heroui/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
 import { useRegister } from "@/api/hooks/use-auth";
+import { Input } from "@/components/input/Input";
 import {
   registerSchema,
   type RegisterFormValues,
@@ -87,20 +81,16 @@ export function RegisterForm() {
         control={control}
         name="login"
         render={({ field, fieldState }) => (
-          <TextField
+          <Input
+            {...field}
+            autoComplete="username"
+            errorMessage={fieldState.error?.message}
             fullWidth
             isInvalid={fieldState.invalid}
             isRequired
-            name={field.name}
-          >
-            <Label>Логин</Label>
-            <Input
-              {...field}
-              autoComplete="username"
-              placeholder="Придумайте логин"
-            />
-            <FieldError>{fieldState.error?.message}</FieldError>
-          </TextField>
+            label="Логин"
+            placeholder="Придумайте логин"
+          />
         )}
       />
 
@@ -109,20 +99,16 @@ export function RegisterForm() {
           control={control}
           name="lastName"
           render={({ field, fieldState }) => (
-            <TextField
+            <Input
+              {...field}
+              autoComplete="family-name"
+              errorMessage={fieldState.error?.message}
               fullWidth
               isInvalid={fieldState.invalid}
               isRequired
-              name={field.name}
-            >
-              <Label>Фамилия</Label>
-              <Input
-                {...field}
-                autoComplete="family-name"
-                placeholder="Иванов"
-              />
-              <FieldError>{fieldState.error?.message}</FieldError>
-            </TextField>
+              label="Фамилия"
+              placeholder="Иванов"
+            />
           )}
         />
 
@@ -130,16 +116,16 @@ export function RegisterForm() {
           control={control}
           name="firstName"
           render={({ field, fieldState }) => (
-            <TextField
+            <Input
+              {...field}
+              autoComplete="given-name"
+              errorMessage={fieldState.error?.message}
               fullWidth
               isInvalid={fieldState.invalid}
               isRequired
-              name={field.name}
-            >
-              <Label>Имя</Label>
-              <Input {...field} autoComplete="given-name" placeholder="Иван" />
-              <FieldError>{fieldState.error?.message}</FieldError>
-            </TextField>
+              label="Имя"
+              placeholder="Иван"
+            />
           )}
         />
       </div>
@@ -149,19 +135,15 @@ export function RegisterForm() {
           control={control}
           name="patronymic"
           render={({ field, fieldState }) => (
-            <TextField
+            <Input
+              {...field}
+              autoComplete="additional-name"
+              errorMessage={fieldState.error?.message}
               fullWidth
               isInvalid={fieldState.invalid}
-              name={field.name}
-            >
-              <Label>Отчество</Label>
-              <Input
-                {...field}
-                autoComplete="additional-name"
-                placeholder="Иванович"
-              />
-              <FieldError>{fieldState.error?.message}</FieldError>
-            </TextField>
+              label="Отчество"
+              placeholder="Иванович"
+            />
           )}
         />
 
@@ -169,20 +151,16 @@ export function RegisterForm() {
           control={control}
           name="phone"
           render={({ field, fieldState }) => (
-            <TextField
+            <Input
+              {...field}
+              autoComplete="tel"
+              errorMessage={fieldState.error?.message}
               fullWidth
               isInvalid={fieldState.invalid}
-              name={field.name}
-            >
-              <Label>Номер телефона</Label>
-              <Input
-                {...field}
-                autoComplete="tel"
-                placeholder="+7 900 123-45-67"
-                type="tel"
-              />
-              <FieldError>{fieldState.error?.message}</FieldError>
-            </TextField>
+              label="Номер телефона"
+              placeholder="+7 900 123-45-67"
+              type="tel"
+            />
           )}
         />
       </div>
@@ -191,16 +169,16 @@ export function RegisterForm() {
         control={control}
         name="email"
         render={({ field, fieldState }) => (
-          <TextField fullWidth isInvalid={fieldState.invalid} name={field.name}>
-            <Label>Почта</Label>
-            <Input
-              {...field}
-              autoComplete="email"
-              placeholder="ivanov@example.ru"
-              type="email"
-            />
-            <FieldError>{fieldState.error?.message}</FieldError>
-          </TextField>
+          <Input
+            {...field}
+            autoComplete="email"
+            errorMessage={fieldState.error?.message}
+            fullWidth
+            isInvalid={fieldState.invalid}
+            label="Почта"
+            placeholder="ivanov@example.ru"
+            type="email"
+          />
         )}
       />
 
@@ -208,25 +186,18 @@ export function RegisterForm() {
         control={control}
         name="password"
         render={({ field, fieldState }) => (
-          <TextField
+          <Input
+            {...field}
+            autoComplete="new-password"
+            description="Не менее 12 символов"
+            errorMessage={fieldState.error?.message}
             fullWidth
             isInvalid={fieldState.invalid}
             isRequired
-            name={field.name}
+            label="Пароль"
+            placeholder="Придумайте пароль"
             type="password"
-          >
-            <Label>Пароль</Label>
-            <Input
-              {...field}
-              autoComplete="new-password"
-              placeholder="Придумайте пароль"
-            />
-            {fieldState.error ? (
-              <FieldError>{fieldState.error.message}</FieldError>
-            ) : (
-              <Description>Не менее 12 символов</Description>
-            )}
-          </TextField>
+          />
         )}
       />
 
@@ -234,21 +205,17 @@ export function RegisterForm() {
         control={control}
         name="passwordConfirmation"
         render={({ field, fieldState }) => (
-          <TextField
+          <Input
+            {...field}
+            autoComplete="new-password"
+            errorMessage={fieldState.error?.message}
             fullWidth
             isInvalid={fieldState.invalid}
             isRequired
-            name={field.name}
+            label="Повторите пароль"
+            placeholder="Введите пароль ещё раз"
             type="password"
-          >
-            <Label>Повторите пароль</Label>
-            <Input
-              {...field}
-              autoComplete="new-password"
-              placeholder="Введите пароль ещё раз"
-            />
-            <FieldError>{fieldState.error?.message}</FieldError>
-          </TextField>
+          />
         )}
       />
 
