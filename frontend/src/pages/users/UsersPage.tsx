@@ -11,6 +11,7 @@ import { useState } from "react";
 
 import { useUsers } from "@/api/hooks/use-users";
 import { Role, roleLabels, type UserDto } from "@/api/types/auth";
+import { ActionDropdown } from "@/components/action-dropdown/ActionDropdown";
 import { UploadIcon } from "@/components/UploadIcon";
 import { ConstrainedLayout, PageHeader } from "@/layouts/ConstrainedLayout";
 import { fallbackAvatars } from "@/lib/fallback-avatars";
@@ -174,7 +175,7 @@ export function UsersPage() {
                   <Table.Column>Роль</Table.Column>
                   <Table.Column>Контакты</Table.Column>
                   <Table.Column>Создан</Table.Column>
-                  <Table.Column aria-label="Действия" />
+                  <Table.Column aria-label="Действия" className="w-0" />
                 </Table.Header>
                 <Table.Body
                   renderEmptyState={() => (
@@ -244,16 +245,19 @@ export function UsersPage() {
                         <Table.Cell className="text-copy-muted whitespace-nowrap">
                           {new Date(user.createdAt).toLocaleDateString("ru-RU")}
                         </Table.Cell>
-                        <Table.Cell>
-                          <Button
-                            aria-label={`Изменить пользователя ${user.login}`}
-                            className="rounded-xl"
-                            size="sm"
-                            variant="outline"
-                            onPress={() => openEdit(user)}
-                          >
-                            Изменить
-                          </Button>
+                        <Table.Cell className="text-center">
+                          <ActionDropdown
+                            ariaLabel={`Действия с пользователем ${user.login}`}
+                            actions={[
+                              {
+                                label: "Изменить",
+                                icon: (
+                                  <UploadIcon className="size-4" name="edit" />
+                                ),
+                                onPress: () => openEdit(user),
+                              },
+                            ]}
+                          />
                         </Table.Cell>
                       </Table.Row>
                     );

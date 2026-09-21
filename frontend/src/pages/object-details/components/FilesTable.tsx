@@ -1,9 +1,10 @@
-import { Button, Table } from "@heroui/react";
+import { Table } from "@heroui/react";
 import { useState } from "react";
 
 import { downloadOriginal } from "@/api/endpoints/objects";
 import type { ObjectFile } from "@/api/types/objects";
 import type { ParsingFile } from "@/api/types/parsing";
+import { ActionDropdown } from "@/components/action-dropdown/ActionDropdown";
 import { UploadIcon, type UploadIconName } from "@/components/UploadIcon";
 
 const formatIcons: Record<ObjectFile["format"], UploadIconName> = {
@@ -61,7 +62,7 @@ export function FilesTable({
               <Table.Column>Формат</Table.Column>
               <Table.Column>Размер</Table.Column>
               <Table.Column>Загружен</Table.Column>
-              <Table.Column aria-label="Скачать оригинал" />
+              <Table.Column aria-label="Действия" className="w-0" />
             </Table.Header>
             <Table.Body
               renderEmptyState={() => (
@@ -107,7 +108,7 @@ export function FilesTable({
                   <Table.Cell className="text-copy-muted whitespace-nowrap">
                     {new Date(file.created_at).toLocaleDateString("ru-RU")}
                   </Table.Cell>
-                  <Table.Cell>
+                  <Table.Cell className="text-center">
                     {(() => {
                       const parsed = parsingFiles?.find(
                         (item) =>
@@ -115,31 +116,39 @@ export function FilesTable({
                           item.state === "succeeded" &&
                           item.artifact_id,
                       );
-                      return parsed && onOpen ? (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="rounded-xl"
-                          aria-label={`Просмотреть документ: ${file.original_name}`}
-                          onPress={() => onOpen(parsed)}
-                        >
-                          Просмотреть
-                        </Button>
-                      ) : null;
+                      return (
+                        <ActionDropdown
+                          ariaLabel={`Действия с файлом ${file.original_name}`}
+                          actions={[
+                            {
+                              label: "Просмотреть",
+                              icon: (
+                                <UploadIcon className="size-4" name="eye" />
+                              ),
+                              isDisabled: !parsed || !onOpen,
+                              onPress: () => {
+                                if (parsed && onOpen) onOpen(parsed);
+                              },
+                            },
+                            {
+                              label: "Скачать",
+                              icon: (
+                                <UploadIcon
+                                  className="size-4"
+                                  name="download"
+                                />
+                              ),
+                              isDisabled:
+                                file.integrity_error || downloading !== null,
+                              isLoading: downloading === file.id,
+                              onPress: () => {
+                                void download(file);
+                              },
+                            },
+                          ]}
+                        />
+                      );
                     })()}
-                    <Button
-                      aria-label={`Скачать оригинал: ${file.original_name}`}
-                      className="rounded-xl"
-                      size="sm"
-                      variant="ghost"
-                      isDisabled={file.integrity_error || downloading !== null}
-                      isPending={downloading === file.id}
-                      onPress={() => {
-                        void download(file);
-                      }}
-                    >
-                      <UploadIcon className="size-4" name="download" /> Скачать
-                    </Button>
                   </Table.Cell>
                 </Table.Row>
               ))}

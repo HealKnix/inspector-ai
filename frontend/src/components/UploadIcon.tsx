@@ -9,6 +9,8 @@ import {
   Delete02Icon,
   Doc01Icon,
   Download01Icon,
+  Edit02Icon,
+  EyeIcon,
   File02Icon,
   FitToScreenIcon,
   Folder01Icon,
@@ -16,7 +18,7 @@ import {
   InformationCircleIcon,
   Layers01Icon,
   LayoutTemplateIcon,
-  MoreHorizontalIcon,
+  MoreVerticalIcon,
   Pdf01Icon,
   PlayIcon,
   Share01Icon,
@@ -33,6 +35,8 @@ export type UploadIconName =
   | "plus"
   | "arrow-left"
   | "download"
+  | "edit"
+  | "eye"
   | "check"
   | "chevron-left"
   | "chevron-right"
@@ -68,6 +72,8 @@ const icons: Record<UploadIconName, IconSvgElement> = {
   plus: Add01Icon,
   "arrow-left": ArrowLeft02Icon,
   download: Download01Icon,
+  edit: Edit02Icon,
+  eye: EyeIcon,
   check: CheckIcon,
   "chevron-left": ArrowLeft01Icon,
   "chevron-right": ArrowRight01Icon,
@@ -78,7 +84,7 @@ const icons: Record<UploadIconName, IconSvgElement> = {
   folder: Folder01Icon,
   info: InformationCircleIcon,
   layers: Layers01Icon,
-  more: MoreHorizontalIcon,
+  more: MoreVerticalIcon,
   play: PlayIcon,
   sparkles: SparklesIcon,
   template: LayoutTemplateIcon,

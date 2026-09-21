@@ -164,9 +164,10 @@ describe("UsersPage", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Изменить пользователя inspector.ivanov",
+        name: "Действия с пользователем inspector.ivanov",
       }),
     );
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Изменить" }));
 
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveAccessibleName("Редактирование пользователя");
@@ -197,8 +198,11 @@ describe("UsersPage", () => {
     await screen.findByText("Администраторов Администратор");
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Изменить пользователя admin" }),
+      screen.getByRole("button", {
+        name: "Действия с пользователем admin",
+      }),
     );
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Изменить" }));
 
     const dialog = await screen.findByRole("dialog");
     expect(dialog.querySelector('[data-disabled="true"]')).not.toBeNull();

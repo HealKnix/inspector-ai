@@ -1,9 +1,7 @@
 import {
-  Button,
   Checkbox,
   Chip,
   Label,
-  Popover,
   SearchField,
   Table,
   ToggleButton,
@@ -17,6 +15,7 @@ import type {
   UploadDocumentFilter,
 } from "@/pages/document-upload/types";
 
+import { ActionDropdown } from "@/components/action-dropdown/ActionDropdown";
 import { UploadIcon } from "@/components/UploadIcon";
 import { cn } from "@/lib/utils";
 
@@ -144,30 +143,18 @@ function RowActions({
   onRemove: (documentId: string) => void;
 }) {
   return (
-    <Popover>
-      <Button
-        aria-label={`Действия с файлом ${document.name}`}
-        className="size-8 min-w-8 rounded-lg"
-        isIconOnly
-        size="sm"
-        variant="ghost"
-      >
-        <UploadIcon className="size-4" name="more" />
-      </Button>
-      <Popover.Content className="border-border bg-popover rounded-xl border p-1 shadow-xl">
-        <Popover.Dialog className="p-0.5 outline-none">
-          <Button
-            className="w-full justify-start rounded-lg"
-            onPress={() => onRemove(document.id)}
-            size="sm"
-            variant="danger-soft"
-          >
-            <UploadIcon className="size-4" name="trash" />
-            Удалить из списка
-          </Button>
-        </Popover.Dialog>
-      </Popover.Content>
-    </Popover>
+    <ActionDropdown
+      ariaLabel={`Действия с файлом ${document.name}`}
+      actions={[
+        {
+          label: "Удалить из списка",
+          description: "Файл будет удалён из списка загруженных документов",
+          icon: <UploadIcon className="size-4" name="trash" />,
+          onPress: () => onRemove(document.id),
+          color: "danger",
+        },
+      ]}
+    />
   );
 }
 

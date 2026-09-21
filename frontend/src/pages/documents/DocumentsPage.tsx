@@ -17,6 +17,7 @@ import {
 import { useUsers } from "@/api/hooks/use-users";
 import type { AdminDocument } from "@/api/types/admin-documents";
 import type { UserDto } from "@/api/types/auth";
+import { ActionDropdown } from "@/components/action-dropdown/ActionDropdown";
 import { UploadIcon, type UploadIconName } from "@/components/UploadIcon";
 import { ConstrainedLayout, PageHeader } from "@/layouts/ConstrainedLayout";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
@@ -243,7 +244,7 @@ export function DocumentsPage() {
                   <Table.Column>Размер</Table.Column>
                   <Table.Column>Обработка</Table.Column>
                   <Table.Column>Загружен</Table.Column>
-                  <Table.Column aria-label="Действия" />
+                  <Table.Column aria-label="Действия" className="w-0" />
                 </Table.Header>
                 <Table.Body
                   renderEmptyState={() => (
@@ -327,17 +328,20 @@ export function DocumentsPage() {
                             "ru-RU",
                           )}
                         </Table.Cell>
-                        <Table.Cell>
-                          <Button
-                            aria-label={`Просмотреть документ: ${document.original_name}`}
-                            className="rounded-xl"
-                            isDisabled={!viewable}
-                            size="sm"
-                            variant="outline"
-                            onPress={() => openViewer(document)}
-                          >
-                            Просмотр
-                          </Button>
+                        <Table.Cell className="text-center">
+                          <ActionDropdown
+                            ariaLabel={`Действия с документом ${document.original_name}`}
+                            actions={[
+                              {
+                                label: "Просмотр",
+                                icon: (
+                                  <UploadIcon className="size-4" name="eye" />
+                                ),
+                                isDisabled: !viewable,
+                                onPress: () => openViewer(document),
+                              },
+                            ]}
+                          />
                         </Table.Cell>
                       </Table.Row>
                     );

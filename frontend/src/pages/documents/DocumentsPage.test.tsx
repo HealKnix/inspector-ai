@@ -194,11 +194,14 @@ describe("DocumentsPage", () => {
     renderPage();
     await screen.findByText("Приложение_Б.docx");
 
-    expect(
+    fireEvent.click(
       screen.getByRole("button", {
-        name: "Просмотреть документ: Приложение_Б.docx",
+        name: "Действия с документом Приложение_Б.docx",
       }),
-    ).toBeDisabled();
+    );
+    expect(
+      await screen.findByRole("menuitem", { name: "Просмотр" }),
+    ).toHaveAttribute("aria-disabled", "true");
   });
 
   it("открывает просмотр обработанного документа в модалке", async () => {
@@ -207,9 +210,10 @@ describe("DocumentsPage", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Просмотреть документ: Раздел_АР.pdf",
+        name: "Действия с документом Раздел_АР.pdf",
       }),
     );
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Просмотр" }));
 
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveTextContent("Раздел_АР.pdf");

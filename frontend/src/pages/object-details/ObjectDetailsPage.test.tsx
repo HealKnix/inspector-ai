@@ -255,17 +255,18 @@ describe("object documents", () => {
   });
   it("показывает оригиналы из API и скачивает файл, скрывая недоступную загрузку", async () => {
     mount();
-    const download = await screen.findByRole("button", {
-      name: "Скачать оригинал: synthetic.xml",
-    });
-    expect(screen.getByRole("link", { name: "Все объекты" })).toHaveAttribute(
-      "href",
-      routeNames.OBJECTS,
-    );
+    expect(
+      await screen.findByRole("link", { name: "Все объекты" }),
+    ).toHaveAttribute("href", routeNames.OBJECTS);
     expect(
       screen.queryByRole("button", { name: "Загрузить документы" }),
     ).not.toBeInTheDocument();
-    fireEvent.click(download);
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Действия с файлом synthetic.xml",
+      }),
+    );
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Скачать" }));
     await waitFor(() =>
       expect(downloadOriginal).toHaveBeenCalledWith(
         object.id,
@@ -285,9 +286,14 @@ describe("object documents", () => {
     expect(
       await screen.findByText("Нарушена целостность оригинала"),
     ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Действия с файлом synthetic.xml",
+      }),
+    );
     expect(
-      screen.getByRole("button", { name: "Скачать оригинал: synthetic.xml" }),
-    ).toBeDisabled();
+      await screen.findByRole("menuitem", { name: "Скачать" }),
+    ).toHaveAttribute("aria-disabled", "true");
   });
   it("сохраняет ссылку на приём при переходе между страницами файлов", async () => {
     vi.mocked(listFiles).mockResolvedValue({
