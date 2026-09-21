@@ -83,6 +83,27 @@ describe("Input", () => {
     expect(screen.getByRole("textbox", { name: "Поиск" })).toHaveFocus();
   });
 
+  it("renders a search field with icon and clear button for type=search", async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <Input
+        aria-label="Поиск"
+        clearButtonLabel="Очистить поиск"
+        onChange={onChange}
+        type="search"
+      />,
+    );
+
+    const input = screen.getByRole("searchbox", { name: "Поиск" });
+    await user.type(input, "abc");
+    expect(onChange).toHaveBeenLastCalledWith("abc");
+    expect(
+      screen.getByRole("button", { name: "Очистить поиск" }),
+    ).toBeInTheDocument();
+  });
+
   it("respects read-only state", () => {
     render(<Input isReadOnly label="Логин" value="inspector" />);
 

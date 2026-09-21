@@ -1,15 +1,8 @@
-import {
-  Button,
-  Label,
-  ListBox,
-  SearchField,
-  Select,
-  Table,
-  type Key,
-} from "@heroui/react";
+import { Button, Label, ListBox, Select, Table, type Key } from "@heroui/react";
 import { useMemo } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
+import { Input } from "@/components/input/Input";
 import { UploadIcon } from "@/components/UploadIcon";
 import { PROTOCOL_FIXTURE_NOTICE } from "@/data/protocols";
 import { ConstrainedLayout, PageHeader } from "@/layouts/ConstrainedLayout";
@@ -133,20 +126,14 @@ export function ProtocolsPage() {
               </Select.Popover>
             </Select>
 
-            <SearchField
-              onChange={(value) => setSearchParam("q", value)}
+            <Input
+              clearButtonLabel="Очистить поиск"
+              label="Поиск"
+              onChange={(value: string) => setSearchParam("q", value)}
+              placeholder="Объект или дата…"
+              type="search"
               value={query}
-            >
-              <Label>Поиск</Label>
-              <SearchField.Group className="rounded-xl">
-                <SearchField.SearchIcon />
-                <SearchField.Input
-                  placeholder="Объект или дата…"
-                  type="search"
-                />
-                <SearchField.ClearButton aria-label="Очистить поиск" />
-              </SearchField.Group>
-            </SearchField>
+            />
           </div>
         </div>
 

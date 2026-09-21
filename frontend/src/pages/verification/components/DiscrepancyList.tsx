@@ -1,14 +1,13 @@
 import {
   Button,
-  Label,
   ProgressBar,
   ScrollShadow,
-  SearchField,
   ToggleButton,
   ToggleButtonGroup,
   type Key,
 } from "@heroui/react";
 
+import { Input } from "@/components/input/Input";
 import { cn } from "@/lib/utils";
 import {
   FindingStatus,
@@ -115,17 +114,15 @@ export function DiscrepancyList({
           </div>
         </div>
 
-        <SearchField className="mt-4" onChange={onQueryChange} value={query}>
-          <Label className="sr-only">Поиск в списке расхождений</Label>
-          <SearchField.Group className="rounded-xl">
-            <SearchField.SearchIcon />
-            <SearchField.Input
-              placeholder="Поиск по расхождениям…"
-              type="search"
-            />
-            <SearchField.ClearButton aria-label="Очистить поиск расхождений" />
-          </SearchField.Group>
-        </SearchField>
+        <Input
+          aria-label="Поиск в списке расхождений"
+          className="mt-4"
+          clearButtonLabel="Очистить поиск расхождений"
+          onChange={onQueryChange}
+          placeholder="Поиск по расхождениям…"
+          type="search"
+          value={query}
+        />
 
         <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
           <ToggleButtonGroup

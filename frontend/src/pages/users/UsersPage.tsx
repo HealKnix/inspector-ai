@@ -1,17 +1,10 @@
-import {
-  Avatar,
-  Button,
-  Label,
-  SearchField,
-  Spinner,
-  Table,
-  useOverlayState,
-} from "@heroui/react";
+import { Avatar, Button, Spinner, Table, useOverlayState } from "@heroui/react";
 import { useState } from "react";
 
 import { useUsers } from "@/api/hooks/use-users";
 import { Role, roleLabels, type UserDto } from "@/api/types/auth";
 import { ActionDropdown } from "@/components/action-dropdown/ActionDropdown";
+import { Input } from "@/components/input/Input";
 import { UploadIcon } from "@/components/UploadIcon";
 import { ConstrainedLayout, PageHeader } from "@/layouts/ConstrainedLayout";
 import { fallbackAvatars } from "@/lib/fallback-avatars";
@@ -100,22 +93,15 @@ export function UsersPage() {
             )}
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <SearchField
+            <Input
               aria-label="Поиск пользователей"
               className="w-64"
+              clearButtonLabel="Очистить поиск"
               onChange={setSearch}
+              placeholder="Имя, логин или контакты…"
+              type="search"
               value={search}
-            >
-              <Label className="sr-only">Поиск</Label>
-              <SearchField.Group className="rounded-xl">
-                <SearchField.SearchIcon />
-                <SearchField.Input
-                  placeholder="Имя, логин или контакты…"
-                  type="search"
-                />
-                <SearchField.ClearButton aria-label="Очистить поиск" />
-              </SearchField.Group>
-            </SearchField>
+            />
             <div
               aria-label="Фильтр по роли"
               className="flex flex-wrap gap-2"

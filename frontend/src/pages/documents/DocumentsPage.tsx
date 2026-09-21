@@ -2,7 +2,6 @@ import {
   Button,
   Label,
   ListBox,
-  SearchField,
   Select,
   Spinner,
   Table,
@@ -18,6 +17,7 @@ import { useUsers } from "@/api/hooks/use-users";
 import type { AdminDocument } from "@/api/types/admin-documents";
 import type { UserDto } from "@/api/types/auth";
 import { ActionDropdown } from "@/components/action-dropdown/ActionDropdown";
+import { Input } from "@/components/input/Input";
 import { UploadIcon, type UploadIconName } from "@/components/UploadIcon";
 import { ConstrainedLayout, PageHeader } from "@/layouts/ConstrainedLayout";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
@@ -115,25 +115,18 @@ export function DocumentsPage() {
             )}
           </div>
           <div className="flex flex-wrap items-end gap-3">
-            <SearchField
+            <Input
               aria-label="Поиск документов"
               className="w-64"
-              onChange={(value) => {
+              clearButtonLabel="Очистить поиск"
+              onChange={(value: string) => {
                 setSearch(value);
                 setPage(1);
               }}
+              placeholder="Файл, объект или пользователь…"
+              type="search"
               value={search}
-            >
-              <Label className="sr-only">Поиск</Label>
-              <SearchField.Group className="rounded-xl">
-                <SearchField.SearchIcon />
-                <SearchField.Input
-                  placeholder="Файл, объект или пользователь…"
-                  type="search"
-                />
-                <SearchField.ClearButton aria-label="Очистить поиск" />
-              </SearchField.Group>
-            </SearchField>
+            />
             <Select
               aria-label="Фильтр по пользователю"
               className="w-64"

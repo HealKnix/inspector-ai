@@ -322,12 +322,13 @@ function DocumentContent({
       <div className="flex flex-wrap items-center gap-2">
         <Input
           aria-label="Поиск по тексту документа"
+          className="min-w-40 flex-1"
+          clearButtonLabel="Очистить поиск"
+          fullWidth
+          onChange={setSearch}
+          placeholder="Найти текст в основных фрагментах"
           type="search"
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Найти текст в основных фрагментах"
-          className="min-w-40 flex-1"
-          fullWidth
         />
         {term && (
           <>

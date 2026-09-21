@@ -1,6 +1,7 @@
-import { Label, SearchField, Table } from "@heroui/react";
+import { Table } from "@heroui/react";
 import { useMemo, useState } from "react";
 
+import { Input } from "@/components/input/Input";
 import type { ProtocolRecord } from "@/types/protocols";
 
 import { filterProtocolViolations } from "../lib/protocols";
@@ -87,21 +88,15 @@ export function ProtocolFindings({ violations }: ProtocolFindingsProps) {
             Показано {visibleViolations.length} из {violations.length}
           </p>
         </div>
-        <SearchField
+        <Input
+          aria-label="Поиск по нарушениям"
           className="w-full sm:max-w-96"
+          clearButtonLabel="Очистить поиск"
           onChange={setQuery}
+          placeholder="Раздел, параметр, код или значение…"
+          type="search"
           value={query}
-        >
-          <Label className="sr-only">Поиск по нарушениям</Label>
-          <SearchField.Group className="rounded-xl">
-            <SearchField.SearchIcon />
-            <SearchField.Input
-              placeholder="Раздел, параметр, код или значение…"
-              type="search"
-            />
-            <SearchField.ClearButton aria-label="Очистить поиск" />
-          </SearchField.Group>
-        </SearchField>
+        />
       </div>
 
       <div className="hidden min-w-0 min-[1040px]:block">

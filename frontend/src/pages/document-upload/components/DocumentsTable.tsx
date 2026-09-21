@@ -1,8 +1,6 @@
 import {
   Checkbox,
   Chip,
-  Label,
-  SearchField,
   Table,
   ToggleButton,
   ToggleButtonGroup,
@@ -16,6 +14,7 @@ import type {
 } from "@/pages/document-upload/types";
 
 import { ActionDropdown } from "@/components/action-dropdown/ActionDropdown";
+import { Input } from "@/components/input/Input";
 import { UploadIcon } from "@/components/UploadIcon";
 import { cn } from "@/lib/utils";
 
@@ -218,18 +217,15 @@ export function DocumentsTable({
         <h2 className="mr-auto text-lg font-semibold">
           Загруженные документы ({totalFiles})
         </h2>
-        <SearchField
+        <Input
+          aria-label="Поиск по документам"
           className="w-full min-[1120px]:max-w-72"
+          clearButtonLabel="Очистить поиск"
           onChange={onQueryChange}
+          placeholder="Поиск по файлам…"
+          type="search"
           value={query}
-        >
-          <Label className="sr-only">Поиск по документам</Label>
-          <SearchField.Group className="rounded-xl">
-            <SearchField.SearchIcon />
-            <SearchField.Input placeholder="Поиск по файлам…" type="search" />
-            <SearchField.ClearButton aria-label="Очистить поиск" />
-          </SearchField.Group>
-        </SearchField>
+        />
       </div>
 
       <div className="overflow-x-auto px-4 pb-3 sm:px-5">

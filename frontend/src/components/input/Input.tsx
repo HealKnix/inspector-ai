@@ -4,16 +4,17 @@ import {
   Input as HeroInput,
   InputGroup,
   Label,
+  SearchField,
   TextField,
 } from "@heroui/react";
 import type { ComponentProps, ReactNode } from "react";
 
 type HeroInputProps = ComponentProps<typeof HeroInput>;
+type HeroSearchFieldProps = ComponentProps<typeof SearchField>;
 
-export interface InputProps extends Omit<HeroInputProps, "className"> {
+interface FieldChromeProps {
   className?: string;
   description?: ReactNode;
-  endContent?: ReactNode;
   errorMessage?: ReactNode;
   inputClassName?: string;
   isDisabled?: boolean;
@@ -21,9 +22,60 @@ export interface InputProps extends Omit<HeroInputProps, "className"> {
   isReadOnly?: boolean;
   isRequired?: boolean;
   label?: ReactNode;
-  startContent?: ReactNode;
   validationBehavior?: "aria" | "native";
 }
+
+type TextInputType =
+  | "button"
+  | "checkbox"
+  | "color"
+  | "date"
+  | "datetime-local"
+  | "email"
+  | "file"
+  | "hidden"
+  | "image"
+  | "month"
+  | "number"
+  | "password"
+  | "radio"
+  | "range"
+  | "reset"
+  | "submit"
+  | "tel"
+  | "text"
+  | "time"
+  | "url"
+  | "week";
+
+export interface TextInputProps
+  extends FieldChromeProps, Omit<HeroInputProps, "className" | "type"> {
+  endContent?: ReactNode;
+  startContent?: ReactNode;
+  type?: TextInputType;
+}
+
+export interface SearchInputProps
+  extends
+    FieldChromeProps,
+    Omit<
+      HeroSearchFieldProps,
+      | "children"
+      | "className"
+      | "isDisabled"
+      | "isInvalid"
+      | "isReadOnly"
+      | "isRequired"
+      | "validationBehavior"
+    > {
+  clearButtonLabel?: string;
+  endContent?: ReactNode;
+  placeholder?: string;
+  startContent?: ReactNode;
+  type: "search";
+}
+
+export type InputProps = TextInputProps | SearchInputProps;
 
 interface InputControlProps extends Omit<HeroInputProps, "className"> {
   className?: string;
@@ -62,7 +114,32 @@ function InputControl({
   );
 }
 
-export function Input({
+function FieldChrome({
+  children,
+  description,
+  errorMessage,
+  invalid,
+  label,
+}: {
+  children: ReactNode;
+  description?: ReactNode;
+  errorMessage?: ReactNode;
+  invalid: boolean;
+  label?: ReactNode;
+}) {
+  return (
+    <>
+      {label !== undefined && <Label>{label}</Label>}
+      {children}
+      {!invalid && description !== undefined && (
+        <Description>{description}</Description>
+      )}
+      <FieldError>{errorMessage}</FieldError>
+    </>
+  );
+}
+
+function TextInput({
   className,
   description,
   errorMessage,
@@ -76,7 +153,7 @@ export function Input({
   name,
   validationBehavior,
   ...inputProps
-}: InputProps) {
+}: TextInputProps) {
   const invalid = isInvalid || Boolean(errorMessage);
 
   return (
@@ -92,12 +169,78 @@ export function Input({
       name={name}
       validationBehavior={validationBehavior}
     >
-      {label !== undefined && <Label>{label}</Label>}
-      <InputControl className={inputClassName} name={name} {...inputProps} />
-      {!invalid && description !== undefined && (
-        <Description>{description}</Description>
-      )}
-      <FieldError>{errorMessage}</FieldError>
+      <FieldChrome
+        description={description}
+        errorMessage={errorMessage}
+        invalid={invalid}
+        label={label}
+      >
+        <InputControl className={inputClassName} name={name} {...inputProps} />
+      </FieldChrome>
     </TextField>
   );
+}
+
+function SearchInput({
+  className,
+  clearButtonLabel = "Очистить",
+  description,
+  endContent,
+  errorMessage,
+  fullWidth,
+  inputClassName,
+  isDisabled,
+  isInvalid,
+  isReadOnly,
+  isRequired,
+  label,
+  placeholder,
+  startContent,
+  type,
+  validationBehavior,
+  ...searchFieldProps
+}: SearchInputProps) {
+  const invalid = isInvalid || Boolean(errorMessage);
+
+  return (
+    <SearchField
+      className={className}
+      fullWidth={fullWidth}
+      isDisabled={isDisabled}
+      isInvalid={invalid}
+      isReadOnly={isReadOnly}
+      isRequired={isRequired}
+      validationBehavior={validationBehavior}
+      {...searchFieldProps}
+    >
+      <FieldChrome
+        description={description}
+        errorMessage={errorMessage}
+        invalid={invalid}
+        label={label}
+      >
+        <SearchField.Group className={inputClassName ?? "rounded-xl"}>
+          {startContent !== undefined ? (
+            startContent
+          ) : (
+            <SearchField.SearchIcon />
+          )}
+          <SearchField.Input placeholder={placeholder} type={type} />
+          {endContent !== undefined ? (
+            endContent
+          ) : (
+            <SearchField.ClearButton aria-label={clearButtonLabel} />
+          )}
+        </SearchField.Group>
+      </FieldChrome>
+    </SearchField>
+  );
+}
+
+export function Input(props: InputProps) {
+  if (props.type === "search") {
+    return <SearchInput {...props} />;
+  }
+
+  return <TextInput {...props} />;
 }
