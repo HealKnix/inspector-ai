@@ -17,7 +17,7 @@ import type {
   RequirementQuantity,
   Stage,
 } from "./completeness-contract.js";
-import { evaluate } from "./completeness-engine.js";
+import { evaluate, isApplicable } from "./completeness-engine.js";
 import { extractListItems } from "./completeness-extract.js";
 
 // Отображение document_kind классификатора (свободная строка слоя ID) в коды
@@ -27,35 +27,6 @@ const DOCUMENT_KIND_CODES: Record<string, string[]> = {
   "Исполнительная схема": ["GEO_SCHEME", "NET_SCHEME", "EXEC_DRAWING"],
   "Реестр исполнительной документации": [],
 };
-
-interface ApplicabilityCondition {
-  attr?: string;
-  op?: "eq" | "nonempty" | "contains";
-  value?: unknown;
-  all?: ApplicabilityCondition[];
-  any?: ApplicabilityCondition[];
-}
-
-function isApplicable(
-  condition: unknown,
-  attributes: Record<string, unknown>,
-): boolean {
-  if (!condition || typeof condition !== "object") return true;
-  const node = condition as ApplicabilityCondition;
-  if (node.all) return node.all.every((c) => isApplicable(c, attributes));
-  if (node.any) return node.any.some((c) => isApplicable(c, attributes));
-  const actual = node.attr ? attributes[node.attr] : undefined;
-  switch (node.op ?? "eq") {
-    case "nonempty":
-      return Array.isArray(actual)
-        ? actual.length > 0
-        : actual !== undefined && actual !== null && actual !== false;
-    case "contains":
-      return Array.isArray(actual) && actual.includes(node.value);
-    default:
-      return actual === node.value;
-  }
-}
 
 function toApiQuantity(quantity: RequirementQuantity) {
   return { min: quantity.min, per: quantity.per ? "list_item" : "object" };

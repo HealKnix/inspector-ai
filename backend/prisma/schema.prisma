@@ -28,6 +28,7 @@ model User {
   uploadedFiles       File[]
   uploadReceipts      UploadReceipt[]
   auditEvents         AuditEvent[]
+  findingDecisions    FindingDecision[]
 
   @@map("users")
 }
@@ -96,6 +97,7 @@ model Process {
   createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
   object    ConstructionObject @relation(fields: [objectId], references: [id], onDelete: Restrict)
   runs      Run[]
+  protocols Protocol[]
 
   @@unique([id, objectId])
   @@index([objectId, createdAt])
@@ -117,6 +119,7 @@ model Run {
   jobs                Job[]
   parsingTasks        ParsingTask[]
   completenessResults CompletenessResult[]
+  protocols           Protocol[]
 
   @@unique([id, processId, objectId])
   @@unique([processId, version])
@@ -695,4 +698,121 @@ model CompletenessResult {
 
   @@index([objectId, processId, createdAt])
   @@map("completeness_results")
+}
+
+enum ProtocolStatus {
+  active
+  superseded
+  finalized
+}
+
+// Finding lifecycle from §9.2/§9.3 ТЗ merged into one scale: service states
+// (MISSING_EVIDENCE/NOT_COMPARABLE/NOT_APPLICABLE) never carry a decision.
+enum FindingStatus {
+  CANDIDATE
+  CONFIRMED_VIOLATION
+  NEGATIVE_VERIFIED
+  CLARIFICATION_REQUIRED
+  MISSING_EVIDENCE
+  NOT_COMPARABLE
+  NOT_APPLICABLE
+}
+
+// Versioned protocol snapshot built from evidence groups by an explicit
+// inspector action. Old versions stay readable; only one `active` per
+// process at a time (enforced by the service, not the schema).
+model Protocol {
+  id                   String         @id @default(uuid()) @db.Uuid
+  objectId             String         @map("object_id") @db.Uuid
+  processId            String         @map("process_id") @db.Uuid
+  runId                String         @map("run_id") @db.Uuid
+  version              Int
+  status               ProtocolStatus @default(active)
+  scenario             String
+  rulesetHash          String?        @map("ruleset_hash") @db.Char(64)
+  inputManifestHash    String         @map("input_manifest_hash") @db.Char(64)
+  findingsHash         String         @map("findings_hash") @db.Char(64)
+  completenessResultId String?        @map("completeness_result_id") @db.Uuid
+  content              Json
+  createdBy            String         @map("created_by") @db.Uuid
+  createdAt            DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  finalizedBy          String?        @map("finalized_by") @db.Uuid
+  finalizedAt          DateTime?      @map("finalized_at") @db.Timestamptz(3)
+  process              Process        @relation(fields: [processId, objectId], references: [id, objectId], onDelete: Restrict)
+  run                  Run            @relation(fields: [runId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+  findings             Finding[]
+
+  @@unique([processId, version])
+  @@index([objectId, createdAt])
+  @@map("protocols")
+}
+
+// One atomic finding per (parameter_code, scope_key) inside a protocol
+// version. verdict is a snapshot — evidence groups may be rebuilt later;
+// evidence_group_id is a traceability hint without FK because group rows
+// are rebuilt in place. members_fingerprint decides whether an inspector
+// decision carries over to the next protocol version.
+model Finding {
+  id                 String            @id @default(uuid()) @db.Uuid
+  protocolId         String            @map("protocol_id") @db.Uuid
+  objectId           String            @map("object_id") @db.Uuid
+  processId          String            @map("process_id") @db.Uuid
+  parameterCode      String            @map("parameter_code") @db.VarChar(32)
+  scopeKey           String            @default("") @map("scope_key")
+  status             FindingStatus
+  risk               String?
+  evidenceGroupId    String?           @map("evidence_group_id") @db.Uuid
+  verdict            Json?
+  gateReasons        Json?             @map("gate_reasons")
+  membersFingerprint String            @map("members_fingerprint") @db.Char(64)
+  decidedBy          String?           @map("decided_by") @db.Uuid
+  decidedAt          DateTime?         @map("decided_at") @db.Timestamptz(3)
+  reasonCode         String?           @map("reason_code")
+  comment            String?
+  rowVersion         Int               @default(1) @map("row_version")
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  protocol           Protocol          @relation(fields: [protocolId], references: [id], onDelete: Restrict)
+  decisions          FindingDecision[]
+  decisionReceipts   FindingDecisionReceipt[]
+
+  @@unique([protocolId, parameterCode, scopeKey])
+  @@index([objectId, status])
+  @@map("findings")
+}
+
+// Immutable decision history: who moved a finding between statuses, on what
+// basis and when. The finding's own columns are the denormalized head.
+model FindingDecision {
+  id         String        @id @default(uuid()) @db.Uuid
+  findingId  String        @map("finding_id") @db.Uuid
+  actorId    String        @map("actor_id")
+  action     String
+  fromStatus FindingStatus @map("from_status")
+  toStatus   FindingStatus @map("to_status")
+  reasonCode String?       @map("reason_code")
+  comment    String?
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  finding    Finding       @relation(fields: [findingId], references: [id], onDelete: Restrict)
+  actor      User          @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  receipts   FindingDecisionReceipt[]
+
+  @@index([findingId, createdAt])
+  @@map("finding_decisions")
+}
+
+// Idempotent decision receipt, same idiom as package_confirm_receipts:
+// replaying request_id returns the recorded decision, never a duplicate.
+model FindingDecisionReceipt {
+  userId     String          @map("user_id")
+  objectId   String          @map("object_id") @db.Uuid
+  requestId  String          @map("request_id") @db.Uuid
+  findingId  String          @map("finding_id") @db.Uuid
+  decisionId String          @map("decision_id") @db.Uuid
+  createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  finding    Finding         @relation(fields: [findingId], references: [id], onDelete: Restrict)
+  decision   FindingDecision @relation(fields: [decisionId], references: [id], onDelete: Restrict)
+
+  @@id([userId, objectId, requestId])
+  @@map("finding_decision_receipts")
 }

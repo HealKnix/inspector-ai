@@ -1,0 +1,174 @@
+## Purpose
+
+Верификация результатов сверки инспектором по §9 ТЗ: явная генерация
+версионированного протокола из снимка доказательств, атомарные находки
+со статусами верификации, решения инспектора с обоснованием и аудитом,
+финализация и отмена финализации. Предварительный вердикт сравнения —
+вход находки, а не её решение.
+
+Источники: [действующее ТЗ](../../../../../docs/requirements/SOURCES.md),
+[границы и зависимости](../../proposal.md),
+[дизайн](../../design.md), [общие контракты](../../../../CONTRACTS.md).
+
+## ADDED Requirements
+
+### Requirement: VER-01 Явная генерация протокола
+
+Система SHALL создавать протокол только по явному действию
+`POST /v1/objects/:objectId/protocol/generate` аутентифицированного
+инспектора с назначением на объект. Генерация SHALL отклоняться с 409,
+если по текущему запуску есть задачи обработки в нефинальных состояниях
+(`queued`, `processing`), или если процесс в статусе `PARSING` либо
+`FINALIZED`. Каждая успешная генерация SHALL сохранять новую версию
+протокола либо возвращать активную версию при неизменном `findings_hash`.
+
+#### Scenario: Протокол после обработки
+
+- **WHEN** все задачи запуска завершены, процесс в `PENDING`, инспектор
+  вызывает `POST protocol/generate`
+- **THEN** создана версия 1 протокола со статусом `active`, находками из
+  текущих `evidence_groups`, процесс переведён в `READY`, события аудита
+  и outbox `protocol.generated` записаны в той же транзакции
+
+#### Scenario: Генерация во время обработки
+
+- **WHEN** по текущему запуску есть задачи `queued`/`processing`
+- **THEN** запрос отклонён с 409, протокол и версия не созданы, статус
+  процесса не изменён
+
+#### Scenario: Повторная генерация без изменений
+
+- **WHEN** активная версия построена на том же `findings_hash`
+- **THEN** возвращена существующая версия без создания копии и без
+  перехода статуса
+
+### Requirement: VER-02 Находки из вердиктов с gate комплектности
+
+Генерация SHALL создавать по одной находке на каждую пару
+`(parameter_code, scope_key)` применимых параметров матрицы. До чтения
+вердикта SHALL применяться `parameterGate` последней оценки
+комплектности: `NOT_APPLICABLE`, `MISSING_EVIDENCE` и
+`CLARIFICATION_REQUIRED` дают одноимённые статусы находки. При gate
+`READY` статус SHALL определяться вердиктом: `discrepancy` →
+`CANDIDATE`; `match` → `NEGATIVE_VERIFIED`; `expected_missing` /
+`actual_missing` → `MISSING_EVIDENCE`; `expected_ambiguous` /
+`actual_ambiguous` → `CLARIFICATION_REQUIRED`; `not_comparable` /
+`no_comparison` → `NOT_COMPARABLE`. Параметр без группы доказательств
+SHALL давать `MISSING_EVIDENCE`. Находка SHALL хранить снимок вердикта,
+`members_fingerprint`, критичность строки матрицы и причины gate.
+
+#### Scenario: Расхождение становится кандидатом
+
+- **WHEN** gate `READY` и вердикт группы `discrepancy` с дельтой по
+  спеке `numeric_delta`
+- **THEN** находка создана со статусом `CANDIDATE`, снимком вердикта и
+  ссылками на доказательства обеих сторон
+
+#### Scenario: Недостаток доказательств — не нарушение
+
+- **WHEN** gate `READY`, вердикт `actual_missing`
+- **THEN** находка `MISSING_EVIDENCE`, в списке кандидатов и нарушений
+  не участвует
+
+#### Scenario: Конфликт внутри ПД
+
+- **WHEN** gate `READY`, вердикт `expected_ambiguous`
+- **THEN** находка `CLARIFICATION_REQUIRED` без решения инспектора
+
+### Requirement: VER-03 Решения инспектора над находками
+
+`POST /v1/objects/:objectId/findings/:findingId/decision` SHALL принимать
+`request_id`, `action` (`confirm | reject | clarify | reopen`),
+`finding_version`, опционально `reason_code` и `comment`. Решения SHALL
+приниматься только в статусах процесса `READY`/`VERIFYING` и только над
+находками `CANDIDATE`/`CLARIFICATION_REQUIRED`/`CONFIRMED_VIOLATION`/
+`NEGATIVE_VERIFIED` по таблице переходов; `reject` SHALL требовать
+`reason_code` и `comment`. Каждое решение SHALL записывать строку
+`finding_decisions` (actor, from/to, время, основание), обновлять текущее
+состояние находки с инкрементом `row_version` и писать аудит
+`finding.decision` в одной транзакции.
+
+#### Scenario: Подтверждение нарушения
+
+- **WHEN** находка `CANDIDATE`, процесс `READY`, инспектор отправляет
+  `confirm` с комментарием
+- **THEN** находка `CONFIRMED_VIOLATION`, записано решение с actor и
+  временем, процесс переведён в `VERIFYING`
+
+#### Scenario: Отклонение без основания
+
+- **WHEN** `reject` без `reason_code` или `comment`
+- **THEN** 400, состояние находки и процесса не изменено
+
+#### Scenario: Устаревшая версия находки
+
+- **WHEN** `finding_version` не совпадает с текущим `row_version`
+- **THEN** 409 с актуальной версией, решение не записано
+
+#### Scenario: Повтор request_id
+
+- **WHEN** тот же `request_id` от того же пользователя и объекта
+- **THEN** возвращён ранее записанный результат решения, дубликат
+  `finding_decisions` не создан
+
+### Requirement: VER-04 Жизненный цикл процесса и финализация
+
+Система SHALL переводить процесс: в `READY` — после сохранения
+протокола; в `VERIFYING` — при первом решении; в `COMPLETED` — когда в
+активной версии не осталось `CANDIDATE`. `POST protocol/finalize` SHALL
+устанавливать `FINALIZED` только при нуле `CANDIDATE` в активной версии
+и статусе протокола `finalized`. `POST protocol/finalize/cancel` SHALL
+быть доступен только администратору, требовать причину и возвращать
+процесс в `COMPLETED` с протоколом `active`. После `FINALIZED` решения
+над находками и генерация SHALL отклоняться.
+
+#### Scenario: Финализация с кандидатами
+
+- **WHEN** в активной версии есть `CANDIDATE`
+- **THEN** `finalize` отклонён с 409 и перечнем неразрешённых находок
+
+#### Scenario: Полный цикл
+
+- **WHEN** все `CANDIDATE` решены, инспектор вызывает `finalize`
+- **THEN** процесс `FINALIZED`, протокол `finalized`, дальнейшие решения
+  отклоняются; после `finalize/cancel` администратором с причиной
+  процесс `COMPLETED`, решения снова принимаются
+
+### Requirement: VER-05 Версионирование и перенос решений
+
+Регенерация SHALL создавать версию `max+1`, переводить предыдущую
+активную версию в `superseded` и переносить решения только на находки с
+совпадающим `members_fingerprint`. Изменённые доказательства SHALL
+начинать новую версию находки с расчётного статуса, без наследования
+решения. Все версии SHALL оставаться читаемыми.
+
+#### Scenario: Дозагрузка меняет доказательство
+
+- **WHEN** после решения по находке дозагружен файл, изменивший members
+  группы, и инспектор регенерирует протокол
+- **THEN** создана версия 2; находка со сменившимся fingerprint —
+  `CANDIDATE` без решения; решение версии 1 сохранено в её истории
+
+#### Scenario: Неизменная находка сохраняет решение
+
+- **WHEN** fingerprint находки не изменился между версиями
+- **THEN** в новой версии находка имеет перенесённые статус и историю
+  решений
+
+### Requirement: VER-06 Контент и аудит протокола
+
+Протокол SHALL хранить `content` со `schema_version`, сценарием
+загрузки, счётчиками находок по статусам, ссылкой на результат
+комплектности и массивом находок с expected/actual значениями и
+ссылками на доказательства; а также `ruleset_hash`,
+`input_manifest_hash`, `findings_hash`, автора и время. Каждое действие
+SHALL оставлять `audit_events` и outbox-события по конверту
+CONTRACTS.md: `protocol.generated`, `finding.decision`,
+`protocol.finalized`, `protocol.finalization_cancelled`.
+
+#### Scenario: Аудируемость генерации
+
+- **WHEN** протокол сгенерирован
+- **THEN** аудит содержит user_id, object_id, request_id, версию,
+  хэши входов и счётчики находок; outbox-запись создана в той же
+  транзакции

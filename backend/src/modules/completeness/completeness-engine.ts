@@ -12,6 +12,36 @@ import type {
 
 const STAGES: Stage[] = ["PD", "RD", "ID"];
 
+interface ApplicabilityCondition {
+  attr?: string;
+  op?: "eq" | "nonempty" | "contains";
+  value?: unknown;
+  all?: ApplicabilityCondition[];
+  any?: ApplicabilityCondition[];
+}
+
+/** Условие применимости требования/правила против атрибутов объекта. */
+export function isApplicable(
+  condition: unknown,
+  attributes: Record<string, unknown>,
+): boolean {
+  if (!condition || typeof condition !== "object") return true;
+  const node = condition as ApplicabilityCondition;
+  if (node.all) return node.all.every((c) => isApplicable(c, attributes));
+  if (node.any) return node.any.some((c) => isApplicable(c, attributes));
+  const actual = node.attr ? attributes[node.attr] : undefined;
+  switch (node.op ?? "eq") {
+    case "nonempty":
+      return Array.isArray(actual)
+        ? actual.length > 0
+        : actual !== undefined && actual !== null && actual !== false;
+    case "contains":
+      return Array.isArray(actual) && actual.includes(node.value);
+    default:
+      return actual === node.value;
+  }
+}
+
 function acceptedKinds(requirement: ExpectedRequirement): Set<string> {
   const kinds = new Set([requirement.kind_code]);
   for (const code of requirement.alternatives?.any ?? []) kinds.add(code);
