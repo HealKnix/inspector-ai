@@ -14,7 +14,7 @@
   `protocol-builder.test.ts` (26 тестов: маппинг вердиктов, gate, fingerprint,
   findings_hash, контент).
 - `bunx vitest run --config vitest.integration.config.ts
-  test/verification.test.ts` — 6/6 сценариев на одноразовом стеке
+test/verification.test.ts` — 6/6 сценариев на одноразовом стеке
   (PostgreSQL :25432, RabbitMQ :25672, HTTP-приложение :3302), ~16 с.
 - eslint по изменённым файлам — 0 ошибок; prettier — применён.
 - Миграция `20260921001514_inspector_verification` применена к dev-БД
@@ -24,14 +24,14 @@
 
 ## Интеграционные сценарии (test/verification.test.ts)
 
-| Сценарий | Проверено |
-| --- | --- |
-| Генерация протокола | findings из 132-строковой матрицы: discrepancy→CANDIDATE (P001, P003), match→NEGATIVE_VERIFIED (P002), actual_missing→MISSING_EVIDENCE (P005), параметр без правила→MISSING_EVIDENCE (P004); процесс → READY; outbox `protocol.generated`; audit `protocol.generated` |
-| Идемпотентность генерации | повтор при неизменном `findings_hash` → та же версия, `reused: true`, без новых строк |
-| Доступ и запреты | инспектор без назначения → 403; generate при PARSING → 409 |
-| Полный цикл | решения confirm/reject → VERIFYING → COMPLETED → finalize → FINALIZED; отмена финализации администратором → COMPLETED, протокол снова active; отмена инспектором → 403 |
-| Идемпотентность решения | повтор `request_id` → записанное решение без дубликата (`replayed: true`) |
-| Перенос решений | регенерация: неизменный fingerprint → решение перенесено (статус, decidedBy, история); изменённый fingerprint → находка сброшена в CANDIDATE |
+| Сценарий                  | Проверено                                                                                                                                                                                                                                                             |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Генерация протокола       | findings из 132-строковой матрицы: discrepancy→CANDIDATE (P001, P003), match→NEGATIVE_VERIFIED (P002), actual_missing→MISSING_EVIDENCE (P005), параметр без правила→MISSING_EVIDENCE (P004); процесс → READY; outbox `protocol.generated`; audit `protocol.generated` |
+| Идемпотентность генерации | повтор при неизменном `findings_hash` → та же версия, `reused: true`, без новых строк                                                                                                                                                                                 |
+| Доступ и запреты          | инспектор без назначения → 403; generate при PARSING → 409                                                                                                                                                                                                            |
+| Полный цикл               | решения confirm/reject → VERIFYING → COMPLETED → finalize → FINALIZED; отмена финализации администратором → COMPLETED, протокол снова active; отмена инспектором → 403                                                                                                |
+| Идемпотентность решения   | повтор `request_id` → записанное решение без дубликата (`replayed: true`)                                                                                                                                                                                             |
+| Перенос решений           | регенерация: неизменный fingerprint → решение перенесено (статус, decidedBy, история); изменённый fingerprint → находка сброшена в CANDIDATE                                                                                                                          |
 
 ## Подтверждённые свойства
 
