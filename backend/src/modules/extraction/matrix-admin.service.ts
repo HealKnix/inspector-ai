@@ -3,15 +3,21 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
   UnprocessableEntityException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "../../generated/prisma/client.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import { readClassificationConfig } from "../identification/classification-config.js";
+import { ClassificationError } from "../identification/classification-contract.js";
 import { ArtifactStorageService } from "../parsing/artifact-storage.service.js";
 import type { ParseArtifactData } from "../parsing/parsing-contract.js";
-import { contextWindows } from "./block-search.js";
+import {
+  contextWindows,
+  normalizeTerm,
+  type ContextWindow,
+} from "./block-search.js";
 import {
   ComparisonValidationError,
   validateComparisonSpec,
@@ -26,7 +32,7 @@ import { executePlan } from "./extraction-engine.js";
 import {
   DRAFT_PROMPT_VERSION,
   draftPlanWithLlm,
-  missingAnchors,
+  missingAnchorsAcross,
   planAnchorTerms,
 } from "./extraction-llm.js";
 
@@ -250,12 +256,7 @@ export class MatrixAdminService {
     const terms =
       input.terms?.filter((term) => typeof term === "string" && term.trim()) ??
       [row.name, row.unit ?? "", "показател"].filter(Boolean);
-    const windows = sources.flatMap((source) =>
-      contextWindows(source.artifact, terms).map((window) => ({
-        ...window,
-        file_id: source.file_id,
-      })),
-    );
+    const windows = draftWindows(sources, terms);
     if (!windows.length)
       throw new UnprocessableEntityException(
         "Поиск не нашёл фрагментов по терминам; уточните terms",
@@ -271,12 +272,27 @@ export class MatrixAdminService {
           source_id: row.sourceId,
           trigger: row.triggerText,
         },
-        windows: windows.slice(0, 16),
+        windows,
       },
       this.llm,
+    ).catch((error: unknown) => {
+      // Invalid model output is a domain failure (retryable drafts exist), not a
+      // server error; transient transport issues surface as 503.
+      if (error instanceof ClassificationError) {
+        if (error.code.startsWith("extraction_llm_invalid"))
+          throw new UnprocessableEntityException(
+            "LLM вернула невалидный план; повторите или уточните terms",
+          );
+        throw new ServiceUnavailableException(
+          `LLM-контур недоступен: ${error.code}`,
+        );
+      }
+      throw error;
+    });
+    const missing = missingAnchorsAcross(
+      plan,
+      sources.map((source) => source.artifact),
     );
-    const artifactForCheck = sources[0]!.artifact;
-    const missing = missingAnchors(plan, artifactForCheck);
     const total = planAnchorTerms(plan).length;
     if (total > 0 && missing.length === total)
       throw new UnprocessableEntityException(
@@ -456,4 +472,46 @@ export class MatrixAdminService {
     }
     return sources;
   }
+}
+
+const MAX_DRAFT_WINDOWS = 16;
+
+/**
+ * Windows for LLM drafting: round-robin across artifacts so one "chatty"
+ * document cannot starve the rest, then ranked by term presence — windows
+ * matching the parameter name (terms[0]) first.
+ */
+export function draftWindows(
+  sources: { artifact: ParseArtifactData; file_id: string }[],
+  terms: string[],
+): (ContextWindow & { file_id: string })[] {
+  const buckets = sources.map((source) =>
+    contextWindows(source.artifact, terms).map((window) => ({
+      ...window,
+      file_id: source.file_id,
+    })),
+  );
+  const interleaved: (ContextWindow & { file_id: string })[] = [];
+  for (let depth = 0; ; depth += 1) {
+    let any = false;
+    for (const bucket of buckets) {
+      const window = bucket[depth];
+      if (window) {
+        interleaved.push(window);
+        any = true;
+      }
+    }
+    if (!any) break;
+  }
+  const norm = terms.map(normalizeTerm);
+  const ranked = interleaved.map((window, index) => {
+    const text = normalizeTerm(window.lines.map((line) => line.text).join(" "));
+    let score = 0;
+    for (const [i, term] of norm.entries()) {
+      if (term && text.includes(term)) score += i === 0 ? 8 : 1;
+    }
+    return { window, index, score };
+  });
+  ranked.sort((a, b) => b.score - a.score || a.index - b.index);
+  return ranked.slice(0, MAX_DRAFT_WINDOWS).map((entry) => entry.window);
 }
