@@ -1,4 +1,8 @@
 export const VERIFICATION_FIXTURE_SOURCE = "synthetic-demo" as const;
+export const VERIFICATION_API_SOURCE = "api" as const;
+
+export type VerificationSource =
+  typeof VERIFICATION_FIXTURE_SOURCE | typeof VERIFICATION_API_SOURCE;
 
 export const VerificationDocumentStage = {
   PD: "ПД",
@@ -23,6 +27,9 @@ export const FindingStatus = {
   CONFIRMED_VIOLATION: "CONFIRMED_VIOLATION",
   NEGATIVE_VERIFIED: "NEGATIVE_VERIFIED",
   CLARIFICATION_REQUIRED: "CLARIFICATION_REQUIRED",
+  MISSING_EVIDENCE: "MISSING_EVIDENCE",
+  NOT_COMPARABLE: "NOT_COMPARABLE",
+  NOT_APPLICABLE: "NOT_APPLICABLE",
 } as const;
 
 export type FindingStatus = (typeof FindingStatus)[keyof typeof FindingStatus];
@@ -58,7 +65,7 @@ export interface VerificationDocument {
   id: string;
   title: string;
   fileName: string;
-  stage: VerificationDocumentStage;
+  stage?: VerificationDocumentStage;
   cipher: string;
   revision: string;
   changeReference: string;
@@ -67,8 +74,8 @@ export interface VerificationDocument {
   previewKind: VerificationDocumentPreviewKind;
   heading: string;
   highlight: string;
-  source: typeof VERIFICATION_FIXTURE_SOURCE;
-  isSynthetic: true;
+  source: VerificationSource;
+  isSynthetic: boolean;
 }
 
 export interface VerificationViewerSlot {
@@ -97,12 +104,16 @@ export interface VerificationFinding {
   reviewPriority: ReviewPriority;
   expectedEvidence: VerificationEvidence;
   actualEvidence: VerificationEvidence;
-  consequences: readonly string[];
-  recommendation: string;
+  consequences?: readonly string[];
+  recommendation?: string;
   decisionReason: string | null;
   reviewComment: string | null;
-  source: typeof VERIFICATION_FIXTURE_SOURCE;
-  isSynthetic: true;
+  parameterCode?: string;
+  verdictStatus?: string;
+  /** row_version находки — оптимистичная блокировка решения через API. */
+  findingVersion?: number;
+  source: VerificationSource;
+  isSynthetic: boolean;
 }
 
 export interface VerificationPackageFixture {
@@ -156,6 +167,7 @@ export type VerificationFindingDecision =
   | {
       findingStatus:
         | typeof FindingStatus.CONFIRMED_VIOLATION
-        | typeof FindingStatus.CLARIFICATION_REQUIRED;
+        | typeof FindingStatus.CLARIFICATION_REQUIRED
+        | typeof FindingStatus.CANDIDATE;
       comment: string;
     };

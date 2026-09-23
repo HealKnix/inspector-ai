@@ -185,7 +185,7 @@ function snapshotFinding(finding: VerificationFinding): VerificationFinding {
     ...finding,
     expectedEvidence: { ...finding.expectedEvidence },
     actualEvidence: { ...finding.actualEvidence },
-    consequences: [...finding.consequences],
+    consequences: finding.consequences?.slice(),
   };
 }
 

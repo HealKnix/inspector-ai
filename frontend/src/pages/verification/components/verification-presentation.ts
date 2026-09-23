@@ -36,4 +36,7 @@ export const statusLabels: Record<FindingStatus, string> = {
   [FindingStatus.CONFIRMED_VIOLATION]: "Подтверждено",
   [FindingStatus.NEGATIVE_VERIFIED]: "Отклонено",
   [FindingStatus.CLARIFICATION_REQUIRED]: "Нужно уточнение",
+  [FindingStatus.MISSING_EVIDENCE]: "Нет доказательств",
+  [FindingStatus.NOT_COMPARABLE]: "Не сопоставимо",
+  [FindingStatus.NOT_APPLICABLE]: "Неприменимо",
 };

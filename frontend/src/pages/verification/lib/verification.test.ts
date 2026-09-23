@@ -160,6 +160,9 @@ describe("getVerificationSummary", () => {
         [FindingStatus.CONFIRMED_VIOLATION]: 0,
         [FindingStatus.NEGATIVE_VERIFIED]: 0,
         [FindingStatus.CLARIFICATION_REQUIRED]: 0,
+        [FindingStatus.MISSING_EVIDENCE]: 0,
+        [FindingStatus.NOT_COMPARABLE]: 0,
+        [FindingStatus.NOT_APPLICABLE]: 0,
       },
       priorityCounts: {
         [ReviewPriority.HIGH]: 0,

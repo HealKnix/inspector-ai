@@ -68,6 +68,9 @@ describe("mockVerificationPackage", () => {
         [FindingStatus.CONFIRMED_VIOLATION]: 6,
         [FindingStatus.NEGATIVE_VERIFIED]: 7,
         [FindingStatus.CLARIFICATION_REQUIRED]: 5,
+        [FindingStatus.MISSING_EVIDENCE]: 0,
+        [FindingStatus.NOT_COMPARABLE]: 0,
+        [FindingStatus.NOT_APPLICABLE]: 0,
       },
       priorityCounts: {
         [ReviewPriority.HIGH]: 12,

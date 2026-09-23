@@ -1,13 +1,47 @@
 import { Button } from "@heroui/react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
+import { ApiError } from "@/api/errors";
 import { useObject } from "@/api/hooks/use-objects";
 import { parsingErrorMessage, useParsingStatus } from "@/api/hooks/use-parsing";
+import {
+  useFinding,
+  useFindings,
+  useProtocol,
+  useVerificationMutations,
+  verificationErrorMessage,
+} from "@/api/hooks/use-verification";
 import type { ParsingFile } from "@/api/types/parsing";
+import type { ApiFindingDetail } from "@/api/types/verification";
 import { UploadIcon } from "@/components/UploadIcon";
 import { ConstrainedLayout, PageHeader } from "@/layouts/ConstrainedLayout";
+import {
+  FindingStatusGroup,
+  decisionActionFor,
+  filterFindingsByGroup,
+  findingStatusGroup,
+  pickEvidencePair,
+  rejectionCodeForLabel,
+  toVerificationDocument,
+  toVerificationFinding,
+} from "@/pages/verification/lib/object-findings";
+import {
+  getVerificationSummary,
+  searchVerificationFindings,
+  sortVerificationFindings,
+} from "@/pages/verification/lib/verification";
+import {
+  FindingStatus,
+  VerificationFindingSort,
+  type VerificationDocument,
+  type VerificationFindingDecision,
+  type VerificationUiMarker,
+} from "@/pages/verification/types";
 import routeNames from "@/routes/routeNames";
 
+import { DiscrepancyDetails } from "./DiscrepancyDetails";
+import { DiscrepancyList } from "./DiscrepancyList";
 import { ParsedDocumentPane } from "./ParsedDocumentPane";
 
 const parsingStatePresentation: Record<
@@ -139,6 +173,138 @@ export function ObjectVerificationWorkspace({
   const parsingQuery = useParsingStatus(objectId, Boolean(object));
   const parsing = parsingQuery.isError ? undefined : parsingQuery.data;
   const [searchParams, setSearchParams] = useSearchParams();
+  const protocolQuery = useProtocol(objectId, Boolean(object));
+  const protocol = protocolQuery.isError ? undefined : protocolQuery.data;
+  const hasProtocol = Boolean(protocol?.protocol);
+  const findingsQuery = useFindings(objectId, hasProtocol);
+  const [statusFilter, setStatusFilter] = useState<
+    FindingStatusGroup | "all" | undefined
+  >(undefined);
+  const [markerFilter] = useState<VerificationUiMarker | "all">("all");
+  const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState<VerificationFindingSort>(
+    VerificationFindingSort.PRIORITY,
+  );
+  const [actionError, setActionError] = useState("");
+  const mutations = useVerificationMutations(objectId);
+
+  const selectedFindingId = searchParams.get("finding") ?? "";
+  const detailQuery = useFinding(
+    objectId,
+    selectedFindingId || null,
+    hasProtocol,
+  );
+  const detail: ApiFindingDetail | undefined = detailQuery.data?.finding;
+
+  const files = useMemo(() => parsing?.items ?? [], [parsing]);
+  const fileNames = useMemo(
+    () =>
+      new Map<string, string>(
+        files.map((file) => [file.file_id, file.original_name]),
+      ),
+    [files],
+  );
+  const fileStages = useMemo(() => {
+    const stages = new Map<string, string>();
+    for (const member of detail?.members ?? []) {
+      if (member.stage) stages.set(member.file_id, member.stage);
+    }
+    return stages;
+  }, [detail]);
+  const documentsById = useMemo(
+    () =>
+      new Map<string, VerificationDocument>(
+        files.map((file) => [
+          file.file_id,
+          toVerificationDocument(file, fileStages.get(file.file_id)),
+        ]),
+      ),
+    [files, fileStages],
+  );
+
+  const findings = useMemo(() => {
+    const items = findingsQuery.data?.items ?? [];
+    return items.map((item, index) =>
+      toVerificationFinding(
+        item,
+        index + 1,
+        detail?.id === item.id ? detail : undefined,
+      ),
+    );
+  }, [findingsQuery.data, detail]);
+
+  const summary = useMemo(() => getVerificationSummary(findings), [findings]);
+  const statusGroupCounts = useMemo(() => {
+    const counts = { all: findings.length } as Record<
+      FindingStatusGroup | "all",
+      number
+    >;
+    for (const group of Object.values(FindingStatusGroup)) counts[group] = 0;
+    for (const finding of findings)
+      counts[findingStatusGroup(finding.findingStatus)] += 1;
+    return counts;
+  }, [findings]);
+  const effectiveStatusFilter =
+    statusFilter ??
+    (statusGroupCounts[FindingStatusGroup.CANDIDATES] > 0
+      ? FindingStatusGroup.CANDIDATES
+      : "all");
+  const visibleFindings = useMemo(
+    () =>
+      sortVerificationFindings(
+        filterFindingsByGroup(
+          searchVerificationFindings(findings, query, [
+            ...documentsById.values(),
+          ]),
+          effectiveStatusFilter,
+        ),
+        sortBy,
+      ),
+    [findings, query, documentsById, effectiveStatusFilter, sortBy],
+  );
+  const selectedFinding =
+    findings.find((finding) => finding.id === selectedFindingId) ??
+    visibleFindings[0];
+
+  // Автовыбор первой видимой находки: без `finding` в URL карточка
+  // показывает visibleFindings[0], но деталь и история не подгружены.
+  useEffect(() => {
+    if (selectedFindingId || !selectedFinding) return;
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.set("finding", selectedFinding.id);
+        return next;
+      },
+      { replace: true },
+    );
+  }, [selectedFindingId, selectedFinding, setSearchParams]);
+
+  const evidencePair = useMemo(
+    () =>
+      detail && selectedFinding && detail.id === selectedFinding.id
+        ? pickEvidencePair(detail)
+        : null,
+    [detail, selectedFinding],
+  );
+  const leftMatchIds = useMemo(
+    () =>
+      new Set(
+        (evidencePair?.expected?.member.evidence ?? [])
+          .map((fragment) => fragment.blockId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    [evidencePair],
+  );
+  const rightMatchIds = useMemo(
+    () =>
+      new Set(
+        (evidencePair?.actual?.member.evidence ?? [])
+          .map((fragment) => fragment.blockId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    [evidencePair],
+  );
 
   if (objectQuery.isPending) {
     return <LoadingState>Загружаем объект проверки…</LoadingState>;
@@ -174,17 +340,10 @@ export function ObjectVerificationWorkspace({
     );
   }
 
-  const files = parsing?.items ?? [];
   const readyFiles = files.filter(
     (file): file is ParsingFile & { artifact_id: string } =>
       file.state === "succeeded" && Boolean(file.artifact_id),
   );
-  const leftFile =
-    readyFiles.find((file) => file.file_id === searchParams.get("leftFile")) ??
-    readyFiles[0];
-  const rightFile =
-    readyFiles.find((file) => file.file_id === searchParams.get("rightFile")) ??
-    readyFiles[1];
 
   const updateSearchParam = (name: string, value: string) => {
     setSearchParams(
@@ -196,6 +355,112 @@ export function ObjectVerificationWorkspace({
       { replace: true },
     );
   };
+
+  const setPane = (
+    slot: "left" | "right",
+    fileId: string | undefined,
+    page?: number,
+  ) => {
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (fileId) next.set(`${slot}File`, fileId);
+        if (page && page > 0) next.set(`${slot}Page`, String(page));
+        else next.delete(`${slot}Page`);
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
+  const selectFinding = (findingId: string) => {
+    const finding = findings.find((candidate) => candidate.id === findingId);
+    if (!finding) return;
+
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.set("finding", finding.id);
+        if (finding.expectedEvidence.documentId)
+          next.set("leftFile", finding.expectedEvidence.documentId);
+        if (finding.actualEvidence.documentId)
+          next.set("rightFile", finding.actualEvidence.documentId);
+        if (finding.expectedEvidence.page > 0)
+          next.set("leftPage", String(finding.expectedEvidence.page));
+        else next.delete("leftPage");
+        if (finding.actualEvidence.page > 0)
+          next.set("rightPage", String(finding.actualEvidence.page));
+        else next.delete("rightPage");
+        return next;
+      },
+      { replace: true },
+    );
+    setActionError("");
+  };
+
+  const locateEvidence = (fileId: string, page: number) => {
+    const currentLeft = searchParams.get("leftFile");
+    if (currentLeft === fileId) {
+      setPane("left", fileId, page);
+    } else {
+      setPane("right", fileId, page);
+    }
+  };
+
+  const applyDecision = async (decision: VerificationFindingDecision) => {
+    if (!selectedFinding?.findingVersion) return;
+
+    const reasonCode =
+      decision.findingStatus === FindingStatus.NEGATIVE_VERIFIED
+        ? rejectionCodeForLabel(decision.reason)
+        : undefined;
+    if (
+      decision.findingStatus === FindingStatus.NEGATIVE_VERIFIED &&
+      !reasonCode
+    ) {
+      throw new Error("Неизвестная причина отклонения.");
+    }
+
+    try {
+      await mutations.decide.mutateAsync({
+        findingId: selectedFinding.id,
+        body: {
+          request_id: crypto.randomUUID(),
+          action: decisionActionFor(decision.findingStatus),
+          finding_version: selectedFinding.findingVersion,
+          reason_code: reasonCode ?? undefined,
+          comment: decision.comment.trim() || undefined,
+        },
+      });
+    } catch (caughtError) {
+      if (caughtError instanceof ApiError && caughtError.status === 409) {
+        void findingsQuery.refetch();
+        void detailQuery.refetch();
+      }
+      throw caughtError;
+    }
+  };
+
+  const runProtocolAction = async (
+    action: () => Promise<unknown>,
+    fallback: string,
+  ) => {
+    setActionError("");
+    try {
+      await action();
+    } catch (caughtError) {
+      setActionError(
+        caughtError instanceof Error ? caughtError.message : fallback,
+      );
+    }
+  };
+
+  const leftFile =
+    readyFiles.find((file) => file.file_id === searchParams.get("leftFile")) ??
+    readyFiles[0];
+  const rightFile =
+    readyFiles.find((file) => file.file_id === searchParams.get("rightFile")) ??
+    readyFiles[1];
 
   const selectFile = (slot: "left" | "right", fileId: string) => {
     setSearchParams(
@@ -209,6 +474,22 @@ export function ObjectVerificationWorkspace({
     );
   };
 
+  const processStatus = protocol?.process_status ?? "";
+  const candidateCount = summary.statusCounts[FindingStatus.CANDIDATE];
+  const protocolReadOnly =
+    processStatus === "FINALIZED" || protocol?.protocol?.status === "finalized";
+  // Решения принимаются только в READY/VERIFYING: в COMPLETED находки уже
+  // решены, в FINALIZED протокол закрыт — форму скрываем, не дожидаясь 409.
+  const decisionsLocked =
+    hasProtocol && !["READY", "VERIFYING"].includes(processStatus);
+  const canFinalize = hasProtocol && candidateCount === 0 && !protocolReadOnly;
+  const expectedDocument = selectedFinding?.expectedEvidence.documentId
+    ? documentsById.get(selectedFinding.expectedEvidence.documentId)
+    : undefined;
+  const actualDocument = selectedFinding?.actualEvidence.documentId
+    ? documentsById.get(selectedFinding.actualEvidence.documentId)
+    : undefined;
+
   return (
     <ConstrainedLayout>
       <PageHeader
@@ -218,13 +499,64 @@ export function ObjectVerificationWorkspace({
         badge="Инспектор"
         notice={
           <>
-            Показаны фактические страницы текущих результатов обработки объекта
-            «{object.name}».
+            Показаны фактические страницы и находки текущей версии протокола
+            объекта «{object.name}».
           </>
         }
         noticeLabel="ДАННЫЕ ОБЪЕКТА"
         title="Проверка комплекта документов"
+        actions={
+          hasProtocol || protocolQuery.isPending ? (
+            <div className="flex flex-col gap-2 self-end sm:flex-row sm:items-center sm:justify-end">
+              <p className="text-copy-muted text-xs leading-5 sm:mr-auto">
+                {protocolReadOnly
+                  ? `Протокол v${protocol?.protocol?.version} финализирован — решения заблокированы.`
+                  : hasProtocol
+                    ? `Протокол v${protocol?.protocol?.version} · ${processStatus || "—"} · кандидатов без решения: ${candidateCount}.`
+                    : "Загружаем протокол…"}
+              </p>
+              {hasProtocol ? (
+                <Button
+                  className="rounded-xl"
+                  isDisabled={!canFinalize || mutations.finalize.isPending}
+                  onPress={() =>
+                    void runProtocolAction(
+                      () => mutations.finalize.mutateAsync(),
+                      "Не удалось финализировать протокол.",
+                    )
+                  }
+                >
+                  Финализировать протокол
+                </Button>
+              ) : null}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 self-end sm:flex-row sm:items-center sm:justify-end">
+              <p className="text-copy-muted text-xs leading-5 sm:mr-auto">
+                Протокол ещё не сформирован — решения по находкам станут
+                доступны после генерации.
+              </p>
+              <Button
+                className="rounded-xl"
+                isDisabled={mutations.generate.isPending}
+                onPress={() =>
+                  void runProtocolAction(
+                    () => mutations.generate.mutateAsync(),
+                    "Не удалось сформировать протокол.",
+                  )
+                }
+              >
+                Сформировать протокол
+              </Button>
+            </div>
+          )
+        }
       />
+      {actionError ? (
+        <p className="text-danger mt-3 text-sm" role="alert">
+          {actionError}
+        </p>
+      ) : null}
 
       {files.length === 0 ? (
         <section className="border-line bg-card text-copy-muted mt-5 grid min-h-72 place-items-center rounded-2xl border p-6 text-center text-sm">
@@ -251,7 +583,8 @@ export function ObjectVerificationWorkspace({
                 file={leftFile}
                 files={readyFiles}
                 key={`left:${leftFile.file_id}:${leftFile.run_id}:${leftFile.artifact_id}`}
-                label="Документ 1"
+                label="Ожидаемое (ПД)"
+                matchIds={leftMatchIds}
                 objectId={objectId}
                 onFileChange={(fileId) => selectFile("left", fileId)}
                 onPageChange={(page) =>
@@ -266,7 +599,8 @@ export function ObjectVerificationWorkspace({
                 file={rightFile}
                 files={readyFiles}
                 key={`right:${rightFile.file_id}:${rightFile.run_id}:${rightFile.artifact_id}`}
-                label="Документ 2"
+                label="Фактическое (РД/ИД)"
+                matchIds={rightMatchIds}
                 objectId={objectId}
                 onFileChange={(fileId) => selectFile("right", fileId)}
                 onPageChange={(page) =>
@@ -277,10 +611,87 @@ export function ObjectVerificationWorkspace({
             )}
           </div>
           <div className="min-w-0 min-[1440px]:col-span-4">
-            <PackageDocumentsPanel files={files} />
+            {hasProtocol ? (
+              <DiscrepancyList
+                findings={visibleFindings}
+                markerFilter={markerFilter}
+                onMarkerFilterChange={() => undefined}
+                onQueryChange={setQuery}
+                onSelect={selectFinding}
+                onSortChange={setSortBy}
+                query={query}
+                selectedId={selectedFinding?.id ?? ""}
+                sortBy={sortBy}
+                statusFilter={effectiveStatusFilter}
+                statusGroupCounts={statusGroupCounts}
+                onStatusFilterChange={setStatusFilter}
+                summary={summary}
+              />
+            ) : (
+              <PackageDocumentsPanel files={files} />
+            )}
           </div>
         </div>
       )}
+
+      {hasProtocol && findingsQuery.isPending ? (
+        <p className="text-copy-muted mt-4 text-sm" role="status">
+          Загружаем находки протокола…
+        </p>
+      ) : null}
+      {hasProtocol && findingsQuery.error ? (
+        <div className="mt-4" role="alert">
+          <QueryError
+            message={verificationErrorMessage(findingsQuery.error)}
+            onRetry={() => {
+              void findingsQuery.refetch();
+            }}
+          />
+        </div>
+      ) : null}
+
+      {hasProtocol && selectedFinding ? (
+        <div className="mt-4 pb-6">
+          <DiscrepancyDetails
+            actualDocument={actualDocument}
+            currentIndex={Math.max(
+              visibleFindings.findIndex(
+                (finding) => finding.id === selectedFinding.id,
+              ),
+              0,
+            )}
+            detail={
+              detail?.id === selectedFinding.id && !detailQuery.isPending
+                ? detail
+                : undefined
+            }
+            expectedDocument={expectedDocument}
+            fileNames={fileNames}
+            finding={selectedFinding}
+            decisionPending={mutations.decide.isPending}
+            decisionsDisabled={decisionsLocked}
+            onDecision={applyDecision}
+            onLocate={locateEvidence}
+            onNext={() => {
+              const index = visibleFindings.findIndex(
+                (finding) => finding.id === selectedFinding.id,
+              );
+              const next = visibleFindings[index + 1] ?? visibleFindings[0];
+              if (next) selectFinding(next.id);
+            }}
+            onPrevious={() => {
+              const index = visibleFindings.findIndex(
+                (finding) => finding.id === selectedFinding.id,
+              );
+              const previous =
+                visibleFindings[index - 1] ??
+                visibleFindings[visibleFindings.length - 1];
+              if (previous) selectFinding(previous.id);
+            }}
+            totalCount={visibleFindings.length}
+          />
+        </div>
+      ) : null}
 
       <section className="border-line bg-card mt-4 rounded-2xl border p-5 sm:p-6">
         <div className="flex items-start gap-3">
@@ -290,12 +701,9 @@ export function ObjectVerificationWorkspace({
           <div>
             <h2 className="font-semibold">Проверка метаданных</h2>
             <p className="text-copy-muted mt-2 max-w-4xl text-sm leading-6">
-              Текущий API возвращает страницы и техническое состояние обработки,
-              но ещё не предоставляет распознанные стадию ПД/РД/ИД, шифр,
-              редакцию, утверждение и решения по спорным полям. Поэтому эта
-              страница не подменяет отсутствующий результат проверки
-              вымышленными значениями и пока работает как фактический
-              предпросмотр комплекта.
+              Шифр, редакция, утверждение и спорные поля документов пока не
+              извлекаются конвейером — в карточках находок отображаются только
+              фактические значения и локаторы доказательств.
             </p>
           </div>
         </div>

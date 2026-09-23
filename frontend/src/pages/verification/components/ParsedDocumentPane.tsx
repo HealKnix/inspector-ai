@@ -16,6 +16,8 @@ interface ParsedDocumentPaneProps {
   file: ParsingFile;
   files: readonly ParsingFile[];
   label: string;
+  /** Блоки доказательств — подсвечиваются на странице. */
+  matchIds?: ReadonlySet<string>;
   objectId: string;
   onFileChange: (fileId: string) => void;
   onPageChange: (page: number) => void;
@@ -52,6 +54,7 @@ export function ParsedDocumentPane({
   file,
   files,
   label,
+  matchIds = emptyMatchIds,
   objectId,
   onFileChange,
   onPageChange,
@@ -299,7 +302,7 @@ export function ParsedDocumentPane({
                         <RenderedDocumentPage
                           className="h-full max-h-none rounded-none"
                           file={file}
-                          matchIds={emptyMatchIds}
+                          matchIds={matchIds}
                           objectId={objectId}
                           onSelect={setSelectedBlockId}
                           page={page}
@@ -347,7 +350,7 @@ export function ParsedDocumentPane({
           <RenderedDocumentPage
             className="h-full max-h-none rounded-none"
             file={file}
-            matchIds={emptyMatchIds}
+            matchIds={matchIds}
             objectId={objectId}
             onSelect={setSelectedBlockId}
             page={page}

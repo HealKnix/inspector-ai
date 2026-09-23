@@ -14,6 +14,12 @@ import {
   getParsingStatus,
   getRenderedPage,
 } from "@/api/endpoints/parsing";
+import {
+  getFinding,
+  getProtocol,
+  listFindings,
+  postDecision,
+} from "@/api/endpoints/verification";
 import { queryKeys } from "@/api/query-keys";
 import type { ConstructionObject } from "@/api/types/objects";
 import {
@@ -39,6 +45,15 @@ vi.mock("@/api/endpoints/parsing", () => ({
   getParsingStatus: vi.fn(),
   getRenderedPage: vi.fn(),
   retryParsing: vi.fn(),
+}));
+
+vi.mock("@/api/endpoints/verification", () => ({
+  finalizeProtocol: vi.fn(),
+  generateProtocol: vi.fn(),
+  getFinding: vi.fn(),
+  getProtocol: vi.fn(),
+  listFindings: vi.fn(),
+  postDecision: vi.fn(),
 }));
 
 const object: ConstructionObject = {
@@ -78,6 +93,14 @@ beforeEach(() => {
   vi.mocked(getRenderedPage).mockResolvedValue(
     new Blob(["synthetic"], { type: "image/png" }),
   );
+  vi.mocked(getProtocol).mockResolvedValue({
+    schema_version: 1,
+    object_id: parsingObjectId,
+    process_status: "READY",
+    protocol: null,
+    versions: [],
+    protocol_absent_reason: "protocol_not_generated",
+  });
 });
 
 describe("object verification workspace", () => {
@@ -149,7 +172,7 @@ describe("object verification workspace", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Следующая страница, Документ 1",
+        name: "Следующая страница, Ожидаемое (ПД)",
       }),
     );
 
@@ -170,6 +193,147 @@ describe("object verification workspace", () => {
 
     view.unmount();
     expect(revokeObjectUrl).toHaveBeenCalled();
+    view.client.clear();
+  });
+
+  it("показывает находки протокола и отправляет решение через API", async () => {
+    const findingId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const item = {
+      id: findingId,
+      parameter_code: "P022",
+      parameter_name: "Класс стойкости",
+      scope_key: "object",
+      status: "CANDIDATE" as const,
+      risk: "критичный",
+      reason_code: null,
+      comment: null,
+      decided_at: null,
+      finding_version: 2,
+      gate_reasons: null,
+      verdict: {
+        engine: "comparison-v1",
+        status: "discrepancy" as const,
+        spec: { kind: "equals" },
+        expected: [
+          {
+            extraction_id: "88888888-8888-4888-8888-888888888888",
+            file_id: parsedFile.file_id,
+            value: "II",
+            value_raw: "II",
+            unit: null,
+          },
+        ],
+        actual: [],
+        pairs: [],
+        warnings: [],
+        evaluated_at: "2026-10-01T00:00:00.000Z",
+      },
+    };
+
+    vi.mocked(getProtocol).mockResolvedValue({
+      schema_version: 1,
+      object_id: parsingObjectId,
+      process_status: "VERIFYING",
+      protocol: {
+        id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        version: 1,
+        status: "active",
+        scenario: "initial",
+        created_at: "2026-10-01T00:00:00.000Z",
+        finalized_at: null,
+        findings: 1,
+      },
+      versions: [],
+      protocol_absent_reason: null,
+    });
+    vi.mocked(listFindings).mockResolvedValue({
+      schema_version: 1,
+      object_id: parsingObjectId,
+      protocol_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      items: [item],
+      findings_absent_reason: null,
+    });
+    vi.mocked(getFinding).mockResolvedValue({
+      schema_version: 1,
+      object_id: parsingObjectId,
+      finding: {
+        ...item,
+        protocol_version: 1,
+        members: [
+          {
+            extraction_id: "88888888-8888-4888-8888-888888888888",
+            file_id: parsedFile.file_id,
+            stage: "PD",
+            role: "expected" as const,
+            status: "extracted",
+            value: "II",
+            value_raw: "II",
+            unit: null,
+            evidence: [
+              {
+                extractionId: "88888888-8888-4888-8888-888888888888",
+                fileId: parsedFile.file_id,
+                pageNumber: 1,
+                sheetLabel: null,
+                blockId: "block-1",
+                quote: "Класс стойкости II",
+                bbox: [0.1, 0.2, 0.4, 0.25],
+              },
+            ],
+          },
+        ],
+        decisions: [],
+      },
+    });
+    vi.mocked(getParsingStatus).mockResolvedValue({
+      schema_version: 1,
+      active: false,
+      poll_after_ms: 2000,
+      items: [parsedFile],
+    });
+    vi.mocked(getParseResult).mockResolvedValue(structuredClone(parseResult));
+    vi.mocked(postDecision).mockResolvedValue({
+      schema_version: 1,
+      object_id: parsingObjectId,
+      finding: { ...item, status: "CONFIRMED_VIOLATION" as const },
+      process_status: "COMPLETED",
+      replayed: false,
+    });
+
+    const view = renderPage();
+
+    expect(
+      await screen.findByRole("heading", { name: "Список расхождений" }),
+    ).toBeInTheDocument();
+    const card = await screen.findByRole("button", {
+      name: /P022 · Класс стойкости/,
+    });
+    fireEvent.click(card);
+
+    expect(
+      await screen.findByRole("button", { name: "Подтвердить нарушение" }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Подтвердить нарушение" }),
+    );
+    fireEvent.change(screen.getByLabelText("Комментарий инспектора"), {
+      target: { value: "Расхождение подтверждено по оригиналу." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Сохранить решение" }));
+
+    await waitFor(() => expect(postDecision).toHaveBeenCalledTimes(1));
+    const [, calledFindingId, body] = vi.mocked(postDecision).mock.calls[0]!;
+    expect(calledFindingId).toBe(findingId);
+    expect(body).toMatchObject({
+      action: "confirm",
+      finding_version: 2,
+      comment: "Расхождение подтверждено по оригиналу.",
+    });
+    expect(body.request_id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+
+    view.unmount();
     view.client.clear();
   });
 

@@ -15,6 +15,10 @@ export const queryKeys = {
       ["objects", id, "completeness", "result", runId ?? "latest"] as const,
     extractions: (id: string) => ["objects", id, "extractions"] as const,
     evidenceGroups: (id: string) => ["objects", id, "evidence-groups"] as const,
+    protocol: (id: string) => ["objects", id, "protocol"] as const,
+    findings: (id: string) => ["objects", id, "findings"] as const,
+    finding: (id: string, findingId: string) =>
+      ["objects", id, "findings", findingId] as const,
     parse: (id: string, fileId: string, runId: string, artifactId: string) =>
       ["objects", id, "parse", fileId, runId, artifactId] as const,
     renderedPage: (

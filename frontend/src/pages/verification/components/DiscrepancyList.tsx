@@ -11,6 +11,10 @@ import {
 
 import { cn } from "@/lib/utils";
 import {
+  findingStatusGroupLabels,
+  type FindingStatusGroup,
+} from "@/pages/verification/lib/object-findings";
+import {
   FindingStatus,
   VerificationFindingSort,
   VerificationUiMarker,
@@ -51,6 +55,10 @@ interface DiscrepancyListProps {
   selectedId: string;
   sortBy: VerificationFindingSort;
   summary: VerificationSummary;
+  /** Режим реальных данных: фильтр по группам статусов вместо маркеров. */
+  statusFilter?: FindingStatusGroup | "all";
+  statusGroupCounts?: Record<FindingStatusGroup | "all", number>;
+  onStatusFilterChange?: (value: FindingStatusGroup | "all") => void;
 }
 
 export function DiscrepancyList({
@@ -64,7 +72,12 @@ export function DiscrepancyList({
   selectedId,
   sortBy,
   summary,
+  statusFilter,
+  statusGroupCounts,
+  onStatusFilterChange,
 }: DiscrepancyListProps) {
+  const statusFilterMode = statusFilter !== undefined && onStatusFilterChange;
+
   const handleMarkerChange = (keys: Set<Key>) => {
     const value = keys.values().next().value;
 
@@ -75,6 +88,14 @@ export function DiscrepancyList({
       value === VerificationUiMarker.FORMALITY
     ) {
       onMarkerFilterChange(value);
+    }
+  };
+
+  const handleStatusChange = (keys: Set<Key>) => {
+    const value = keys.values().next().value;
+
+    if (typeof value === "string") {
+      onStatusFilterChange?.(value as FindingStatusGroup | "all");
     }
   };
 
@@ -128,37 +149,68 @@ export function DiscrepancyList({
         </SearchField>
 
         <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
-          <ToggleButtonGroup
-            aria-label="Фильтр расхождений"
-            className="w-max gap-1"
-            disallowEmptySelection
-            isDetached
-            onSelectionChange={handleMarkerChange}
-            selectedKeys={new Set<Key>([markerFilter])}
-            selectionMode="single"
-            size="sm"
-          >
-            <ToggleButton
-              className="text-copy-muted data-[selected=true]:bg-accent/10 data-[selected=true]:text-accent rounded-full px-3"
-              id="all"
-              variant="ghost"
+          {statusFilterMode ? (
+            <ToggleButtonGroup
+              aria-label="Фильтр находок по статусу"
+              className="w-max gap-1"
+              disallowEmptySelection
+              isDetached
+              onSelectionChange={handleStatusChange}
+              selectedKeys={new Set<Key>([statusFilter])}
+              selectionMode="single"
+              size="sm"
             >
-              Все {summary.totalCount}
-            </ToggleButton>
-            {(
-              Object.values(VerificationUiMarker) as VerificationUiMarkerValue[]
-            ).map((marker) => (
+              {(
+                Object.keys(findingStatusGroupLabels) as Array<
+                  FindingStatusGroup | "all"
+                >
+              ).map((group) => (
+                <ToggleButton
+                  className="text-copy-muted data-[selected=true]:bg-accent/10 data-[selected=true]:text-accent rounded-full px-3"
+                  id={group}
+                  key={group}
+                  variant="ghost"
+                >
+                  {findingStatusGroupLabels[group]}{" "}
+                  {statusGroupCounts?.[group] ?? ""}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          ) : (
+            <ToggleButtonGroup
+              aria-label="Фильтр расхождений"
+              className="w-max gap-1"
+              disallowEmptySelection
+              isDetached
+              onSelectionChange={handleMarkerChange}
+              selectedKeys={new Set<Key>([markerFilter])}
+              selectionMode="single"
+              size="sm"
+            >
               <ToggleButton
                 className="text-copy-muted data-[selected=true]:bg-accent/10 data-[selected=true]:text-accent rounded-full px-3"
-                id={marker}
-                key={marker}
+                id="all"
                 variant="ghost"
               >
-                {markerPresentation[marker].label}{" "}
-                {summary.markerCounts[marker]}
+                Все {summary.totalCount}
               </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
+              {(
+                Object.values(
+                  VerificationUiMarker,
+                ) as VerificationUiMarkerValue[]
+              ).map((marker) => (
+                <ToggleButton
+                  className="text-copy-muted data-[selected=true]:bg-accent/10 data-[selected=true]:text-accent rounded-full px-3"
+                  id={marker}
+                  key={marker}
+                  variant="ghost"
+                >
+                  {markerPresentation[marker].label}{" "}
+                  {summary.markerCounts[marker]}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          )}
           <Button
             className="ml-auto shrink-0 rounded-full"
             onPress={cycleSort}

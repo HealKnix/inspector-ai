@@ -259,8 +259,12 @@ describe("VerificationPage", () => {
     await waitFor(() => {
       expect(screen.getByText("19 из 47")).toBeInTheDocument();
     });
+    // Решённая находка доступна только для возврата в работу —
+    // фокус переходит на оставшееся действие.
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Отклонить" })).toHaveFocus();
+      expect(
+        screen.getByRole("button", { name: "Вернуть в работу" }),
+      ).toHaveFocus();
     });
     expect(screen.getByRole("status")).toHaveTextContent(
       "Демонстрационное решение применено только в памяти этой страницы.",
@@ -275,7 +279,7 @@ describe("VerificationPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("подставляет сохранённое основание при повторной проверке решения", () => {
+  it("подставляет сохранённое основание при повторной проверке решения", async () => {
     renderPage();
 
     fireEvent.click(
@@ -283,16 +287,25 @@ describe("VerificationPage", () => {
         name: "Открыть расхождение 2: Несоответствие веса",
       }),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Отклонить" }));
+    // Решённая находка возвращается в работу только через reopen —
+    // прямого повторного отклонения у контракта нет.
+    fireEvent.click(screen.getByRole("button", { name: "Вернуть в работу" }));
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Комментарий инспектора" }),
+      { target: { value: "Возвращаю для повторной проверки." } },
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Сохранить демо-решение" }),
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Отклонить" }));
 
     expect(
       screen.getByRole("radio", { name: "Ошибка привязки доказательства" }),
     ).toHaveAttribute("aria-checked", "true");
     expect(
       screen.getByRole("textbox", { name: "Комментарий инспектора" }),
-    ).toHaveValue(
-      "Демонстрационный комментарий: доказательства сопоставлены вручную.",
-    );
+    ).toHaveValue("Возвращаю для повторной проверки.");
   });
 
   it("сохраняет фокус при переходе к следующему расхождению", () => {

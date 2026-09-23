@@ -42,7 +42,7 @@ function StageSelector({
   label,
   onStageChange,
 }: {
-  activeStage: DocumentStage;
+  activeStage: DocumentStage | undefined;
   availableStages: ReadonlySet<DocumentStage>;
   label: string;
   onStageChange: (stage: DocumentStage) => void;
@@ -65,7 +65,7 @@ function StageSelector({
       disallowEmptySelection
       isDetached
       onSelectionChange={handleSelectionChange}
-      selectedKeys={new Set<Key>([activeStage])}
+      selectedKeys={new Set<Key>(activeStage ? [activeStage] : [])}
       selectionMode="single"
       size="sm"
     >
@@ -153,7 +153,11 @@ export function DocumentPane({
     );
   }
 
-  const availableStages = new Set(documents.map((item) => item.stage));
+  const availableStages = new Set(
+    documents
+      .map((item) => item.stage)
+      .filter((stage): stage is DocumentStage => stage !== undefined),
+  );
   const currentPage = clampPage(page, document.totalPages);
   const zoomIndex = zoomLevels.indexOf(zoom);
   const isApproved = document.approvalStatus

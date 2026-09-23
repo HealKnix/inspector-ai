@@ -337,22 +337,43 @@ export class VerificationService {
     return (last?.version ?? 0) + 1;
   }
 
-  private serializeFinding(finding: {
-    id: string;
-    parameterCode: string;
-    scopeKey: string;
-    status: string;
-    risk: string | null;
-    reasonCode: string | null;
-    comment: string | null;
-    decidedAt: Date | null;
-    rowVersion: number;
-    gateReasons: unknown;
-    verdict: unknown;
-  }) {
+  /** Имя параметра из последнего импорта матрицы — для карточек находок. */
+  private async parameterNames(
+    tx: Prisma.TransactionClient,
+    codes: readonly string[],
+  ) {
+    const source = await tx.matrixImport.findFirst({
+      orderBy: { importedAt: "desc" },
+      select: { id: true },
+    });
+    if (!source || codes.length === 0) return new Map<string, string>();
+    const rows = await tx.matrixRow.findMany({
+      where: { importId: source.id, parameterCode: { in: [...codes] } },
+      select: { parameterCode: true, name: true },
+    });
+    return new Map(rows.map((row) => [row.parameterCode, row.name]));
+  }
+
+  private serializeFinding(
+    finding: {
+      id: string;
+      parameterCode: string;
+      scopeKey: string;
+      status: string;
+      risk: string | null;
+      reasonCode: string | null;
+      comment: string | null;
+      decidedAt: Date | null;
+      rowVersion: number;
+      gateReasons: unknown;
+      verdict: unknown;
+    },
+    names?: ReadonlyMap<string, string>,
+  ) {
     return {
       id: finding.id,
       parameter_code: finding.parameterCode,
+      parameter_name: names?.get(finding.parameterCode) ?? null,
       scope_key: finding.scopeKey,
       status: finding.status,
       risk: finding.risk,
@@ -421,11 +442,15 @@ export class VerificationService {
         },
         orderBy: [{ parameterCode: "asc" }, { scopeKey: "asc" }],
       });
+      const names = await this.parameterNames(
+        tx,
+        items.map((finding) => finding.parameterCode),
+      );
       return {
         schema_version: VERIFICATION_SCHEMA_VERSION,
         object_id: objectId,
         protocol_id: protocol.id,
-        items: items.map((finding) => this.serializeFinding(finding)),
+        items: items.map((finding) => this.serializeFinding(finding, names)),
         findings_absent_reason: null,
       };
     });
@@ -473,11 +498,12 @@ export class VerificationService {
         list.push(fragment);
         byExtraction.set(fragment.extractionId, list);
       }
+      const names = await this.parameterNames(tx, [finding.parameterCode]);
       return {
         schema_version: VERIFICATION_SCHEMA_VERSION,
         object_id: objectId,
         finding: {
-          ...this.serializeFinding(finding),
+          ...this.serializeFinding(finding, names),
           protocol_version: finding.protocol.version,
           members: ((group?.members as unknown as GroupMember[]) ?? []).map(
             (member) => ({
@@ -527,10 +553,11 @@ export class VerificationService {
         const finding = await tx.finding.findUniqueOrThrow({
           where: { id: receipt.findingId },
         });
+        const names = await this.parameterNames(tx, [finding.parameterCode]);
         return {
           schema_version: VERIFICATION_SCHEMA_VERSION,
           object_id: objectId,
-          finding: this.serializeFinding(finding),
+          finding: this.serializeFinding(finding, names),
           replayed: true,
         };
       }
@@ -640,10 +667,11 @@ export class VerificationService {
           },
         },
       });
+      const names = await this.parameterNames(tx, [updated.parameterCode]);
       return {
         schema_version: VERIFICATION_SCHEMA_VERSION,
         object_id: objectId,
-        finding: this.serializeFinding(updated),
+        finding: this.serializeFinding(updated, names),
         process_status: status,
         replayed: false,
       };
