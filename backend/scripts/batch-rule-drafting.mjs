@@ -70,7 +70,9 @@ function deriveComparison(trigger, unit) {
     return { kind: "equals" };
   // Числовой параметр без явного триггера — допуск 0% эквивалентен equals.
   if (unit) return { kind: "numeric_delta", tolerance_pct: 0 };
-  return null;
+  // Без узнаваемого триггера сверяем на равенство: расхождение значений —
+  // кандидат на проверку инспектором, а не автонарушение.
+  return { kind: "equals" };
 }
 
 async function api(path, { method = "GET", body, token, form } = {}) {
@@ -174,6 +176,58 @@ async function main() {
       const rules = rulesRes.data?.versions ?? rulesRes.data?.rules ?? [];
       const approved = rules.find((r) => r.status === "approved");
       if (approved) {
+        // Approved без comparison-спеки: довешиваем спеку новой версией —
+        // план извлечения уже доказан, dry-run подтверждает актуальность.
+        if (approved.comparison == null) {
+          const comparison = deriveComparison(trigger, row.unit);
+          const res = await call(`/v1/admin/matrix/rows/${code}/rules`, {
+            method: "POST",
+            body: {
+              plan: approved.plan,
+              comparison,
+              note: `batch: backfill comparison для approved v${approved.version}`,
+            },
+          });
+          if ((res.status !== 200 && res.status !== 201) || !res.data?.rule) {
+            entry.final = "backfill_failed";
+            entry.steps.backfill = {
+              error: `HTTP ${res.status} ${JSON.stringify(res.data).slice(0, 200)}`,
+            };
+            report.push(entry);
+            console.log(
+              `${code}: backfill comparison не создан — HTTP ${res.status}`,
+            );
+            continue;
+          }
+          const target = res.data.rule;
+          entry.steps.draft_with_comparison = {
+            id: target.id,
+            version: target.version,
+          };
+          const dry = await call(
+            `/v1/admin/matrix/rules/${target.id}/dry-run`,
+            { method: "POST", body: { object_id: OBJECT_ID } },
+          );
+          const extracted = (dry.data?.results ?? []).filter(
+            (r) => r.outcome?.status === "extracted",
+          ).length;
+          entry.steps.dry_run = { extracted, comparison };
+          if (AUTO_APPROVE && dry.status === 200 && extracted > 0) {
+            const ok = await call(
+              `/v1/admin/matrix/rules/${target.id}/approve`,
+              { method: "POST" },
+            );
+            entry.final =
+              ok.status === 200 ? "comparison_backfilled" : "approve_failed";
+          } else {
+            entry.final = "backfill_no_extraction";
+          }
+          report.push(entry);
+          console.log(
+            `${code}: ${entry.final} (extracted ${extracted}, comparison=${comparison.kind})`,
+          );
+          continue;
+        }
         entry.steps.skip = `approved v${approved.version}`;
         entry.final = "already_approved";
         report.push(entry);
@@ -196,7 +250,7 @@ async function main() {
           method: "POST",
           body: { object_id: OBJECT_ID, ...(terms ? { terms } : {}) },
         });
-        if (res.status === 200 && res.data?.rule) {
+        if ((res.status === 200 || res.status === 201) && res.data?.rule) {
           draft = res.data.rule;
           entry.steps.draft = { id: draft.id, version: draft.version };
           break;
@@ -215,7 +269,7 @@ async function main() {
             method: "POST",
             body: { object_id: OBJECT_ID, file_id: fileId },
           });
-          if (res.status === 200 && res.data?.rule) {
+          if ((res.status === 200 || res.status === 201) && res.data?.rule) {
             draft = res.data.rule;
             entry.steps.draft = {
               id: draft.id,
@@ -249,7 +303,7 @@ async function main() {
             note: `batch: план llm_draft v${draft.version} + comparison из триггера`,
           },
         });
-        if (res.status === 200 && res.data?.rule) {
+        if ((res.status === 200 || res.status === 201) && res.data?.rule) {
           target = res.data.rule;
           entry.steps.draft_with_comparison = {
             id: target.id,
