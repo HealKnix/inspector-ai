@@ -31,6 +31,7 @@ function doc(partial: Partial<DocumentFact>): DocumentFact {
     kind_code: "ПЗ",
     kind_ambiguous: false,
     needs_review: false,
+    covered_items: [],
     ...partial,
   };
 }
@@ -86,6 +87,46 @@ describe("completeness engine", () => {
     ];
     const result = evaluate(requirements, [
       doc({ stage: "ID", kind_code: "AOSR" }),
+    ]);
+    expect(result.requirements[0]!.outcome).toBe("unverifiable");
+    expect(result.requirements[0]!.reasons).toContain("scope_unresolved");
+  });
+
+  it("документ, покрывающий пункт перечня, исполняет scoped-требование", () => {
+    const requirements = [
+      req({
+        stage: "ID",
+        kind_code: "AOSR",
+        scope: { item: "Устройство свай" },
+        quantity: { min: 1, per: "hidden_works" },
+      }),
+    ];
+    const result = evaluate(requirements, [
+      doc({
+        stage: "ID",
+        kind_code: "AOSR",
+        covered_items: ["устройство свай"],
+      }),
+    ]);
+    expect(result.requirements[0]!.outcome).toBe("fulfilled");
+    expect(result.requirements[0]!.matched).toHaveLength(1);
+  });
+
+  it("акт на другую работу не закрывает scoped-требование", () => {
+    const requirements = [
+      req({
+        stage: "ID",
+        kind_code: "AOSR",
+        scope: { item: "устройство свай" },
+        quantity: { min: 1, per: "hidden_works" },
+      }),
+    ];
+    const result = evaluate(requirements, [
+      doc({
+        stage: "ID",
+        kind_code: "AOSR",
+        covered_items: ["гидроизоляция фундамента"],
+      }),
     ]);
     expect(result.requirements[0]!.outcome).toBe("unverifiable");
     expect(result.requirements[0]!.reasons).toContain("scope_unresolved");
@@ -172,6 +213,27 @@ describe("completeness engine", () => {
     ]);
     expect(result.requirements[0]!.outcome).toBe("unverifiable");
     expect(result.requirements[0]!.reasons).toContain("kind_needs_review");
+  });
+
+  it("сводит причины и не считает fulfilled требование с min=0 требуемым", () => {
+    const requirements = [
+      req({
+        code: "RD-PDOC",
+        stage: "RD",
+        kind_code: "PDOC",
+        quantity: { min: 0, per: null },
+      }),
+      req({ stage: "ID", kind_code: "JOURNAL" }),
+      req({ stage: "ID", kind_code: "AOSR" }),
+    ];
+    const result = evaluate(requirements, [
+      doc({ stage: "ID", kind_code: "JOURNAL" }),
+      doc({ stage: "ID", kind_code: null }),
+    ]);
+    expect(result.counts.fulfilled).toBe(2);
+    expect(result.counts.fulfilled_required).toBe(1);
+    expect(result.counts.unverifiable).toBe(1);
+    expect(result.counts.reasons).toEqual({ kind_unresolved: 1 });
   });
 });
 

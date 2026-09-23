@@ -11,6 +11,17 @@ export interface ExtractedItem {
   source: { file_id: string; page: number; quote: string };
 }
 
+// Сравнение пунктов перечня и scope требования с текстом документа: регистр,
+// ё/е и пунктуация не должны ломать совпадение.
+export function normalizeItemKey(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/ё/g, "е")
+    .replace(/[^0-9a-zа-я]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 interface TextLike {
   page_number: number;
   blocks: { raw_text: string; normalized_text: string }[];

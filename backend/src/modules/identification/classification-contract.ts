@@ -19,7 +19,9 @@ export interface ClassificationResult {
   schema_version: 1;
   stage: ClassificationStage | null;
   document_kind: string | null;
-  method: "rules" | "llm" | "none";
+  /** Код вида из словаря каркаса; заполняется при ручном разрешении инспектором. */
+  kind_code?: string | null;
+  method: "rules" | "llm" | "none" | "manual";
   needs_review: boolean;
   reasons: string[];
   evidence: ClassificationEvidence[];
@@ -34,7 +36,7 @@ export interface ClassificationResult {
 }
 
 export const CLASSIFIER_VERSION = "classification-v1";
-export const RULES_VERSION = "own-evidence-v1";
+export const RULES_VERSION = "own-evidence-v2";
 export const CONTEXT_VERSION = "title-anchors-v1";
 export const PROMPT_VERSION = "document-family-v1";
 

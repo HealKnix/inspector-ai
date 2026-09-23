@@ -27,7 +27,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "completeness:verify": "bun src/completeness-verify.ts"
+    "completeness:verify": "bun src/completeness-verify.ts",
+    "completeness:metrics": "bun src/completeness-metrics.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.2.5",

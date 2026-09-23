@@ -5,6 +5,8 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { downloadOriginal } from "@/api/endpoints/objects";
 import {
   useClassificationStatus,
+  useKindOptions,
+  useResolveClassification,
   useRetryClassification,
 } from "@/api/hooks/use-classification";
 import {
@@ -70,6 +72,10 @@ export function DocumentUploadPage() {
   const classification = classificationQuery.isError
     ? undefined
     : classificationQuery.data;
+  const kindOptionsQuery = useKindOptions(objectId, Boolean(object));
+  const kindOptions = kindOptionsQuery.isError
+    ? null
+    : (kindOptionsQuery.data?.options ?? null);
 
   const [packageStage, setPackageStage] = useState<DocumentStage>(
     DocumentStage.PD,
@@ -96,6 +102,7 @@ export function DocumentUploadPage() {
   const receiptResult = receipt.isError ? undefined : receipt.data;
   const retryParsing = useRetryParsing();
   const retryClassification = useRetryClassification();
+  const resolveClassification = useResolveClassification();
 
   const parsingByFileId = useMemo(
     () =>
@@ -302,6 +309,20 @@ export function DocumentUploadPage() {
     }
   };
 
+  const handleResolveKind = (
+    row: UploadRow,
+    kindCode: string,
+    stage: DocumentStage,
+  ) => {
+    if (!row.fileId) return;
+    resolveClassification.mutate({
+      objectId,
+      fileId: row.fileId,
+      kindCode,
+      stage,
+    });
+  };
+
   if (objectQuery.isPending) {
     return (
       <ConstrainedLayout>
@@ -432,6 +453,7 @@ export function DocumentUploadPage() {
             <DocumentsTable
               failedCount={summary.failedCount}
               filter={filter}
+              kindOptions={kindOptions}
               needsReviewCount={summary.needsReviewCount}
               onAcceptDetectedStage={handleAcceptDetectedStage}
               onChangeDeclaredStage={handleChangeDeclaredStage}
@@ -439,6 +461,7 @@ export function DocumentUploadPage() {
               onFilterChange={setFilter}
               onQueryChange={setQuery}
               onRemovePending={handleRemovePending}
+              onResolveKind={handleResolveKind}
               onRetry={handleRetry}
               onSelectedIdsChange={setSelectedIds}
               query={query}

@@ -36,6 +36,8 @@ export interface DocumentFact {
   /** вид разрешён неоднозначно (несколько кодов) */
   kind_ambiguous: boolean;
   needs_review: boolean;
+  /** Нормализованные пункты объектного перечня, упомянутые в тексте документа. */
+  covered_items: string[];
 }
 
 export type RequirementOutcome =
@@ -78,9 +80,13 @@ export interface Evaluation {
   counts: {
     applicable: number;
     fulfilled: number;
+    /** fulfilled среди требований с quantity.min >= 1 (нетривиальных). */
+    fulfilled_required: number;
     missing: number;
     unverifiable: number;
     not_applicable: number;
+    /** Агрегированные причины по всем требованиям (reason → число требований). */
+    reasons: Record<string, number>;
   };
 }
 

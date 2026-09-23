@@ -114,6 +114,7 @@ export interface UploadRow {
   pageCount: number | null;
   declaredStage: DocumentStage | null;
   detectedStage: DocumentStage | null;
+  documentKind: string | null;
   stage: DocumentStage | null;
   stageMismatch: boolean;
   status: UploadRowStatus;

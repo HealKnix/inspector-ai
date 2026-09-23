@@ -4,6 +4,8 @@ import { ZodError } from "zod";
 
 import {
   getClassificationStatus,
+  getKindOptions,
+  resolveClassification,
   retryClassification,
 } from "@/api/endpoints/classification";
 import { ApiError } from "@/api/errors";
@@ -103,6 +105,29 @@ export function useRetryClassification() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: retryClassification,
+    retry: false,
+    onSettled: async (_data, _error, input) => {
+      await client.invalidateQueries({
+        queryKey: queryKeys.objects.classification(input.objectId),
+      });
+    },
+  });
+}
+
+export function useKindOptions(objectId: string, enabled = true) {
+  return useQuery({
+    queryKey: [...queryKeys.objects.classification(objectId), "kind-options"],
+    queryFn: ({ signal }) => getKindOptions(objectId, signal),
+    enabled: enabled && Boolean(objectId),
+    staleTime: 5 * 60_000,
+    retry: (attempt, error) => !isPermanentError(error) && attempt < 2,
+  });
+}
+
+export function useResolveClassification() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: resolveClassification,
     retry: false,
     onSettled: async (_data, _error, input) => {
       await client.invalidateQueries({

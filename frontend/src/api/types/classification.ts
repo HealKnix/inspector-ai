@@ -27,7 +27,8 @@ export const classificationResultSchema = z.object({
   schema_version: z.literal(1),
   stage: stageSchema.nullable(),
   document_kind: z.string().nullable(),
-  method: z.enum(["rules", "llm", "none"]),
+  kind_code: z.string().nullable().optional(),
+  method: z.enum(["rules", "llm", "none", "manual"]),
   needs_review: z.boolean(),
   reasons: z.array(z.string()),
   evidence: z.array(classificationEvidenceSchema),
@@ -66,9 +67,30 @@ export const classificationRetrySchema = z.object({
   task_id: z.uuid(),
 });
 
+const kindOptionSchema = z.object({
+  code: z.string().min(1),
+  title: z.string().min(1),
+});
+
+export const kindOptionsSchema = z.object({
+  schema_version: z.literal(1),
+  options: z.object({
+    PD: z.array(kindOptionSchema),
+    RD: z.array(kindOptionSchema),
+    ID: z.array(kindOptionSchema),
+  }),
+});
+
+export const classificationResolveSchema = z.object({
+  task_id: z.uuid(),
+  unchanged: z.boolean(),
+});
+
 export type ClassificationEvidence = z.infer<
   typeof classificationEvidenceSchema
 >;
 export type ClassificationResult = z.infer<typeof classificationResultSchema>;
 export type ClassificationFile = z.infer<typeof classificationFileSchema>;
 export type ClassificationStatus = z.infer<typeof classificationStatusSchema>;
+export type KindOption = z.infer<typeof kindOptionSchema>;
+export type KindOptions = z.infer<typeof kindOptionsSchema>["options"];

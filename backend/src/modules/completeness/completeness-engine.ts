@@ -9,6 +9,7 @@ import type {
   Stage,
   StageStatus,
 } from "./completeness-contract.js";
+import { normalizeItemKey } from "./completeness-extract.js";
 
 const STAGES: Stage[] = ["PD", "RD", "ID"];
 
@@ -86,35 +87,41 @@ function evaluateRequirement(
         kinds.has(fact.kind_code),
     ),
   );
-  const matched = kindMatched.map((fact) => ({ file_id: fact.file_id }));
 
   const reasons: string[] = [];
   const ambiguous = stageFacts.some(
     (fact) => fact.kind_ambiguous || fact.needs_review,
   );
   const unresolved = stageFacts.some((fact) => fact.kind_code === null);
-  const scoped = Boolean(requirement.scope?.item ?? requirement.scope?.axes);
+  const scopedItem = requirement.scope?.item ?? requirement.scope?.axes;
+  const scoped = Boolean(scopedItem);
 
   let outcome: RequirementOutcome;
+  let matched = kindMatched.map((fact) => ({ file_id: fact.file_id }));
   const missingParts: string[] = [];
 
   if (scoped) {
-    if (kindMatched.length > 0 || ambiguous || unresolved) {
-      // Кандидат по виду есть или вид не разрешён, а область работ текущим
-      // слоем ID не идентифицирована — ни исполнено, ни отсутствует (D6).
+    // Документ закрывает пункт перечня, если его текст упоминает пункт
+    // (связь извлекается из артефакта распознавания, D6).
+    const itemKey = scopedItem ? normalizeItemKey(scopedItem) : null;
+    const covering = itemKey
+      ? kindMatched.filter((fact) => fact.covered_items.includes(itemKey))
+      : [];
+    if (covering.length >= requirement.quantity.min) {
+      outcome = "fulfilled";
+      matched = covering.map((fact) => ({ file_id: fact.file_id }));
+    } else if (kindMatched.length > 0 || ambiguous || unresolved) {
+      // Кандидат по виду есть, но покрытие пункта не доказано — ни исполнено,
+      // ни отсутствует (D6).
       outcome = "unverifiable";
       reasons.push("scope_unresolved");
       if (ambiguous) reasons.push("kind_needs_review");
       if (unresolved) reasons.push("kind_unresolved");
-      missingParts.push(
-        `область: ${requirement.scope?.item ?? requirement.scope?.axes}`,
-      );
+      missingParts.push(`область: ${scopedItem}`);
     } else {
       outcome = "missing";
       reasons.push("document_absent");
-      missingParts.push(
-        `область: ${requirement.scope?.item ?? requirement.scope?.axes}`,
-      );
+      missingParts.push(`область: ${scopedItem}`);
     }
   } else if (kindMatched.length >= requirement.quantity.min) {
     outcome = "fulfilled";
@@ -191,6 +198,17 @@ export function evaluate(
       stageStatus(results.filter((r) => r.stage === stage)),
     ]),
   ) as Record<Stage, StageStatus | null>;
+  const reasons: Record<string, number> = {};
+  let fulfilledRequired = 0;
+  for (const [index, result] of results.entries()) {
+    if (
+      result.outcome === "fulfilled" &&
+      (sorted[index]?.quantity.min ?? 1) >= 1
+    )
+      fulfilledRequired += 1;
+    for (const reason of result.reasons)
+      reasons[reason] = (reasons[reason] ?? 0) + 1;
+  }
   return {
     stages,
     scenario: scenario(stages),
@@ -198,10 +216,12 @@ export function evaluate(
     counts: {
       applicable: results.filter((r) => r.outcome !== "not_applicable").length,
       fulfilled: results.filter((r) => r.outcome === "fulfilled").length,
+      fulfilled_required: fulfilledRequired,
       missing: results.filter((r) => r.outcome === "missing").length,
       unverifiable: results.filter((r) => r.outcome === "unverifiable").length,
       not_applicable: results.filter((r) => r.outcome === "not_applicable")
         .length,
+      reasons,
     },
   };
 }

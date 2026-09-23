@@ -9,6 +9,7 @@ import {
   type Key,
 } from "@heroui/react";
 
+import type { KindOptions } from "@/api/types/classification";
 import {
   DocumentStage,
   UploadDocumentFilter,
@@ -24,6 +25,7 @@ import { UploadIcon } from "@/components/UploadIcon";
 interface DocumentsTableProps {
   failedCount: number;
   filter: UploadDocumentFilter;
+  kindOptions: KindOptions | null;
   needsReviewCount: number;
   onAcceptDetectedStage: (fileId: string, stage: DocumentStage) => void;
   onChangeDeclaredStage: (clientFileId: string, stage: DocumentStage) => void;
@@ -31,6 +33,11 @@ interface DocumentsTableProps {
   onFilterChange: (filter: UploadDocumentFilter) => void;
   onQueryChange: (query: string) => void;
   onRemovePending: (clientFileId: string) => void;
+  onResolveKind: (
+    row: UploadRow,
+    kindCode: string,
+    stage: DocumentStage,
+  ) => void;
   onRetry: (row: UploadRow) => void;
   onSelectedIdsChange: (selectedIds: Set<string>) => void;
   query: string;
@@ -228,19 +235,33 @@ function SelectionCheckbox({
 }
 
 interface RowActionsProps {
+  kindOptions: KindOptions | null;
   onAcceptDetectedStage: (fileId: string, stage: DocumentStage) => void;
   onChangeDeclaredStage: (clientFileId: string, stage: DocumentStage) => void;
   onDownload: (row: UploadRow) => void;
   onRemovePending: (clientFileId: string) => void;
+  onResolveKind: (
+    row: UploadRow,
+    kindCode: string,
+    stage: DocumentStage,
+  ) => void;
   onRetry: (row: UploadRow) => void;
   row: UploadRow;
 }
 
+const documentStages = [
+  DocumentStage.PD,
+  DocumentStage.RD,
+  DocumentStage.ID,
+] as const;
+
 function RowActions({
+  kindOptions,
   onAcceptDetectedStage,
   onChangeDeclaredStage,
   onDownload,
   onRemovePending,
+  onResolveKind,
   onRetry,
   row,
 }: RowActionsProps) {
@@ -248,6 +269,18 @@ function RowActions({
     row.origin === UploadRowOrigin.LOCAL &&
     row.status !== UploadRowStatus.UPLOADING &&
     row.status !== UploadRowStatus.ACCEPTED;
+  const canResolveKind =
+    row.origin === UploadRowOrigin.REMOTE &&
+    Boolean(row.fileId) &&
+    !row.integrityError &&
+    (row.status === UploadRowStatus.READY ||
+      row.status === UploadRowStatus.NEEDS_REVIEW) &&
+    kindOptions !== null;
+  const kindGroups = canResolveKind
+    ? (row.stage ? [row.stage] : documentStages).map(
+        (stage) => [stage, kindOptions[stage]] as const,
+      )
+    : [];
 
   return (
     <Popover>
@@ -350,6 +383,39 @@ function RowActions({
               Принять стадию «{stageLabels[row.detectedStage]}»
             </Button>
           ) : null}
+          {kindGroups.length > 0 ? (
+            <>
+              <p className="text-copy-muted border-border mt-1 border-t px-2.5 pt-2 pb-1 text-xs font-medium">
+                Вид документа{row.documentKind ? `: ${row.documentKind}` : ""}
+              </p>
+              <div className="max-h-56 overflow-y-auto">
+                {kindGroups.map(([stage, options]) => (
+                  <div key={stage}>
+                    {kindGroups.length > 1 ? (
+                      <p className="text-copy-muted px-2.5 pt-1.5 pb-0.5 text-xs">
+                        {stageLabels[stage]}
+                      </p>
+                    ) : null}
+                    {options.map((option) => (
+                      <Button
+                        className="h-auto w-full justify-start rounded-lg px-2 py-1.5 text-left whitespace-normal"
+                        key={option.code}
+                        onPress={() => onResolveKind(row, option.code, stage)}
+                        size="sm"
+                        variant={
+                          row.documentKind === option.title
+                            ? "secondary"
+                            : "ghost"
+                        }
+                      >
+                        {option.title}
+                      </Button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null}
           {isLocalPending ? (
             <Button
               className="w-full justify-start rounded-lg"
@@ -380,6 +446,7 @@ function RowActions({
 export function DocumentsTable({
   failedCount,
   filter,
+  kindOptions,
   needsReviewCount,
   onAcceptDetectedStage,
   onChangeDeclaredStage,
@@ -387,6 +454,7 @@ export function DocumentsTable({
   onFilterChange,
   onQueryChange,
   onRemovePending,
+  onResolveKind,
   onRetry,
   onSelectedIdsChange,
   query,
@@ -438,10 +506,12 @@ export function DocumentsTable({
 
   const rowActions = (row: UploadRow) => (
     <RowActions
+      kindOptions={kindOptions}
       onAcceptDetectedStage={onAcceptDetectedStage}
       onChangeDeclaredStage={onChangeDeclaredStage}
       onDownload={onDownload}
       onRemovePending={onRemovePending}
+      onResolveKind={onResolveKind}
       onRetry={onRetry}
       row={row}
     />
@@ -555,7 +625,9 @@ export function DocumentsTable({
                       <StageCell row={row} />
                     </Table.Cell>
                     <Table.Cell className="text-copy-muted text-sm">
-                      —
+                      <span className="block max-w-56 truncate">
+                        {row.documentKind ?? "—"}
+                      </span>
                     </Table.Cell>
                     <Table.Cell className="text-copy-muted text-sm">
                       —

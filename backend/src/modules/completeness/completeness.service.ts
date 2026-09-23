@@ -18,12 +18,14 @@ import type {
   Stage,
 } from "./completeness-contract.js";
 import { evaluate, isApplicable } from "./completeness-engine.js";
-import { extractListItems } from "./completeness-extract.js";
+import { extractListItems, normalizeItemKey } from "./completeness-extract.js";
 
 // Отображение document_kind классификатора (свободная строка слоя ID) в коды
 // словаря каркаса. Несколько кодов = неоднозначность → kind_ambiguous.
+// Метки, совпадающие с каноническими названиями словаря каркаса, добавляются
+// из утверждённого набора; здесь остаются только перекрытия и неоднозначные
+// метки, которых в словаре нет.
 const DOCUMENT_KIND_CODES: Record<string, string[]> = {
-  "Акт освидетельствования скрытых работ": ["AOSR"],
   "Исполнительная схема": ["GEO_SCHEME", "NET_SCHEME", "EXEC_DRAWING"],
   "Реестр исполнительной документации": [],
 };
@@ -37,6 +39,10 @@ interface ClassificationRow {
   sha256: string;
   result: ClassificationResult | null;
   needs_review_source: boolean;
+  storage_key: string;
+  artifact_sha256: string;
+  source_sha256: string;
+  pipeline_fingerprint: string;
 }
 
 @Injectable()
@@ -525,11 +531,13 @@ export class CompletenessService {
   private async facts(
     tx: Prisma.TransactionClient,
     objectId: string,
+    listItems: { itemKey: string }[],
     runId?: string,
   ) {
     const rows = await tx.$queryRaw<ClassificationRow[]>`
       SELECT f.id AS file_id, f.sha256, c.result,
-        COALESCE((c.result->>'needs_review')::boolean, false) AS needs_review_source
+        COALESCE((c.result->>'needs_review')::boolean, false) AS needs_review_source,
+        a.storage_key, a.artifact_sha256, a.source_sha256, a.pipeline_fingerprint
       FROM processes p
       JOIN runs r ON r.process_id = p.id AND r.version = p.version
       JOIN run_inputs ri ON ri.run_id = r.id
@@ -543,13 +551,92 @@ export class CompletenessService {
       WHERE p.object_id = ${objectId}::uuid
         AND (${runId ?? null}::uuid IS NULL OR r.id = ${runId ?? null}::uuid)
         AND f.corrupted_at IS NULL`;
-    return rows.map((row) => this.toFact(row));
+    const kindCodes = await this.kindCodeMap(tx);
+    // Пункты короче 4 символов слишком общие для текстового совпадения —
+    // их покрытие разрешается только вручную.
+    const targets = listItems
+      .map((item) => normalizeItemKey(item.itemKey))
+      .filter((key) => key.length >= 4);
+    const facts: DocumentFact[] = [];
+    for (const row of rows)
+      facts.push(
+        this.toFact(row, kindCodes, await this.coveredItems(row, targets)),
+      );
+    return facts;
   }
 
-  private toFact(row: ClassificationRow): DocumentFact {
+  // Покрытие пунктов перечня документом: нормализованный текст артефакта
+  // содержит нормализованный пункт. Нечитаемый артефакт — без покрытий.
+  private async coveredItems(
+    row: Pick<
+      ClassificationRow,
+      | "storage_key"
+      | "artifact_sha256"
+      | "source_sha256"
+      | "pipeline_fingerprint"
+    >,
+    targets: string[],
+  ) {
+    const covered = new Set<string>();
+    if (!targets.length) return covered;
+    try {
+      const artifact = await this.artifacts.read(
+        row.storage_key,
+        row.artifact_sha256,
+        row.source_sha256,
+        row.pipeline_fingerprint,
+        "stored",
+      );
+      const text = normalizeItemKey(
+        artifact.pages
+          .flatMap((page) =>
+            page.blocks.map((block) => block.normalized_text || block.raw_text),
+          )
+          .join(" "),
+      );
+      for (const key of targets) if (text.includes(key)) covered.add(key);
+    } catch {
+      // Повреждённый артефакт не должен ломать оценку.
+    }
+    return covered;
+  }
+
+  // Метка → коды: статичные перекрытия плюс канонические названия видов
+  // утверждённого каркаса (pd_section | rd_mark | rd_component | id_kind).
+  private async kindCodeMap(tx: Prisma.TransactionClient) {
+    const set = await tx.frameworkSet.findFirst({
+      where: { status: "approved" },
+      orderBy: { version: "desc" },
+      include: { vocabularies: true },
+    });
+    const map: Record<string, string[]> = { ...DOCUMENT_KIND_CODES };
+    for (const entry of set?.vocabularies ?? []) {
+      if (
+        !["pd_section", "rd_mark", "rd_component", "id_kind"].includes(
+          entry.kind,
+        ) ||
+        entry.code === "SET"
+      )
+        continue;
+      if (!(entry.title in map)) map[entry.title] = [entry.code];
+    }
+    return map;
+  }
+
+  private toFact(
+    row: ClassificationRow,
+    kindCodes: Record<string, string[]>,
+    coveredItems: Set<string>,
+  ): DocumentFact {
     const result = row.result;
     const kindText = result?.document_kind ?? null;
-    const codes = kindText ? (DOCUMENT_KIND_CODES[kindText] ?? []) : [];
+    // Ручное разрешение инспектором несёт код словаря напрямую и не зависит
+    // от словаря меток классификатора.
+    const codes = result?.kind_code
+      ? [result.kind_code]
+      : kindText
+        ? (kindCodes[kindText] ?? [])
+        : [];
     return {
       file_id: row.file_id,
       sha256: row.sha256,
@@ -557,6 +644,7 @@ export class CompletenessService {
       kind_code: codes.length === 1 ? (codes[0] ?? null) : null,
       kind_ambiguous: codes.length > 1,
       needs_review: row.needs_review_source || Boolean(result?.needs_review),
+      covered_items: [...coveredItems],
     };
   }
 
@@ -571,7 +659,11 @@ export class CompletenessService {
       const pack = await tx.packageVersion.findFirst({
         where: { objectId, status: "confirmed" },
         orderBy: { version: "desc" },
-        include: { requirements: true, frameworkSet: true },
+        include: {
+          requirements: true,
+          frameworkSet: true,
+          listItems: true,
+        },
       });
       if (!pack)
         throw new ConflictException(
@@ -588,7 +680,7 @@ export class CompletenessService {
             include: { process: true },
           });
       if (!run) throw new NotFoundException("Запуск обработки недоступен");
-      const documents = await this.facts(tx, objectId, run.id);
+      const documents = await this.facts(tx, objectId, pack.listItems, run.id);
       const requirements: ExpectedRequirement[] = pack.requirements.map(
         (requirement) => ({
           id: requirement.id,

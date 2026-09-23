@@ -194,9 +194,11 @@ describe("buildProtocol", () => {
       counts: {
         applicable: 3,
         fulfilled: 1,
+        fulfilled_required: 1,
         missing: 2,
         unverifiable: 0,
         not_applicable: 0,
+        reasons: {},
       },
     } satisfies Evaluation;
     const result = build(
@@ -228,9 +230,11 @@ describe("buildProtocol", () => {
       counts: {
         applicable: 1,
         fulfilled: 0,
+        fulfilled_required: 0,
         missing: 0,
         unverifiable: 1,
         not_applicable: 0,
+        reasons: {},
       },
     } satisfies Evaluation;
     const result = build(

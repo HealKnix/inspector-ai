@@ -49,6 +49,7 @@ function uploadRow(stage: DocumentStage): UploadRow {
     needsReview: false,
     retryKind: null,
     existingFileId: null,
+    documentKind: null,
   };
 }
 

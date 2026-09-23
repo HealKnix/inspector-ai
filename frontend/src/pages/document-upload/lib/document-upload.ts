@@ -109,6 +109,7 @@ export function localUploadRow(
     pageCount: null,
     declaredStage: pending.declaredStage,
     detectedStage: null,
+    documentKind: null,
     stage: pending.declaredStage,
     stageMismatch: false,
     status,
@@ -180,6 +181,7 @@ export function remoteUploadRow(
     pageCount: parsing?.pages_total ?? null,
     declaredStage,
     detectedStage,
+    documentKind: classification?.result?.document_kind ?? null,
     stage: detectedStage ?? declaredStage,
     stageMismatch: Boolean(
       declaredStage && detectedStage && declaredStage !== detectedStage,

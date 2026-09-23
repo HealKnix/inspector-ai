@@ -8,7 +8,10 @@ import {
 } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
-import { getClassificationStatus } from "@/api/endpoints/classification";
+import {
+  getClassificationStatus,
+  getKindOptions,
+} from "@/api/endpoints/classification";
 import {
   getCompletenessResult,
   getExpectedPackage,
@@ -46,6 +49,8 @@ vi.mock("@/api/endpoints/parsing", () => ({
 }));
 vi.mock("@/api/endpoints/classification", () => ({
   getClassificationStatus: vi.fn(),
+  getKindOptions: vi.fn(),
+  resolveClassification: vi.fn(),
   retryClassification: vi.fn(),
 }));
 vi.mock("@/api/endpoints/completeness", () => ({
@@ -224,6 +229,19 @@ beforeEach(() => {
   });
   vi.mocked(getParsingStatus).mockResolvedValue(parsingStatus);
   vi.mocked(getClassificationStatus).mockResolvedValue(classificationStatus);
+  vi.mocked(getKindOptions).mockResolvedValue({
+    schema_version: 1,
+    options: {
+      PD: [{ code: "ПЗ", title: "Пояснительная записка" }],
+      RD: [{ code: "СО", title: "Спецификация оборудования" }],
+      ID: [
+        {
+          code: "AOSR",
+          title: "Акт освидетельствования скрытых работ",
+        },
+      ],
+    },
+  });
   vi.mocked(getExpectedPackage).mockResolvedValue({
     schema_version: 1,
     object_id: object.id,
