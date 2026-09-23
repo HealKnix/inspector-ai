@@ -16,6 +16,8 @@ class RouteNames {
 
   // Администрирование
   ADMIN_MATRIX = "/admin/matrix";
+  ADMIN_USERS = "/admin/users";
+  ADMIN_DOCUMENTS = "/admin/documents";
 
   // Авторизация
   LOGIN = "/login";

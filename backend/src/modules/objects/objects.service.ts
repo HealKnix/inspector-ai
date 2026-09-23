@@ -73,6 +73,14 @@ export class ObjectsService {
     );
   }
 
+  async listAll() {
+    const items = await this.prisma.constructionObject.findMany({
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: { id: true, name: true },
+    });
+    return { items };
+  }
+
   get(userId: string, objectId: string) {
     return this.prisma.$transaction(async (tx) => {
       await this.access.lock(tx, objectId);

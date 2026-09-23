@@ -19,6 +19,11 @@ model User {
   login               String               @unique @db.VarChar(64)
   passwordHash        String               @map("password_hash")
   role                Role?                @default(INSPECTOR)
+  lastName            String               @map("last_name") @db.VarChar(100)
+  firstName           String               @map("first_name") @db.VarChar(100)
+  patronymic          String?              @db.VarChar(100)
+  phone               String?              @db.VarChar(32)
+  email               String?              @db.VarChar(320)
   createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
   authSessions        AuthSession[]

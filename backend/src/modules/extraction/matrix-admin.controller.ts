@@ -7,16 +7,11 @@ import {
   Param,
   Post,
   Req,
-  UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { randomUUID } from "node:crypto";
 import { Roles } from "../../common/decorators/roles.decorator.js";
-import { RolesGuard } from "../../common/guards/roles.guard.js";
-import {
-  JwtAuthGuard,
-  type AuthenticatedRequest,
-} from "../auth/jwt-auth.guard.js";
+import { type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { apiErrorSchema } from "../documents/upload-contract.js";
 import { MatrixAdminService } from "./matrix-admin.service.js";
 
@@ -30,7 +25,6 @@ function uuid(value: unknown, field: string): string {
 @ApiBearerAuth("access-token")
 @ApiResponse({ status: 401, schema: apiErrorSchema })
 @ApiResponse({ status: 403, schema: apiErrorSchema })
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Roles("ADMINISTRATOR")
 @Controller("v1/admin/matrix")
 export class MatrixAdminController {

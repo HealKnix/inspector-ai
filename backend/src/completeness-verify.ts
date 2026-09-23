@@ -26,6 +26,8 @@ async function main() {
       login: `verify-${suffix}`,
       passwordHash: "verify-only",
       role: "INSPECTOR",
+      lastName: "Проверка",
+      firstName: "Инспектор",
     },
   });
   const object = await prisma.constructionObject.create({
@@ -253,6 +255,8 @@ async function main() {
       login: `outsider-${suffix}`,
       passwordHash: "verify-only",
       role: "INSPECTOR",
+      lastName: "Проверка",
+      firstName: "Посторонний",
     },
   });
   try {

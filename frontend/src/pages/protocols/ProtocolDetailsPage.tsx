@@ -196,7 +196,7 @@ export function ProtocolDetailsPage() {
                 );
               }}
             >
-              <UploadIcon className="size-4.5" name="upload" />
+              <UploadIcon className="size-4.5" name="share" />
               Передать в РиН
             </Button>
             <Button

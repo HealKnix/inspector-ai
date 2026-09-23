@@ -1,15 +1,8 @@
-import {
-  Button,
-  Label,
-  ListBox,
-  SearchField,
-  Select,
-  Table,
-  type Key,
-} from "@heroui/react";
+import { Button, Label, ListBox, Select, Table, type Key } from "@heroui/react";
 import { useMemo } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
+import { Input } from "@/components/input/Input";
 import { UploadIcon } from "@/components/UploadIcon";
 import { PROTOCOL_FIXTURE_NOTICE } from "@/data/protocols";
 import { ConstrainedLayout, PageHeader } from "@/layouts/ConstrainedLayout";
@@ -104,15 +97,19 @@ export function ProtocolsPage() {
               value={objectId || ALL_OBJECTS_KEY}
             >
               <Label>Объект</Label>
-              <Select.Trigger className="rounded-xl">
+              <Select.Trigger>
                 <Select.Value className="max-w-full truncate" />
                 <Select.Indicator />
               </Select.Trigger>
               <Select.Popover className="not-sm:max-w-0">
                 <ListBox>
-                  <ListBox.Item id={ALL_OBJECTS_KEY} textValue="Все объекты">
+                  <ListBox.Item
+                    id={ALL_OBJECTS_KEY}
+                    textValue="Все объекты"
+                    className="data-selected:text-accent data-selected:bg-accent/10 flex gap-2 data-selected:[&>p]:pr-4"
+                  >
                     Все объекты
-                    <ListBox.ItemIndicator />
+                    <ListBox.ItemIndicator className="text-accent" />
                   </ListBox.Item>
                   {objects.map((object) => (
                     <ListBox.Item
@@ -129,20 +126,14 @@ export function ProtocolsPage() {
               </Select.Popover>
             </Select>
 
-            <SearchField
-              onChange={(value) => setSearchParam("q", value)}
+            <Input
+              clearButtonLabel="Очистить поиск"
+              label="Поиск"
+              onChange={(value: string) => setSearchParam("q", value)}
+              placeholder="Объект или дата…"
+              type="search"
               value={query}
-            >
-              <Label>Поиск</Label>
-              <SearchField.Group className="rounded-xl">
-                <SearchField.SearchIcon />
-                <SearchField.Input
-                  placeholder="Объект или дата…"
-                  type="search"
-                />
-                <SearchField.ClearButton aria-label="Очистить поиск" />
-              </SearchField.Group>
-            </SearchField>
+            />
           </div>
         </div>
 

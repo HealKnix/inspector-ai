@@ -107,6 +107,28 @@ export class ParsingService {
       : null;
     return { file, process, run, task };
   }
+  private async publishedState(
+    tx: Prisma.TransactionClient,
+    objectId: string,
+    fileId: string,
+    expectedArtifact?: string,
+  ) {
+    const { file, run, task } = await this.current(tx, objectId, fileId);
+    if (file.corruptedAt)
+      throw new ServiceUnavailableException("Нарушена целостность оригинала");
+    if (
+      !task?.artifact ||
+      task.state !== "succeeded" ||
+      !run ||
+      (expectedArtifact && expectedArtifact !== task.artifact.id)
+    )
+      throw new ConflictException(
+        "Результат текущего запуска ещё недоступен или изменился",
+      );
+    if (task.artifact.sourceSha256 !== file.sha256)
+      throw new ServiceUnavailableException("Нарушена целостность результата");
+    return { file, run, metadata: task.artifact };
+  }
   private async published(
     userId: string,
     objectId: string,
@@ -116,31 +138,31 @@ export class ParsingService {
     return this.prisma.$transaction(async (tx) => {
       await this.access.lock(tx, objectId);
       await this.access.requireAccess(tx, userId, objectId);
-      const { file, run, task } = await this.current(tx, objectId, fileId);
-      if (file.corruptedAt)
-        throw new ServiceUnavailableException("Нарушена целостность оригинала");
-      if (
-        !task?.artifact ||
-        task.state !== "succeeded" ||
-        !run ||
-        (expectedArtifact && expectedArtifact !== task.artifact.id)
-      )
-        throw new ConflictException(
-          "Результат текущего запуска ещё недоступен или изменился",
-        );
-      if (task.artifact.sourceSha256 !== file.sha256)
-        throw new ServiceUnavailableException(
-          "Нарушена целостность результата",
-        );
-      return { file, run, metadata: task.artifact };
+      return this.publishedState(tx, objectId, fileId, expectedArtifact);
     });
   }
-  async artifact(userId: string, objectId: string, fileId: string) {
-    const { file, run, metadata } = await this.published(
-      userId,
-      objectId,
-      fileId,
-    );
+  private async publishedAsAdmin(fileId: string, expectedArtifact?: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const owner = await tx.file.findUnique({ where: { id: fileId } });
+      if (!owner) throw new NotFoundException("Файл недоступен");
+      await this.access.lock(tx, owner.objectId);
+      return this.publishedState(tx, owner.objectId, fileId, expectedArtifact);
+    });
+  }
+  private async readArtifact(
+    acquire: () => Promise<{
+      file: { sha256: string };
+      run: { id: string };
+      metadata: {
+        id: string;
+        storageKey: string;
+        artifactSha256: string;
+        pipelineFingerprint: string;
+      };
+    }>,
+    confirm: (artifactId: string) => Promise<unknown>,
+  ) {
+    const { file, run, metadata } = await acquire();
     try {
       const artifact = await this.artifacts.read(
         metadata.storageKey,
@@ -149,10 +171,9 @@ export class ParsingService {
         metadata.pipelineFingerprint,
         "stored",
       );
-      await this.published(userId, objectId, fileId, metadata.id);
+      await confirm(metadata.id);
       return {
         artifact_id: metadata.id,
-        file_id: fileId,
         run_id: run.id,
         artifact,
       };
@@ -161,19 +182,33 @@ export class ParsingService {
       throw new ServiceUnavailableException("Сохранённый результат недоступен");
     }
   }
-  async page(
-    userId: string,
-    objectId: string,
-    fileId: string,
-    pageNumber: number,
-    expectedArtifact?: string,
-  ) {
-    const { file, metadata } = await this.published(
-      userId,
-      objectId,
-      fileId,
-      expectedArtifact,
+  async artifact(userId: string, objectId: string, fileId: string) {
+    const result = await this.readArtifact(
+      () => this.published(userId, objectId, fileId),
+      (expected) => this.published(userId, objectId, fileId, expected),
     );
+    return { ...result, file_id: fileId };
+  }
+  async adminArtifact(fileId: string) {
+    const result = await this.readArtifact(
+      () => this.publishedAsAdmin(fileId),
+      (expected) => this.publishedAsAdmin(fileId, expected),
+    );
+    return { ...result, file_id: fileId };
+  }
+  private async readPage(
+    pageNumber: number,
+    acquire: (expectedArtifact?: string) => Promise<{
+      file: { sha256: string };
+      metadata: {
+        id: string;
+        storageKey: string;
+        artifactSha256: string;
+        pipelineFingerprint: string;
+      };
+    }>,
+  ) {
+    const { file, metadata } = await acquire();
     try {
       const artifact = await this.artifacts.read(
         metadata.storageKey,
@@ -187,12 +222,32 @@ export class ParsingService {
       );
       if (!page) throw new NotFoundException("Страница не найдена");
       const bytes = await this.artifacts.image(page);
-      await this.published(userId, objectId, fileId, metadata.id);
+      await acquire(metadata.id);
       return { bytes, artifactId: metadata.id };
     } catch (error) {
       if (error instanceof HttpException) throw error;
       throw new ServiceUnavailableException("Сохранённая страница недоступна");
     }
+  }
+  async page(
+    userId: string,
+    objectId: string,
+    fileId: string,
+    pageNumber: number,
+    expectedArtifact?: string,
+  ) {
+    return this.readPage(pageNumber, (expected) =>
+      this.published(userId, objectId, fileId, expected ?? expectedArtifact),
+    );
+  }
+  async adminPage(
+    fileId: string,
+    pageNumber: number,
+    expectedArtifact?: string,
+  ) {
+    return this.readPage(pageNumber, (expected) =>
+      this.publishedAsAdmin(fileId, expected ?? expectedArtifact),
+    );
   }
 
   async retry(

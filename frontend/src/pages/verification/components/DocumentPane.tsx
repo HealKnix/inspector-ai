@@ -1,12 +1,12 @@
 import {
   Button,
-  Modal,
   ToggleButton,
   ToggleButtonGroup,
   type Key,
 } from "@heroui/react";
 import { useState } from "react";
 
+import { DocumentViewerModal } from "@/components/document-viewer-modal/DocumentViewerModal";
 import { cn } from "@/lib/utils";
 import {
   VerificationDocumentStage,
@@ -296,104 +296,80 @@ export function DocumentPane({
         </div>
 
         <div className="ml-auto">
-          <Modal>
-            <Modal.Trigger
-              aria-label="Развернуть просмотр документа"
-              className="text-copy-muted hover:bg-default/40 focus-visible:ring-ring grid size-9 place-items-center rounded-lg outline-none focus-visible:ring-2"
-            >
-              <VerificationIcon className="size-4.5" name="expand" />
-            </Modal.Trigger>
-            <Modal.Backdrop className="bg-backdrop backdrop-blur-sm">
-              <Modal.Container scroll="inside" size="full">
-                <Modal.Dialog className="border-border bg-background text-foreground overflow-hidden border p-0">
-                  <Modal.Header className="border-border relative flex flex-row items-center gap-3 border-b px-4 py-3 pr-14 sm:px-6 sm:pr-16">
-                    <Modal.Heading className="min-w-0 flex-1 truncate pr-2 text-base font-semibold">
-                      {document.title}
-                    </Modal.Heading>
-                    <span className="text-copy-muted hidden shrink-0 text-xs sm:inline">
-                      Стр. {currentPage} из {document.totalPages}
-                    </span>
-                    <Modal.CloseTrigger
-                      aria-label="Закрыть просмотр документа"
-                      className="top-1/2 right-2 size-8 -translate-y-1/2"
-                    />
-                  </Modal.Header>
-                  <Modal.Body className="bg-surface-low mt-0 flex min-h-0 flex-col overflow-hidden p-0">
-                    <div className="border-border bg-card flex flex-wrap items-center gap-2 border-b px-3 py-2 sm:px-5">
-                      <StageSelector
-                        activeStage={document.stage}
-                        availableStages={availableStages}
-                        label={`${label}, полноэкранный просмотр`}
-                        onStageChange={selectStage}
-                      />
-                      <div className="flex items-center gap-1 sm:ml-auto">
-                        <ToolbarButton
-                          ariaLabel="Предыдущая страница в полноэкранном просмотре"
-                          icon="chevron-left"
-                          isDisabled={currentPage <= 1}
-                          onPress={() => onPageChange(currentPage - 1)}
-                        />
-                        <span className="text-foreground min-w-16 text-center text-xs tabular-nums">
-                          {currentPage} / {document.totalPages}
-                        </span>
-                        <ToolbarButton
-                          ariaLabel="Следующая страница в полноэкранном просмотре"
-                          icon="chevron-right"
-                          isDisabled={currentPage >= document.totalPages}
-                          onPress={() => onPageChange(currentPage + 1)}
-                        />
-                      </div>
-                      <span
-                        aria-hidden="true"
-                        className="bg-line hidden h-5 w-px sm:block"
-                      />
-                      <div className="flex items-center gap-1">
-                        <ToolbarButton
-                          ariaLabel="Уменьшить масштаб в полноэкранном просмотре"
-                          icon="zoom-out"
-                          isDisabled={zoomIndex === 0}
-                          onPress={() => {
-                            const nextZoom = zoomLevels[zoomIndex - 1];
-                            if (nextZoom) setZoom(nextZoom);
-                          }}
-                        />
-                        <span className="text-foreground min-w-12 text-center text-xs tabular-nums">
-                          {zoom}%
-                        </span>
-                        <ToolbarButton
-                          ariaLabel="Увеличить масштаб в полноэкранном просмотре"
-                          icon="zoom-in"
-                          isDisabled={zoomIndex === zoomLevels.length - 1}
-                          onPress={() => {
-                            const nextZoom = zoomLevels[zoomIndex + 1];
-                            if (nextZoom) setZoom(nextZoom);
-                          }}
-                        />
-                        <ToolbarButton
-                          ariaLabel="Установить масштаб 100% в полноэкранном просмотре"
-                          icon="fit"
-                          isDisabled={zoom === 100}
-                          onPress={() => setZoom(100)}
-                        />
-                      </div>
-                    </div>
-                    <div className="min-h-0 flex-1 overflow-auto p-3 sm:p-6">
-                      <DocumentPreview
-                        document={document}
-                        evidence={
-                          evidence?.documentId === document.id
-                            ? evidence
-                            : undefined
-                        }
-                        page={currentPage}
-                        zoom={zoom}
-                      />
-                    </div>
-                  </Modal.Body>
-                </Modal.Dialog>
-              </Modal.Container>
-            </Modal.Backdrop>
-          </Modal>
+          <DocumentViewerModal
+            contentClassName="p-3 sm:p-6"
+            pageLabel={`Стр. ${currentPage} из ${document.totalPages}`}
+            title={document.title}
+            toolbar={
+              <>
+                <StageSelector
+                  activeStage={document.stage}
+                  availableStages={availableStages}
+                  label={`${label}, полноэкранный просмотр`}
+                  onStageChange={selectStage}
+                />
+                <div className="flex items-center gap-1">
+                  <ToolbarButton
+                    ariaLabel="Предыдущая страница в полноэкранном просмотре"
+                    icon="chevron-left"
+                    isDisabled={currentPage <= 1}
+                    onPress={() => onPageChange(currentPage - 1)}
+                  />
+                  <span className="text-foreground min-w-16 text-center text-xs tabular-nums">
+                    {currentPage} / {document.totalPages}
+                  </span>
+                  <ToolbarButton
+                    ariaLabel="Следующая страница в полноэкранном просмотре"
+                    icon="chevron-right"
+                    isDisabled={currentPage >= document.totalPages}
+                    onPress={() => onPageChange(currentPage + 1)}
+                  />
+                </div>
+                <span
+                  aria-hidden="true"
+                  className="bg-line hidden h-5 w-px sm:block"
+                />
+                <div className="flex items-center gap-1">
+                  <ToolbarButton
+                    ariaLabel="Уменьшить масштаб в полноэкранном просмотре"
+                    icon="zoom-out"
+                    isDisabled={zoomIndex === 0}
+                    onPress={() => {
+                      const nextZoom = zoomLevels[zoomIndex - 1];
+                      if (nextZoom) setZoom(nextZoom);
+                    }}
+                  />
+                  <span className="text-foreground min-w-12 text-center text-xs tabular-nums">
+                    {zoom}%
+                  </span>
+                  <ToolbarButton
+                    ariaLabel="Увеличить масштаб в полноэкранном просмотре"
+                    icon="zoom-in"
+                    isDisabled={zoomIndex === zoomLevels.length - 1}
+                    onPress={() => {
+                      const nextZoom = zoomLevels[zoomIndex + 1];
+                      if (nextZoom) setZoom(nextZoom);
+                    }}
+                  />
+                  <ToolbarButton
+                    ariaLabel="Установить масштаб 100% в полноэкранном просмотре"
+                    icon="fit"
+                    isDisabled={zoom === 100}
+                    onPress={() => setZoom(100)}
+                  />
+                </div>
+              </>
+            }
+          >
+            <DocumentPreview
+              document={document}
+              evidence={
+                evidence?.documentId === document.id ? evidence : undefined
+              }
+              page={currentPage}
+              zoom={zoom}
+            />
+          </DocumentViewerModal>
         </div>
       </div>
 

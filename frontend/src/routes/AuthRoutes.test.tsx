@@ -11,6 +11,8 @@ import { PublicOnlyRoute } from "./PublicOnlyRoute";
 const user: UserDto = {
   id: "27b43d75-2f24-4ff0-8bd8-d4758cfbd3cb",
   login: "inspector",
+  lastName: "Иванов",
+  firstName: "Иван",
   role: Role.INSPECTOR,
   createdAt: "2026-09-16T08:00:00.000Z",
 };

@@ -31,7 +31,7 @@ export function ThemeSwitcher() {
   return (
     <ToggleButtonGroup
       aria-label="Тема оформления"
-      className="mt-2 w-full gap-1 p-1"
+      className="w-full gap-1 p-1"
       disallowEmptySelection
       fullWidth
       isDetached
@@ -41,7 +41,12 @@ export function ThemeSwitcher() {
       size="sm"
     >
       {themeOptions.map((option) => (
-        <ToggleButton id={option.value} key={option.value} variant="ghost">
+        <ToggleButton
+          id={option.value}
+          key={option.value}
+          variant="ghost"
+          className="rounded-xl"
+        >
           {option.label}
         </ToggleButton>
       ))}

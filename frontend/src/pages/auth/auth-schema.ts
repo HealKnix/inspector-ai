@@ -1,22 +1,13 @@
 import { z } from "zod";
 
-const loginField = z
-  .string()
-  .trim()
-  .transform((value) => value.normalize("NFC"))
-  .pipe(
-    z
-      .string()
-      .min(3, "Введите не менее 3 символов")
-      .max(64, "Введите не более 64 символов")
-      .regex(/^[^\s\p{Cc}\p{Cf}]+$/u, "Уберите пробелы и управляющие символы"),
-  )
-  .transform((value) => value.toLowerCase());
-
-const passwordField = z
-  .string()
-  .min(12, "Пароль должен содержать не менее 12 символов")
-  .max(128, "Пароль должен содержать не более 128 символов");
+import {
+  emailField,
+  loginField,
+  nameField,
+  passwordField,
+  phoneField,
+  requiredNameField,
+} from "@/lib/user-fields";
 
 export const loginSchema = z.object({
   login: loginField,
@@ -31,6 +22,11 @@ export const registerSchema = z
     login: loginField,
     password: passwordField,
     passwordConfirmation: z.string(),
+    lastName: requiredNameField("фамилию"),
+    firstName: requiredNameField("имя"),
+    patronymic: nameField,
+    phone: phoneField,
+    email: emailField,
   })
   .refine((values) => values.password === values.passwordConfirmation, {
     message: "Пароли не совпадают",
@@ -39,3 +35,4 @@ export const registerSchema = z
 
 export type LoginFormValues = z.input<typeof loginSchema>;
 export type RegisterFormValues = z.input<typeof registerSchema>;
+export type RegisterSubmitValues = z.output<typeof registerSchema>;

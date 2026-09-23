@@ -31,6 +31,11 @@ describe("AuthService", () => {
     id: "8c15a0d2-4328-4d6d-8426-49f10b0f679c",
     login: "inspector.ivanov",
     role: null,
+    lastName: "Иванов",
+    firstName: "Иван",
+    patronymic: null,
+    phone: null,
+    email: null,
     createdAt: new Date("2026-09-15T12:00:00.000Z"),
   };
   const usersService = {
@@ -99,15 +104,22 @@ describe("AuthService", () => {
     mockTokenPair();
 
     await expect(
-      service.register("  Inspector.Ivanov ", "correct-horse-2026"),
+      service.register({
+        login: "  Inspector.Ivanov ",
+        password: "correct-horse-2026",
+        lastName: "Иванов",
+        firstName: "Иван",
+      }),
     ).resolves.toEqual({
       accessToken: "signed-access-token",
       refreshToken: "signed-refresh-token",
       user,
     });
     expect(usersService.create).toHaveBeenCalledWith(
-      "inspector.ivanov",
-      "scrypt$salt$key",
+      expect.objectContaining({
+        login: "inspector.ivanov",
+        passwordHash: "scrypt$salt$key",
+      }),
     );
     const createdSession = authSessionsService.create.mock.calls[0]?.[0] as
       SessionMutationInput | undefined;
@@ -170,7 +182,12 @@ describe("AuthService", () => {
     });
 
     await expect(
-      service.register("inspector.ivanov", "correct-horse-2026"),
+      service.register({
+        login: "inspector.ivanov",
+        password: "correct-horse-2026",
+        lastName: "Иванов",
+        firstName: "Иван",
+      }),
     ).rejects.toThrow(
       new ConflictException("Пользователь с таким логином уже зарегистрирован"),
     );

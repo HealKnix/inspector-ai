@@ -1,5 +1,6 @@
-import { Button, Label, SearchField } from "@heroui/react";
+import { Button } from "@heroui/react";
 
+import { Input } from "@/components/input/Input";
 import { UploadIcon } from "@/components/UploadIcon";
 import { PageHeader } from "@/layouts/ConstrainedLayout";
 
@@ -28,21 +29,15 @@ export function VerificationHeader({
     <PageHeader
       actions={
         <div className="grid w-full gap-3 self-end min-[880px]:w-135 sm:grid-cols-[minmax(240px,0.8fr)_minmax(280px,1.2fr)]">
-          <SearchField
+          <Input
+            aria-label="Поиск по расхождениям"
             className="col-span-2 self-end"
+            clearButtonLabel="Очистить поиск"
             onChange={onQueryChange}
+            placeholder="Документ, параметр или значение…"
+            type="search"
             value={query}
-          >
-            <Label className="sr-only">Поиск по расхождениям</Label>
-            <SearchField.Group className="rounded-xl">
-              <SearchField.SearchIcon />
-              <SearchField.Input
-                placeholder="Документ, параметр или значение…"
-                type="search"
-              />
-              <SearchField.ClearButton aria-label="Очистить поиск" />
-            </SearchField.Group>
-          </SearchField>
+          />
 
           <div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row sm:items-center sm:justify-end">
             <p

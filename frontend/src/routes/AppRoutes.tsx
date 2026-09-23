@@ -52,6 +52,16 @@ const AdminMatrixPage = lazy(() =>
     default: module.AdminMatrixPage,
   })),
 );
+const UsersPage = lazy(() =>
+  import("@/pages/users/UsersPage").then((module) => ({
+    default: module.UsersPage,
+  })),
+);
+const DocumentsPage = lazy(() =>
+  import("@/pages/documents/DocumentsPage").then((module) => ({
+    default: module.DocumentsPage,
+  })),
+);
 
 function ObjectRedirect() {
   const { objectId = "" } = useParams();
@@ -145,6 +155,11 @@ export function AppRoutes() {
               <Route
                 element={<AdminMatrixPage />}
                 path={routeNames.ADMIN_MATRIX}
+              />
+              <Route element={<UsersPage />} path={routeNames.ADMIN_USERS} />
+              <Route
+                element={<DocumentsPage />}
+                path={routeNames.ADMIN_DOCUMENTS}
               />
             </Route>
           </Route>

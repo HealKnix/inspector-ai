@@ -49,9 +49,12 @@ function digest(data: Buffer | string) {
 }
 
 async function account(role: "INSPECTOR" | "ADMINISTRATOR") {
-  const session = await app
-    .get(AuthService)
-    .register("cls-" + randomUUID().slice(0, 8), "Synthetic-password-123!");
+  const session = await app.get(AuthService).register({
+    login: "cls-" + randomUUID().slice(0, 8),
+    password: "Synthetic-password-123!",
+    lastName: "Тестов",
+    firstName: "Инспектор",
+  });
   await prisma.user.update({ where: { id: session.user.id }, data: { role } });
   return { id: session.user.id, token: session.accessToken };
 }
