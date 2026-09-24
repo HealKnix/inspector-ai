@@ -337,6 +337,181 @@ describe("object verification workspace", () => {
     view.client.clear();
   });
 
+  it("открывает страницу доказательства при выборе находки", async () => {
+    const file = {
+      ...parsedFile,
+      pages_completed: 2,
+      pages_total: 2,
+    };
+    const result = structuredClone(parseResult);
+    const secondPage = structuredClone(result.artifact.pages[0]!);
+    secondPage.page_number = 2;
+    secondPage.image_key = "88888888-8888-4888-8888-888888888888";
+    secondPage.blocks = secondPage.blocks.map((block) => ({
+      ...block,
+      id: `${block.id}-page-2`,
+    }));
+    result.artifact.pages.push(secondPage);
+    result.artifact.coverage = {
+      total_pages: 2,
+      readable_pages: 2,
+      unreadable_pages: 0,
+    };
+
+    const makeItem = (
+      id: string,
+      code: string,
+      name: string,
+      risk: string,
+    ) => ({
+      id,
+      parameter_code: code,
+      parameter_name: name,
+      scope_key: "object",
+      status: "CANDIDATE" as const,
+      risk,
+      reason_code: null,
+      comment: null,
+      decided_at: null,
+      finding_version: 1,
+      gate_reasons: null,
+      verdict: {
+        engine: "comparison-v1",
+        status: "discrepancy" as const,
+        spec: { kind: "equals" },
+        expected: [
+          {
+            extraction_id: "88888888-8888-4888-8888-888888888888",
+            file_id: file.file_id,
+            value: "II",
+            value_raw: "II",
+            unit: null,
+          },
+        ],
+        actual: [],
+        pairs: [],
+        warnings: [],
+        evaluated_at: "2026-10-01T00:00:00.000Z",
+      },
+    });
+    const first = makeItem(
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "P001",
+      "Первый параметр",
+      "критичный",
+    );
+    const second = makeItem(
+      "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      "P002",
+      "Второй параметр",
+      "низкий",
+    );
+    const makeDetail = (
+      item: ReturnType<typeof makeItem>,
+      pageNumber: number,
+      blockId: string,
+    ) => ({
+      schema_version: 1 as const,
+      object_id: parsingObjectId,
+      finding: {
+        ...item,
+        protocol_version: 1,
+        members: [
+          {
+            extraction_id: "88888888-8888-4888-8888-888888888888",
+            file_id: file.file_id,
+            stage: "PD",
+            role: "expected" as const,
+            status: "extracted",
+            value: "II",
+            value_raw: "II",
+            unit: null,
+            evidence: [
+              {
+                extractionId: "88888888-8888-4888-8888-888888888888",
+                fileId: file.file_id,
+                pageNumber,
+                sheetLabel: null,
+                blockId,
+                quote: "Значение II",
+                bbox: [0.1, 0.2, 0.4, 0.25],
+              },
+            ],
+          },
+        ],
+        decisions: [],
+      },
+    });
+
+    vi.mocked(getProtocol).mockResolvedValue({
+      schema_version: 1,
+      object_id: parsingObjectId,
+      process_status: "VERIFYING",
+      protocol: {
+        id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        version: 1,
+        status: "active",
+        scenario: "initial",
+        created_at: "2026-10-01T00:00:00.000Z",
+        finalized_at: null,
+        findings: 2,
+      },
+      versions: [],
+      protocol_absent_reason: null,
+    });
+    vi.mocked(listFindings).mockResolvedValue({
+      schema_version: 1,
+      object_id: parsingObjectId,
+      protocol_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      items: [first, second],
+      findings_absent_reason: null,
+    });
+    vi.mocked(getFinding).mockImplementation((_objectId, findingId) =>
+      Promise.resolve(
+        findingId === second.id
+          ? makeDetail(second, 2, "block-1-page-2")
+          : makeDetail(first, 1, "block-1"),
+      ),
+    );
+    vi.mocked(getParsingStatus).mockResolvedValue({
+      schema_version: 1,
+      active: false,
+      poll_after_ms: 2000,
+      items: [file],
+    });
+    vi.mocked(getParseResult).mockResolvedValue(result);
+
+    const view = renderPage();
+
+    expect(
+      await screen.findByRole("img", {
+        name: "Страница 1 документа synthetic.xml",
+      }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /P002 · Второй параметр/ }),
+    );
+
+    await waitFor(() =>
+      expect(getRenderedPage).toHaveBeenCalledWith(
+        parsingObjectId,
+        file.file_id,
+        file.artifact_id,
+        2,
+        expect.any(AbortSignal),
+      ),
+    );
+    expect(
+      await screen.findByRole("img", {
+        name: "Страница 2 документа synthetic.xml",
+      }),
+    ).toBeInTheDocument();
+
+    view.unmount();
+    view.client.clear();
+  });
+
   it("не запрашивает страницы до успешного завершения обработки", async () => {
     vi.mocked(getParsingStatus).mockResolvedValue({
       schema_version: 1,

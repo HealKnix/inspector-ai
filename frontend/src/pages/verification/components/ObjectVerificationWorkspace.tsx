@@ -1,5 +1,5 @@
 import { Button } from "@heroui/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { ApiError } from "@/api/errors";
@@ -189,6 +189,9 @@ export function ObjectVerificationWorkspace({
   const mutations = useVerificationMutations(objectId);
 
   const selectedFindingId = searchParams.get("finding") ?? "";
+  // Помечаем находку, для которой после загрузки detail нужно
+  // автоматически открыть страницы доказательств в панелях.
+  const pendingEvidenceNav = useRef<string | null>(null);
   const detailQuery = useFinding(
     objectId,
     selectedFindingId || null,
@@ -270,6 +273,7 @@ export function ObjectVerificationWorkspace({
   // показывает visibleFindings[0], но деталь и история не подгружены.
   useEffect(() => {
     if (selectedFindingId || !selectedFinding) return;
+    pendingEvidenceNav.current = selectedFinding.id;
     setSearchParams(
       (current) => {
         const next = new URLSearchParams(current);
@@ -305,6 +309,37 @@ export function ObjectVerificationWorkspace({
       ),
     [evidencePair],
   );
+
+  // После выбора находки и загрузки detail переводим обе панели на файл
+  // и первую страницу доказательства — иначе подсветка остаётся на другой
+  // странице и не видна. Срабатывает один раз на выбор, чтобы не перебивать
+  // ручную навигацию пользователя по страницам.
+  useEffect(() => {
+    if (
+      !evidencePair ||
+      !selectedFinding ||
+      pendingEvidenceNav.current !== selectedFinding.id
+    )
+      return;
+    pendingEvidenceNav.current = null;
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        const expected = evidencePair.expected;
+        const actual = evidencePair.actual;
+        if (expected?.member.file_id)
+          next.set("leftFile", expected.member.file_id);
+        if (expected?.fragment?.pageNumber)
+          next.set("leftPage", String(expected.fragment.pageNumber));
+        if (actual?.member.file_id)
+          next.set("rightFile", actual.member.file_id);
+        if (actual?.fragment?.pageNumber)
+          next.set("rightPage", String(actual.fragment.pageNumber));
+        return next;
+      },
+      { replace: true },
+    );
+  }, [evidencePair, selectedFinding, setSearchParams]);
 
   if (objectQuery.isPending) {
     return <LoadingState>Загружаем объект проверки…</LoadingState>;
@@ -377,6 +412,7 @@ export function ObjectVerificationWorkspace({
     const finding = findings.find((candidate) => candidate.id === findingId);
     if (!finding) return;
 
+    pendingEvidenceNav.current = finding.id;
     setSearchParams(
       (current) => {
         const next = new URLSearchParams(current);
