@@ -9,8 +9,12 @@ import pg from "pg";
 import "reflect-metadata";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import type { Prisma } from "../src/generated/prisma/client.js";
 import { PrismaService } from "../src/infrastructure/prisma/prisma.service.js";
 import { AuthService } from "../src/modules/auth/auth.service.js";
+import { rulesetFingerprint } from "../src/modules/extraction/extraction-engine.js";
+import { ExtractionJobsService } from "../src/modules/extraction/extraction-jobs.service.js";
+import { identificationSources } from "../src/modules/identification/identification-state.js";
 
 // Same disposable test PostgreSQL as the other integration suites.
 const dbName = "verification_" + randomUUID().replaceAll("-", "");
@@ -50,15 +54,29 @@ function member(
   role: "expected" | "actual",
   value: number | string,
 ) {
+  const extractionId = randomUUID();
+  const artifactId = randomUUID();
   return {
-    extraction_id: randomUUID(),
+    extraction_id: extractionId,
     file_id: fileId,
+    artifact_id: artifactId,
     stage: role === "expected" ? "PD" : "RD",
     role,
     status: "extracted",
     value,
     value_raw: String(value),
     unit: "m2",
+    evidence: [
+      {
+        extractionId,
+        fileId,
+        artifactId,
+        pageNumber: 1,
+        blockId: "synthetic-p1-b1",
+        quote: `Синтетическая площадь ${value} м2`,
+        bbox: [0.1, 0.2, 0.8, 0.3],
+      },
+    ],
   };
 }
 
@@ -130,6 +148,39 @@ async function seedObject() {
   await prisma.runInput.create({
     data: { runId: run.id, fileId: file.id, processId: process.id, objectId },
   });
+  const snapshotHash = createHash("sha256").update(run.id).digest("hex");
+  await prisma.parsingTask.create({
+    data: {
+      runId: run.id,
+      fileId: file.id,
+      objectId,
+      processId: process.id,
+      state: "failed",
+      errorCode: "synthetic_fixture",
+    },
+  });
+  const source = await prisma.$transaction((tx) =>
+    identificationSources(tx, run.id),
+  );
+  await prisma.resolvedInputSnapshot.create({
+    data: {
+      objectId,
+      processId: process.id,
+      runId: run.id,
+      inputManifestHash: run.inputManifestHash,
+      resolvedInputHash: snapshotHash,
+      sourceFingerprint: source.fingerprint,
+      snapshot: {
+        schema_version: 1,
+        documents: [],
+        contexts: [],
+        blockers: [],
+      },
+    },
+  });
+  const rulesHash = rulesetFingerprint(
+    await app.get(ExtractionJobsService).approvedRules(),
+  );
   const groups: Record<
     string,
     { status: string; expected: number; actual: number | null }
@@ -144,9 +195,13 @@ async function seedObject() {
       data: {
         objectId,
         processId: process.id,
+        runId: run.id,
+        resolvedInputHash: snapshotHash,
+        contextKey: "synthetic-context",
+        contentHash: createHash("sha256").update(code).digest("hex"),
         parameterCode: code,
         scopeKey: "",
-        rulesetHash: createHash("sha256").update("rules").digest("hex"),
+        rulesetHash: rulesHash,
         members: [
           member(file.id, "expected", group.expected),
           ...(group.actual === null
@@ -322,6 +377,47 @@ describe("verification flow", () => {
     expect(byCode.get("P004")?.status).toBe("MISSING_EVIDENCE");
     expect(byCode.get("P004")?.gateReasons).toEqual(["rule_not_approved"]);
     expect(byCode.get("P005")?.status).toBe("MISSING_EVIDENCE");
+    const listed = await request(server)
+      .get(`/api/v1/objects/${objectId}/findings`)
+      .auth(inspector.token, { type: "bearer" })
+      .expect(200);
+    const items = (
+      listed.body as {
+        items: { parameter_code: string; has_evidence: boolean }[];
+      }
+    ).items;
+    expect(items).toHaveLength(5);
+    expect(
+      items.map((item) => [item.parameter_code, item.has_evidence]),
+    ).toEqual([
+      ["P001", true],
+      ["P002", true],
+      ["P003", true],
+      ["P004", false],
+      ["P005", true],
+    ]);
+    expect(items.find((item) => item.parameter_code === "P004")).toMatchObject({
+      evidence_preview: null,
+    });
+    expect(items.find((item) => item.parameter_code === "P005")).toMatchObject({
+      evidence_preview: {
+        role: "expected",
+        value: 3,
+        value_raw: "3",
+        unit: "m2",
+        quote: "Синтетическая площадь 3 м2",
+      },
+    });
+    const detail = await request(server)
+      .get(`/api/v1/objects/${objectId}/findings/${byCode.get("P005")!.id}`)
+      .auth(inspector.token, { type: "bearer" })
+      .expect(200);
+    expect(detail.body).toMatchObject({
+      finding: {
+        has_evidence: true,
+        evidence_preview: { value: 3, quote: "Синтетическая площадь 3 м2" },
+      },
+    });
     const audit = await prisma.auditEvent.findFirstOrThrow({
       where: { objectId, action: "protocol.generated" },
     });
@@ -377,6 +473,9 @@ describe("verification flow", () => {
     expect(
       (confirmed.body as { finding: { status: string } }).finding.status,
     ).toBe("CONFIRMED_VIOLATION");
+    expect(confirmed.body).toMatchObject({
+      finding: { has_evidence: true, evidence_preview: { value: 100 } },
+    });
     expect((confirmed.body as { process_status: string }).process_status).toBe(
       "VERIFYING",
     );
@@ -414,6 +513,22 @@ describe("verification flow", () => {
       where: { id: processId },
     });
     expect(finalized.status).toBe("FINALIZED");
+    const reloaded = await request(server)
+      .get(`/api/v1/objects/${objectId}/protocol`)
+      .auth(inspector.token, { type: "bearer" })
+      .expect(200);
+    expect(
+      (reloaded.body as { protocol: { status: string } }).protocol.status,
+    ).toBe("finalized");
+    expect(
+      (reloaded.body as { protocol: { is_current: boolean } }).protocol
+        .is_current,
+    ).toBe(true);
+    const finalFindings = await request(server)
+      .get(`/api/v1/objects/${objectId}/findings`)
+      .auth(inspector.token, { type: "bearer" })
+      .expect(200);
+    expect((finalFindings.body as { items: unknown[] }).items).toHaveLength(5);
     await generate(objectId).expect(409);
 
     await request(server)
@@ -457,6 +572,9 @@ describe("verification flow", () => {
       comment: "да",
     }).expect(201);
     expect((second.body as { replayed: boolean }).replayed).toBe(true);
+    expect(second.body).toMatchObject({
+      finding: { has_evidence: true, evidence_preview: { value: 100 } },
+    });
     expect(
       await prisma.findingDecision.count({ where: { findingId: finding.id } }),
     ).toBe(1);
@@ -487,9 +605,24 @@ describe("verification flow", () => {
     }).expect(201);
 
     // Меняем evidence только P001: решение не наследуется (§9.3).
-    await prisma.evidenceGroup.updateMany({
+    const previousGroup = await prisma.evidenceGroup.findFirstOrThrow({
       where: { objectId, parameterCode: "P001" },
+    });
+    await expect(
+      prisma.evidenceGroup.update({
+        where: { id: previousGroup.id },
+        data: { members: [] },
+      }),
+    ).rejects.toThrow();
+    await prisma.evidenceGroup.create({
       data: {
+        ...previousGroup,
+        version: previousGroup.version + 1,
+        id: randomUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        contentHash: createHash("sha256").update("changed").digest("hex"),
+        verdict: previousGroup.verdict as Prisma.InputJsonValue,
         members: [
           {
             extraction_id: randomUUID(),
@@ -525,11 +658,38 @@ describe("verification flow", () => {
     });
     expect(protocols[0]?.status).toBe("superseded");
     expect(protocols[1]?.status).toBe("active");
+    const historical = await request(server)
+      .get(`/api/v1/objects/${objectId}/findings/${p001.id}`)
+      .auth(inspector.token, { type: "bearer" })
+      .expect(200);
+    expect(
+      (
+        historical.body as { finding: { members: { value: number }[] } }
+      ).finding.members.map((item) => item.value),
+    ).toEqual([100, 120]);
+    expect(historical.body).toMatchObject({
+      finding: { has_evidence: true, evidence_preview: { value: 100 } },
+    });
+    const historyList = await request(server)
+      .get(`/api/v1/objects/${objectId}/findings`)
+      .query({ protocol_id: protocols[0]!.id })
+      .auth(inspector.token, { type: "bearer" })
+      .expect(200);
+    expect((historyList.body as { protocol_id: string }).protocol_id).toBe(
+      protocols[0]!.id,
+    );
     const v2 = new Map(
       protocols[1]!.findings.map((finding) => [finding.parameterCode, finding]),
     );
     expect(v2.get("P001")?.status).toBe("CANDIDATE");
     expect(v2.get("P001")?.decidedBy).toBeNull();
+    const currentDetail = await request(server)
+      .get(`/api/v1/objects/${objectId}/findings/${v2.get("P001")!.id}`)
+      .auth(inspector.token, { type: "bearer" })
+      .expect(200);
+    expect(currentDetail.body).toMatchObject({
+      finding: { has_evidence: false, evidence_preview: null },
+    });
     expect(v2.get("P003")?.status).toBe("NEGATIVE_VERIFIED");
     expect(v2.get("P003")?.decidedBy).toBe(inspector.id);
     expect(

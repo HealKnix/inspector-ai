@@ -779,6 +779,7 @@ describe("classification durability and access (real PG/broker/storage, syntheti
     ).toBe(1);
     expect((await listing(source).expect(200)).body).toMatchObject({
       active: false,
+      review_active: false,
       items: [
         {
           task_id: original.id,

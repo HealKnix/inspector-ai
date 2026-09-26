@@ -63,6 +63,7 @@ export interface RenderedDocumentPageProps {
   zoom: number | "fit";
   selectedId: string | null;
   matchIds: ReadonlySet<string>;
+  evidenceRects?: ReadonlyArray<{ bbox: TextBlock["bbox"]; quote: string }>;
   onSelect: (id: string) => void;
   showRegions?: boolean;
   selectedRegionId?: string | null;
@@ -78,6 +79,7 @@ export function RenderedDocumentPage({
   zoom,
   selectedId,
   matchIds,
+  evidenceRects,
   onSelect,
   showRegions = false,
   selectedRegionId = null,
@@ -170,6 +172,16 @@ export function RenderedDocumentPage({
                   style={blockRectangle(block.bbox)}
                 />
               ))}
+          {!showRegions &&
+            evidenceRects?.map((evidence, index) => (
+              <div
+                key={`evidence:${index}`}
+                role="img"
+                aria-label={`Доказательство: ${evidence.quote}`}
+                className="pointer-events-none absolute border-2 border-amber-600 bg-amber-300/25"
+                style={blockRectangle(evidence.bbox)}
+              />
+            ))}
         </div>
       )}
     </div>

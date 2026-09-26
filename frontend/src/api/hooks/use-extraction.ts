@@ -42,6 +42,7 @@ export function useExtractions(
   objectId: string,
   parsingActive: boolean,
   enabled = true,
+  resolvedInputHash?: string | null,
 ) {
   const available = useSyncExternalStore(
     subscribeAvailability,
@@ -49,7 +50,10 @@ export function useExtractions(
     () => true,
   );
   return useQuery({
-    queryKey: queryKeys.objects.extractions(objectId),
+    queryKey: [
+      ...queryKeys.objects.extractions(objectId),
+      resolvedInputHash ?? "latest",
+    ],
     queryFn: ({ signal }) => getExtractions(objectId, signal),
     enabled: (query) =>
       enabled &&

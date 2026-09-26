@@ -16,6 +16,22 @@ const requirementId = "44444444-4444-4444-8444-444444444444";
 const fileId = "55555555-5555-4555-8555-555555555555";
 
 describe("completeness OpenAPI schemas", () => {
+  it("принимает отсутствие оценки текущего снимка без подмены историческим результатом", () => {
+    const validate = ajv.compile(completenessResultSchema);
+    const sample = {
+      schema_version: 1,
+      object_id: objectId,
+      process_id: null,
+      run_id: null,
+      resolved_input_hash: null,
+      package_version: null,
+      framework_version: null,
+      evaluated_at: null,
+      evaluation: null,
+      evaluation_absent_reason: "not_evaluated",
+    };
+    expect(validate(sample), ajv.errorsText(validate.errors)).toBe(true);
+  });
   it("принимает неизвестную полноту без выдуманного знаменателя", () => {
     const validate = ajv.compile(expectedPackageSchema);
     const sample = {

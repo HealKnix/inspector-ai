@@ -3,17 +3,15 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 import {
+  confirmExpectedPackage,
+  evaluateCompleteness,
   generateExpectedPackage,
+  getCompletenessResult,
   getExpectedPackage,
 } from "@/api/endpoints/completeness";
 import { ApiError } from "@/api/errors";
 import type { ExpectedPackageResponse } from "@/api/types/completeness";
-import {
-  DocumentStage,
-  UploadRowOrigin,
-  UploadRowStatus,
-  type UploadRow,
-} from "@/pages/document-upload/types";
+import { idRegistry } from "@/pages/identification/lib/identification-test-fixtures";
 
 import { CompletenessPanel } from "./CompletenessPanel";
 
@@ -28,30 +26,22 @@ beforeEach(() => vi.resetAllMocks());
 
 const objectId = "88888888-8888-4888-8888-888888888888";
 
-function uploadRow(stage: DocumentStage): UploadRow {
-  return {
-    id: `row-${stage}-${Math.random()}`,
-    origin: UploadRowOrigin.REMOTE,
-    name: `${stage}.pdf`,
-    extension: "pdf",
-    sizeBytes: 100,
-    clientFileId: null,
-    fileId: `file-${stage}-${Math.random()}`,
-    sha256: null,
-    integrityError: false,
-    pageCount: null,
-    declaredStage: stage,
-    detectedStage: stage,
-    stage,
-    stageMismatch: false,
-    status: UploadRowStatus.READY,
-    statusDetail: null,
-    needsReview: false,
-    retryKind: null,
-    existingFileId: null,
-    documentKind: null,
-  };
-}
+const registry = { ...idRegistry, object_id: objectId };
+const emptyResult = {
+  schema_version: 1 as const,
+  object_id: objectId,
+  process_id: registry.process_id,
+  run_id: registry.run_id,
+  resolved_input_hash: registry.resolved_input_hash,
+  package_version: null,
+  framework_version: null,
+  evaluated_at: null,
+  evaluation: null,
+  evaluation_absent_reason: "not_evaluated",
+};
+beforeEach(() => {
+  vi.mocked(getCompletenessResult).mockResolvedValue(emptyResult);
+});
 
 const proposedPackage: ExpectedPackageResponse = {
   schema_version: 1,
@@ -114,12 +104,12 @@ const proposedPackage: ExpectedPackageResponse = {
   package_absent_reason: null,
 };
 
-function renderPanel(rows: UploadRow[] = []) {
+function renderPanel() {
   const client = new QueryClient();
   const rendered = render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
-        <CompletenessPanel objectId={objectId} rows={rows} />
+        <CompletenessPanel objectId={objectId} registry={registry} canEdit />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -153,22 +143,166 @@ describe("completeness panel", () => {
     client.clear();
   });
 
-  it("показывает загружено из ожидаемого по стадиям", async () => {
+  it("показывает предложенный состав и подтверждает его только явным действием", async () => {
     vi.mocked(getExpectedPackage).mockResolvedValue(proposedPackage);
-    const { client, unmount } = renderPanel([
-      uploadRow(DocumentStage.PD),
-      uploadRow(DocumentStage.ID),
-    ]);
-    expect(await screen.findByText("1 из 2")).toBeInTheDocument();
-    expect(screen.getByText("0 из 0")).toBeInTheDocument();
-    expect(screen.getByText("1 из 1")).toBeInTheDocument();
+    vi.mocked(confirmExpectedPackage).mockResolvedValue({
+      schema_version: 1,
+      object_id: objectId,
+      package_version: 3,
+    });
+    vi.mocked(evaluateCompleteness).mockResolvedValue(emptyResult);
+    const { client, unmount } = renderPanel();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Проверить состав комплекта" }),
+    );
     expect(
-      screen.getByText(/Загружено 2 из 3 документов эталонного состава/),
+      screen.getByText("Пояснительная записка — не менее 2"),
     ).toBeInTheDocument();
-    expect(screen.getByText("Состав предложен")).toBeInTheDocument();
+    expect(screen.queryByText("Комплект КР")).not.toBeInTheDocument();
+    expect(confirmExpectedPackage).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Подтвердить состав" }));
+    await waitFor(() =>
+      expect(confirmExpectedPackage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          objectId,
+          expectedVersion: 2,
+          basis: "Подтверждаю состав комплекта для этого объекта.",
+          attributes: {},
+          exclude: [
+            {
+              requirement_id: "22222222-2222-4222-8222-222222222222",
+              reason: "Не применимо",
+            },
+          ],
+        }),
+      ),
+    );
+    expect(
+      vi.mocked(confirmExpectedPackage).mock.calls[0]?.[0].requestId,
+    ).toMatch(/^[0-9a-f-]{36}$/);
+    await waitFor(() =>
+      expect(evaluateCompleteness).toHaveBeenCalledWith({
+        objectId,
+        runId: registry.run_id,
+      }),
+    );
     unmount();
     client.clear();
   });
+
+  it("показывает результат по логическим документам, а не количеству файлов", async () => {
+    vi.mocked(getExpectedPackage).mockResolvedValue({
+      ...proposedPackage,
+      package: { ...proposedPackage.package!, status: "confirmed" },
+    });
+    vi.mocked(getCompletenessResult).mockResolvedValue({
+      ...emptyResult,
+      package_version: 2,
+      evaluation: {
+        stages: {
+          PD: {
+            status: "PARTIAL",
+            applicable: 2,
+            fulfilled: 1,
+            missing: 1,
+            unverifiable: 0,
+          },
+          RD: null,
+          ID: {
+            status: "UPLOADED",
+            applicable: 1,
+            fulfilled: 1,
+            missing: 0,
+            unverifiable: 0,
+          },
+        },
+        scenario: "PD_ID_ONLY",
+        requirements: [
+          {
+            requirement_id: "test",
+            code: "PD-PZ",
+            title: "Пояснительная записка",
+            stage: "PD",
+            scope: null,
+            outcome: "missing",
+            reasons: [],
+            matched: [],
+            missing_parts: [],
+          },
+        ],
+        counts: {
+          applicable: 3,
+          fulfilled: 2,
+          missing: 1,
+          unverifiable: 0,
+          not_applicable: 0,
+        },
+      },
+    });
+    const { client, unmount } = renderPanel();
+    expect(await screen.findByText("Подтверждено 1 из 2")).toBeInTheDocument();
+    expect(screen.getByText("Состав не определён")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Что ещё нужно" }));
+    expect(
+      screen.getByText("Пояснительная записка — загрузите документ"),
+    ).toBeInTheDocument();
+    unmount();
+    client.clear();
+  });
+
+  it.each(["snapshot", "run", "package"])(
+    "не показывает комплектность другого %s как актуальную",
+    async (identity) => {
+      vi.mocked(getExpectedPackage).mockResolvedValue({
+        ...proposedPackage,
+        package: { ...proposedPackage.package!, status: "confirmed" },
+      });
+      vi.mocked(getCompletenessResult).mockResolvedValue({
+        ...emptyResult,
+        package_version: identity === "package" ? 1 : 2,
+        resolved_input_hash:
+          identity === "snapshot"
+            ? "f".repeat(64)
+            : registry.resolved_input_hash,
+        run_id:
+          identity === "run"
+            ? "99999999-9999-4999-8999-999999999999"
+            : registry.run_id,
+        evaluation: {
+          stages: {
+            PD: {
+              status: "UPLOADED",
+              applicable: 1,
+              fulfilled: 1,
+              missing: 0,
+              unverifiable: 0,
+            },
+            RD: null,
+            ID: null,
+          },
+          scenario: "SINGLE_ONLY",
+          requirements: [],
+          counts: {
+            applicable: 1,
+            fulfilled: 1,
+            missing: 0,
+            unverifiable: 0,
+            not_applicable: 0,
+          },
+        },
+      });
+      const { client, unmount } = renderPanel();
+      expect(
+        await screen.findByText(/Комплектность ещё не определена/),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/из 0/)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("Документы по подтверждённому составу загружены."),
+      ).not.toBeInTheDocument();
+      unmount();
+      client.clear();
+    },
+  );
 
   it("сообщает об ошибке загрузки состава и предлагает повторить", async () => {
     vi.mocked(getExpectedPackage).mockRejectedValue(

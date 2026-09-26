@@ -9,12 +9,17 @@ import type { Prisma } from "../../generated/prisma/client.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import type { Evaluation } from "../completeness/completeness-contract.js";
 import { isApplicable } from "../completeness/completeness-engine.js";
+import { CompletenessService } from "../completeness/completeness.service.js";
 import type { GroupMember } from "../extraction/comparison-engine.js";
+import { rulesetFingerprint } from "../extraction/extraction-engine.js";
 import { ExtractionJobsService } from "../extraction/extraction-jobs.service.js";
+import type { IdentificationSnapshot } from "../identification/identification-contract.js";
+import { identificationSources } from "../identification/identification-state.js";
 import {
   ObjectAccessService,
   type AuditContext,
 } from "../objects/object-access.service.js";
+import { frozenFindingEvidencePreview } from "./finding-evidence.js";
 import { buildProtocol, protocolContent } from "./protocol-builder.js";
 import {
   decisionTarget,
@@ -32,6 +37,11 @@ export interface ProtocolRow {
   created_at: Date;
   finalized_at: Date | null;
   findings: number;
+  parameters: number;
+  parameters_compared: number | null;
+  run_id: string;
+  resolved_input_hash: string | null;
+  ruleset_hash: string | null;
 }
 
 export interface DecisionInput {
@@ -48,6 +58,7 @@ export class VerificationService {
     private readonly prisma: PrismaService,
     private readonly access: ObjectAccessService,
     private readonly jobs: ExtractionJobsService,
+    private readonly completeness: CompletenessService,
   ) {}
 
   private async currentProcess(tx: Prisma.TransactionClient, objectId: string) {
@@ -78,6 +89,23 @@ export class VerificationService {
         where: { processId: process.id, version: process.version },
       });
       if (!run) throw new ConflictException("Нет запуска текущей версии");
+      const snapshot = await tx.resolvedInputSnapshot.findFirst({
+        where: { runId: run.id },
+        orderBy: { version: "desc" },
+      });
+      if (!snapshot)
+        throw new ConflictException(
+          "Выбор источников текущего запуска ещё не завершён",
+        );
+      const identifiedSources = await identificationSources(tx, run.id);
+      if (
+        identifiedSources.sources.length > 0 &&
+        (!identifiedSources.ready ||
+          identifiedSources.fingerprint !== snapshot.sourceFingerprint)
+      )
+        throw new ConflictException(
+          "Исходные данные изменились. Дождитесь идентификации текущего запуска",
+        );
       const [{ pending }] = await tx.$queryRaw<[{ pending: number }]>`
         SELECT (
           (SELECT count(*) FROM parsing_tasks
@@ -93,17 +121,54 @@ export class VerificationService {
             JOIN parsing_tasks pt ON pt.id = a.task_id
             WHERE pt.run_id = ${run.id}::uuid
               AND et.state IN ('queued', 'processing'))
+        + (SELECT count(*) FROM identification_tasks it WHERE it.run_id = ${run.id}::uuid AND it.state IN ('queued','processing'))
         )::int AS pending`;
       if (pending > 0)
         throw new ConflictException(
           `Обработка не завершена: незавершённых задач ${pending}`,
         );
 
-      const groups = await tx.evidenceGroup.findMany({
-        where: { processId: process.id },
-        orderBy: [{ parameterCode: "asc" }, { scopeKey: "asc" }],
-      });
       const rules = await this.jobs.approvedRules(tx);
+      const rulesHash = rulesetFingerprint(rules);
+      const source = snapshot.snapshot as unknown as IdentificationSnapshot;
+      if (rules.length) {
+        for (const artifactId of new Set(
+          source.documents.flatMap((doc) =>
+            doc.revisions.flatMap((rev) =>
+              rev.representations.map((rep) => rep.artifact_id),
+            ),
+          ),
+        )) {
+          const task = await tx.extractionTask.findFirst({
+            where: { artifactId },
+            orderBy: { cycle: "desc" },
+          });
+          if (
+            !task ||
+            !["succeeded", "failed"].includes(task.state) ||
+            task.resolvedInputHash !== snapshot.resolvedInputHash ||
+            task.fingerprint !== rulesHash
+          )
+            throw new ConflictException(
+              "Извлечение по выбранным источникам ещё не завершено",
+            );
+        }
+      }
+      const versionsOfGroups = await tx.evidenceGroup.findMany({
+        where: {
+          processId: process.id,
+          runId: run.id,
+          resolvedInputHash: snapshot.resolvedInputHash,
+          rulesetHash: rulesHash,
+        },
+        orderBy: [{ version: "desc" }, { id: "desc" }],
+      });
+      const uniqueGroups = new Map<string, (typeof versionsOfGroups)[number]>();
+      for (const group of versionsOfGroups) {
+        const key = `${group.parameterCode}|${group.contextKey}`;
+        if (!uniqueGroups.has(key)) uniqueGroups.set(key, group);
+      }
+      const groups = [...uniqueGroups.values()];
       const executable = new Set(rules.map((rule) => rule.parameter_code));
       const versions = await tx.ruleVersion.findMany({
         where: { status: "approved", parameterCode: { in: [...executable] } },
@@ -121,17 +186,25 @@ export class VerificationService {
       });
       const attributes = (pack?.attributes ?? {}) as Record<string, unknown>;
 
-      const source = await tx.matrixImport.findFirst({
+      const matrixSource = await tx.matrixImport.findFirst({
         orderBy: { importedAt: "desc" },
       });
-      const rows = source
+      const rows = matrixSource
         ? await tx.matrixRow.findMany({
-            where: { importId: source.id },
+            where: { importId: matrixSource.id },
             orderBy: { parameterId: "asc" },
           })
         : [];
+      await this.completeness.evaluateForRun(tx, run.id, context);
       const latestCompleteness = await tx.completenessResult.findFirst({
-        where: { processId: process.id },
+        where: {
+          processId: process.id,
+          runId: run.id,
+          inputRefs: {
+            path: ["resolved_input_hash"],
+            equals: snapshot.resolvedInputHash,
+          },
+        },
         orderBy: { createdAt: "desc" },
       });
       const fileIds = new Set<string>();
@@ -175,13 +248,20 @@ export class VerificationService {
         })),
         evaluation: (latestCompleteness?.result as Evaluation | null) ?? null,
         fileSha256,
+        unresolvedSources: source.blockers.length
+          ? source.blockers
+          : ["comparison_context_unresolved"],
       });
 
       const active = await tx.protocol.findFirst({
         where: { processId: process.id, status: "active" },
         include: { findings: { include: { decisions: true } } },
       });
-      if (active?.findingsHash === built.findings_hash) {
+      if (
+        active?.findingsHash === built.findings_hash &&
+        active.runId === run.id &&
+        active.resolvedInputHash === snapshot.resolvedInputHash
+      ) {
         return {
           schema_version: VERIFICATION_SCHEMA_VERSION,
           object_id: objectId,
@@ -222,8 +302,9 @@ export class VerificationService {
           runId: run.id,
           version: await this.nextVersion(tx, process.id),
           scenario: built.scenario ?? "PARTIALLY_LOADED",
-          rulesetHash: groups[0]?.rulesetHash ?? null,
+          rulesetHash: rulesHash,
           inputManifestHash: run.inputManifestHash,
+          resolvedInputHash: snapshot.resolvedInputHash,
           findingsHash: built.findings_hash,
           completenessResultId: latestCompleteness?.id ?? null,
           content: protocolContent(
@@ -252,6 +333,8 @@ export class VerificationService {
               : undefined,
             gateReasons: finding.gate_reasons,
             membersFingerprint: finding.members_fingerprint,
+            evidenceSnapshot:
+              finding.evidence_snapshot as unknown as Prisma.InputJsonValue,
             decidedBy: previous?.decidedBy ?? null,
             decidedAt: previous?.decidedAt ?? null,
             reasonCode: previous?.reasonCode ?? null,
@@ -337,6 +420,47 @@ export class VerificationService {
     return (last?.version ?? 0) + 1;
   }
 
+  private async requireCurrentProtocol(
+    tx: Prisma.TransactionClient,
+    process: { id: string; version: number },
+    protocol: {
+      runId: string;
+      resolvedInputHash: string | null;
+      rulesetHash: string | null;
+    },
+  ) {
+    const run = await tx.run.findUnique({
+      where: {
+        processId_version: { processId: process.id, version: process.version },
+      },
+    });
+    const snapshot = run
+      ? await tx.resolvedInputSnapshot.findFirst({
+          where: { runId: run.id },
+          orderBy: { version: "desc" },
+        })
+      : null;
+    if (
+      run?.id !== protocol.runId ||
+      protocol.resolvedInputHash !== (snapshot?.resolvedInputHash ?? null)
+    )
+      throw new ConflictException(
+        "Источники изменились. Сформируйте протокол текущего расчёта",
+      );
+    if (snapshot) {
+      const source = await identificationSources(tx, run.id);
+      if (
+        !source.ready ||
+        source.fingerprint !== snapshot.sourceFingerprint ||
+        protocol.rulesetHash !==
+          rulesetFingerprint(await this.jobs.approvedRules(tx))
+      )
+        throw new ConflictException(
+          "Основания расчёта изменились. Дождитесь обработки и сформируйте новый протокол",
+        );
+    }
+  }
+
   /** Имя параметра из последнего импорта матрицы — для карточек находок. */
   private async parameterNames(
     tx: Prisma.TransactionClient,
@@ -367,9 +491,13 @@ export class VerificationService {
       rowVersion: number;
       gateReasons: unknown;
       verdict: unknown;
+      evidenceSnapshot: unknown;
     },
     names?: ReadonlyMap<string, string>,
   ) {
+    const evidencePreview = frozenFindingEvidencePreview(
+      finding.evidenceSnapshot,
+    );
     return {
       id: finding.id,
       parameter_code: finding.parameterCode,
@@ -383,30 +511,67 @@ export class VerificationService {
       finding_version: finding.rowVersion,
       gate_reasons: finding.gateReasons,
       verdict: finding.verdict,
+      has_evidence: evidencePreview !== null,
+      evidence_preview: evidencePreview,
     };
   }
 
   /** Активная версия протокола + история версий процесса. */
-  async getProtocol(userId: string, objectId: string) {
+  async getProtocol(userId: string, objectId: string, protocolId?: string) {
     return this.prisma.$transaction(async (tx) => {
       await this.access.lock(tx, objectId);
       await this.access.requireAccess(tx, userId, objectId);
       const process = await this.currentProcess(tx, objectId);
       const versions = await tx.$queryRaw<ProtocolRow[]>`
         SELECT p.id, p.version, p.status::text AS status, p.scenario,
-               p.created_at, p.finalized_at,
+               p.created_at, p.finalized_at, p.run_id, p.resolved_input_hash, p.ruleset_hash,
                (SELECT count(*) FROM findings f
-                 WHERE f.protocol_id = p.id)::int AS findings
+                 WHERE f.protocol_id = p.id)::int AS findings,
+               (SELECT count(DISTINCT f.parameter_code) FROM findings f WHERE f.protocol_id=p.id)::int AS parameters,
+               (p.content->>'parameters_compared')::int AS parameters_compared
         FROM protocols p
         WHERE p.process_id = ${process.id}::uuid
         ORDER BY p.version DESC`;
-      const active = versions.find((row) => row.status === "active") ?? null;
+      const active = protocolId
+        ? (versions.find((row) => row.id === protocolId) ?? null)
+        : (versions[0] ?? null);
+      if (protocolId && !active)
+        throw new NotFoundException("Протокол недоступен");
+      const run = await tx.run.findUnique({
+        where: {
+          processId_version: {
+            processId: process.id,
+            version: process.version,
+          },
+        },
+      });
+      const snapshot = run
+        ? await tx.resolvedInputSnapshot.findFirst({
+            where: { runId: run.id },
+            orderBy: { version: "desc" },
+          })
+        : null;
+      const rulesHash = rulesetFingerprint(await this.jobs.approvedRules(tx));
+      const sources =
+        snapshot && run ? await identificationSources(tx, run.id) : null;
+      const isCurrent = (row: ProtocolRow) =>
+        row.run_id === run?.id &&
+        row.resolved_input_hash === (snapshot?.resolvedInputHash ?? null) &&
+        (!snapshot ||
+          (sources?.ready &&
+            sources.fingerprint === snapshot.sourceFingerprint &&
+            row.ruleset_hash === rulesHash));
       return {
         schema_version: VERIFICATION_SCHEMA_VERSION,
         object_id: objectId,
         process_status: process.status,
-        protocol: active,
-        versions,
+        protocol: active ? { ...active, is_current: isCurrent(active) } : null,
+        current_run_id: run?.id ?? null,
+        is_current: active ? isCurrent(active) : false,
+        versions: versions.map((row) => ({
+          ...row,
+          is_current: isCurrent(row),
+        })),
         protocol_absent_reason: active ? null : "protocol_not_generated",
       };
     });
@@ -415,14 +580,18 @@ export class VerificationService {
   async listFindings(
     userId: string,
     objectId: string,
-    filter: { status?: FindingStatusValue; q?: string },
+    filter: { status?: FindingStatusValue; q?: string; protocol_id?: string },
   ) {
     return this.prisma.$transaction(async (tx) => {
       await this.access.lock(tx, objectId);
       await this.access.requireAccess(tx, userId, objectId);
       const process = await this.currentProcess(tx, objectId);
       const protocol = await tx.protocol.findFirst({
-        where: { processId: process.id, status: "active" },
+        where: {
+          processId: process.id,
+          ...(filter.protocol_id ? { id: filter.protocol_id } : {}),
+        },
+        orderBy: { version: "desc" },
       });
       if (!protocol)
         return {
@@ -465,39 +634,24 @@ export class VerificationService {
         where: { id: findingId, objectId },
         include: {
           decisions: { orderBy: { createdAt: "asc" } },
-          protocol: { select: { version: true, status: true } },
+          protocol: {
+            select: {
+              version: true,
+              status: true,
+              runId: true,
+              resolvedInputHash: true,
+            },
+          },
         },
       });
       if (!finding) throw new NotFoundException("Находка недоступна");
-      const group = finding.evidenceGroupId
-        ? await tx.evidenceGroup.findUnique({
-            where: { id: finding.evidenceGroupId },
-            select: { members: true },
-          })
-        : null;
-      const extractionIds = ((group?.members as unknown as GroupMember[]) ?? [])
-        .map((member) => member.extraction_id)
-        .filter(Boolean);
-      const fragments = extractionIds.length
-        ? await tx.evidenceFragment.findMany({
-            where: { extractionId: { in: extractionIds } },
-            select: {
-              extractionId: true,
-              fileId: true,
-              pageNumber: true,
-              sheetLabel: true,
-              blockId: true,
-              quote: true,
-              bbox: true,
-            },
-          })
-        : [];
-      const byExtraction = new Map<string, typeof fragments>();
-      for (const fragment of fragments) {
-        const list = byExtraction.get(fragment.extractionId) ?? [];
-        list.push(fragment);
-        byExtraction.set(fragment.extractionId, list);
-      }
+      // Legacy groups were mutable. Their current contents cannot restore
+      // evidence that the inspector saw in an earlier protocol.
+      const frozen = finding.evidenceSnapshot as unknown as {
+        members: GroupMember[];
+        context: unknown;
+        selection_basis: unknown;
+      } | null;
       const names = await this.parameterNames(tx, [finding.parameterCode]);
       return {
         schema_version: VERIFICATION_SCHEMA_VERSION,
@@ -505,12 +659,17 @@ export class VerificationService {
         finding: {
           ...this.serializeFinding(finding, names),
           protocol_version: finding.protocol.version,
-          members: ((group?.members as unknown as GroupMember[]) ?? []).map(
-            (member) => ({
-              ...member,
-              evidence: byExtraction.get(member.extraction_id) ?? [],
-            }),
-          ),
+          run_id: finding.protocol.runId,
+          resolved_input_hash: finding.protocol.resolvedInputHash,
+          members: (frozen?.members ?? []).map((member) => ({
+            ...member,
+            evidence: member.evidence ?? [],
+          })),
+          context: frozen?.context ?? null,
+          selection_basis: frozen?.selection_basis ?? null,
+          evidence_absent_reason: frozen
+            ? null
+            : "historical_evidence_not_recoverable",
           decisions: finding.decisions.map((decision) => ({
             id: decision.id,
             actor_id: decision.actorId,
@@ -576,6 +735,7 @@ export class VerificationService {
         throw new ConflictException(
           "Решения принимаются только по активной версии протокола",
         );
+      await this.requireCurrentProtocol(tx, process, finding.protocol);
       if (input.finding_version !== finding.rowVersion)
         throw new ConflictException(
           `Находка изменилась: актуальная версия ${finding.rowVersion}, передана ${input.finding_version}`,
@@ -692,6 +852,7 @@ export class VerificationService {
         where: { processId: process.id, status: "active" },
       });
       if (!protocol) throw new ConflictException("Протокол не сформирован");
+      await this.requireCurrentProtocol(tx, process, protocol);
       const open = await tx.finding.findMany({
         where: { protocolId: protocol.id, status: "CANDIDATE" },
         select: { parameterCode: true, scopeKey: true },

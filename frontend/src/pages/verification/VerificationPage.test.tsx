@@ -11,6 +11,7 @@ import { AppProviders } from "@/components/AppProviders";
 import { VerificationPage } from "./VerificationPage";
 
 function renderPage() {
+  window.history.replaceState({}, "", "/verification?demo=1");
   return render(
     <AppProviders>
       <VerificationPage />

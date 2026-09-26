@@ -3,6 +3,7 @@
 // No I/O — the service feeds rows in and persists the result.
 
 import { createHash } from "node:crypto";
+import { canonicalJson } from "../documents/canonical-json.js";
 
 import type {
   Evaluation,
@@ -49,6 +50,12 @@ export interface BuiltFinding {
   verdict: GroupVerdict | null;
   gate_reasons: string[];
   members_fingerprint: string;
+  evidence_snapshot: {
+    schema_version: 1;
+    members: GroupMember[];
+    context: unknown;
+    selection_basis: unknown;
+  };
 }
 
 export interface BuildInput {
@@ -58,6 +65,7 @@ export interface BuildInput {
   evaluation: Evaluation | null;
   /** file_id → sha256 для семантического отпечатка членов группы. */
   fileSha256: Map<string, string>;
+  unresolvedSources?: string[];
 }
 
 export interface BuildResult {
@@ -88,6 +96,7 @@ export function membersFingerprint(
   members: GroupMember[],
   verdict: GroupVerdict | null,
   fileSha256: Map<string, string>,
+  rulesetHash = "",
 ): string {
   const hash = createHash("sha256");
   const normalized = members
@@ -99,12 +108,29 @@ export function membersFingerprint(
         member.value_raw ?? "",
         member.unit ?? "",
         fileSha256.get(member.file_id) ?? member.file_id,
+        member.document_id ?? "",
+        member.revision_id ?? "",
+        member.rule_version_id ?? "",
+        member.artifact_sha256 ?? "",
+        canonicalJson(
+          (member.evidence ?? []).map((item) =>
+            Object.fromEntries(
+              Object.entries(item as Record<string, unknown>).filter(
+                ([key]) =>
+                  !["extractionId", "artifactId", "fileId", "id"].includes(key),
+              ),
+            ),
+          ),
+        ),
       ].join("|"),
     )
     .sort();
   for (const row of normalized) hash.update(row).update("\n");
   hash.update(JSON.stringify(verdict?.status ?? null));
   hash.update(JSON.stringify(verdict?.spec ?? null));
+  hash.update(rulesetHash);
+  hash.update(canonicalJson(verdict?.context ?? null));
+  hash.update(canonicalJson(verdict?.selection_basis ?? null));
   return hash.digest("hex");
 }
 
@@ -113,52 +139,66 @@ function hasEvidence(members: GroupMember[]): boolean {
 }
 
 export function buildProtocol(input: BuildInput): BuildResult {
-  const groups = new Map<string, BuilderGroup>();
+  const groups = new Map<string, BuilderGroup[]>();
   for (const group of input.groups) {
-    groups.set(`${group.parameter_code}${group.scope_key}`, group);
+    groups.set(group.parameter_code, [
+      ...(groups.get(group.parameter_code) ?? []),
+      group,
+    ]);
   }
   const findings: BuiltFinding[] = [];
   for (const parameter of input.parameters) {
-    const group = groups.get(`${parameter.parameter_code}`);
-    const members = group && isMembers(group.members) ? group.members : [];
-    const verdict = group && isVerdict(group.verdict) ? group.verdict : null;
+    for (const group of groups.get(parameter.parameter_code) ?? [undefined]) {
+      const members = group && isMembers(group.members) ? group.members : [];
+      const verdict = group && isVerdict(group.verdict) ? group.verdict : null;
+      const identityBlockers =
+        verdict?.identity_blockers ??
+        (!group ? (input.unresolvedSources ?? []) : []);
 
-    let status: FindingStatusValue;
-    let reasons: string[];
-    if (!parameter.has_rule) {
-      // Параметр в матрице есть, но утверждённого правила нет — проверка
-      // не выполнялась, это недостаток возможности, а не нарушение.
-      status = "MISSING_EVIDENCE";
-      reasons = ["rule_not_approved"];
-    } else if (!parameter.applicable) {
-      status = "NOT_APPLICABLE";
-      reasons = ["parameter_not_applicable"];
-    } else {
-      const gate = parameterGate({
-        parameterApplicable: true,
-        relevantStages: parameter.relevant_stages,
-        stages: input.evaluation?.stages ?? { PD: null, RD: null, ID: null },
-        evidencePresent: hasEvidence(members),
-        revisionUnresolved: false,
-      });
-      const gated = statusForGate(gate.gate);
-      status = gated ?? statusForVerdict(verdict?.status ?? "no_comparison");
-      reasons = gate.reasons;
-    }
-    findings.push({
-      parameter_code: parameter.parameter_code,
-      scope_key: group?.scope_key ?? "",
-      status,
-      risk: parameter.criticality,
-      evidence_group_id: group?.id ?? null,
-      verdict,
-      gate_reasons: reasons,
-      members_fingerprint: membersFingerprint(
-        members,
+      let status: FindingStatusValue;
+      let reasons: string[];
+      if (!parameter.has_rule) {
+        // Параметр в матрице есть, но утверждённого правила нет — проверка
+        // не выполнялась, это недостаток возможности, а не нарушение.
+        status = "MISSING_EVIDENCE";
+        reasons = ["rule_not_approved"];
+      } else if (!parameter.applicable) {
+        status = "NOT_APPLICABLE";
+        reasons = ["parameter_not_applicable"];
+      } else {
+        const gate = parameterGate({
+          parameterApplicable: true,
+          relevantStages: parameter.relevant_stages,
+          stages: input.evaluation?.stages ?? { PD: null, RD: null, ID: null },
+          evidencePresent: hasEvidence(members),
+          revisionUnresolved: identityBlockers.length > 0,
+        });
+        const gated = statusForGate(gate.gate);
+        status = gated ?? statusForVerdict(verdict?.status ?? "no_comparison");
+        reasons = [...gate.reasons, ...identityBlockers];
+      }
+      findings.push({
+        parameter_code: parameter.parameter_code,
+        scope_key: group?.scope_key ?? "",
+        status,
+        risk: parameter.criticality,
+        evidence_group_id: group?.id ?? null,
         verdict,
-        input.fileSha256,
-      ),
-    });
+        gate_reasons: reasons,
+        members_fingerprint: membersFingerprint(
+          members,
+          verdict,
+          input.fileSha256,
+          group?.ruleset_hash,
+        ),
+        evidence_snapshot: {
+          schema_version: 1,
+          members,
+          context: verdict?.context ?? null,
+          selection_basis: verdict?.selection_basis ?? null,
+        },
+      });
+    }
   }
   findings.sort((a, b) =>
     `${a.parameter_code}|${a.scope_key}`.localeCompare(
@@ -192,11 +232,37 @@ export function protocolContent(
   for (const finding of result.findings) {
     counts[finding.status] = (counts[finding.status] ?? 0) + 1;
   }
+  const parameterCodes = [
+    ...new Set(result.findings.map((finding) => finding.parameter_code)),
+  ];
+  const comparedStatuses = ["CANDIDATE", "NEGATIVE_VERIFIED"];
   return {
     schema_version: VERIFICATION_SCHEMA_VERSION,
     scenario: result.scenario,
     completeness_result_id: completenessResultId,
     counts,
+    findings_count: result.findings.length,
+    parameters_count: new Set(
+      result.findings.map((finding) => finding.parameter_code),
+    ).size,
+    parameters_with_evidence: new Set(
+      result.findings
+        .filter((finding) => hasEvidence(finding.evidence_snapshot.members))
+        .map((finding) => finding.parameter_code),
+    ).size,
+    parameters_compared: parameterCodes.filter((code) => {
+      const contexts = result.findings.filter(
+        (finding) => finding.parameter_code === code,
+      );
+      return (
+        contexts.some((finding) => comparedStatuses.includes(finding.status)) &&
+        contexts.every(
+          (finding) =>
+            comparedStatuses.includes(finding.status) ||
+            finding.status === "NOT_APPLICABLE",
+        )
+      );
+    }).length,
     findings: result.findings.map((finding) => ({
       parameter_code: finding.parameter_code,
       scope_key: finding.scope_key,

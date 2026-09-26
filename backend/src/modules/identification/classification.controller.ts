@@ -17,10 +17,12 @@ import {
 } from "@nestjs/swagger";
 import {
   IsIn,
+  IsInt,
   IsNotEmpty,
-  IsOptional,
   IsString,
   IsUUID,
+  MaxLength,
+  Min,
 } from "class-validator";
 import type { Response } from "express";
 import { randomUUID } from "node:crypto";
@@ -40,6 +42,24 @@ export class ClassificationRetryDto {
 }
 
 export class ClassificationResolveDto {
+  @ApiProperty({ format: "uuid" })
+  @IsUUID()
+  request_id!: string;
+
+  @ApiProperty({ format: "uuid" })
+  @IsUUID()
+  expected_run_id!: string;
+
+  @ApiProperty({ minimum: 1 })
+  @IsInt()
+  @Min(1)
+  expected_version!: number;
+
+  @ApiProperty({ maxLength: 4000 })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(4000)
+  basis!: string;
   @ApiProperty({
     description: "Код вида документа из словаря утверждённого каркаса",
     example: "AOSR",
@@ -50,13 +70,12 @@ export class ClassificationResolveDto {
 
   @ApiProperty({
     enum: ["PD", "RD", "ID"],
-    required: false,
+    required: true,
     description:
       "Стадия; обязательна, когда код встречается в словарях нескольких стадий",
   })
-  @IsOptional()
   @IsIn(["PD", "RD", "ID"])
-  stage?: ClassificationStage;
+  stage!: ClassificationStage;
 }
 
 @ApiTags("classification")
@@ -122,17 +141,18 @@ export class ClassificationController {
   }
 
   @Post("files/:fileId/classification/resolve")
-  @HttpCode(200)
+  @HttpCode(202)
   @ApiResponse({
-    status: 200,
+    status: 202,
     description:
-      "Ручное разрешение вида документа новым циклом классификации; повтор с тем же видом не создаёт цикл",
+      "Совместимый маршрут versioned уточнения документа: обязательны версия, Run, основание и идемпотентный ключ; создаётся новый Run",
     schema: {
       type: "object",
-      required: ["task_id", "unchanged"],
+      required: ["run_id", "previous_run_id", "replayed"],
       properties: {
-        task_id: { type: "string", format: "uuid" },
-        unchanged: { type: "boolean" },
+        run_id: { type: "string", format: "uuid" },
+        previous_run_id: { type: "string", format: "uuid" },
+        replayed: { type: "boolean" },
       },
     },
   })

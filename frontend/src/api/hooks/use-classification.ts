@@ -53,7 +53,12 @@ export function classificationInterval(
   available: boolean,
   parsingActive: boolean,
 ) {
-  if (!available || error || (!data?.active && !parsingActive)) return false;
+  if (
+    !available ||
+    error ||
+    (!data?.active && !data?.review_active && !parsingActive)
+  )
+    return false;
   return Math.max(1000, data?.poll_after_ms ?? 2000);
 }
 
@@ -61,6 +66,7 @@ export function useClassificationStatus(
   objectId: string,
   parsing: ParsingStatus | undefined,
   enabled = true,
+  resolvedInputHash?: string | null,
 ) {
   const available = useSyncExternalStore(
     subscribeAvailability,
@@ -76,7 +82,11 @@ export function useClassificationStatus(
       )
       .join("|") ?? "";
   return useQuery({
-    queryKey: [...queryKeys.objects.classification(objectId), parsingIdentity],
+    queryKey: [
+      ...queryKeys.objects.classification(objectId),
+      parsingIdentity,
+      resolvedInputHash ?? "latest",
+    ],
     queryFn: ({ signal }) => getClassificationStatus(objectId, signal),
     enabled: (query) =>
       enabled &&
@@ -131,7 +141,7 @@ export function useResolveClassification() {
     retry: false,
     onSettled: async (_data, _error, input) => {
       await client.invalidateQueries({
-        queryKey: queryKeys.objects.classification(input.objectId),
+        queryKey: queryKeys.objects.detail(input.objectId),
       });
     },
   });

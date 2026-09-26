@@ -28,6 +28,9 @@ export interface ExpectedRequirement {
 
 /** Один логический документ снимка (представления слиты на входе). */
 export interface DocumentFact {
+  /** Stable logical identity from the selected ID snapshot; formats are not documents. */
+  document_id?: string;
+  revision_ids?: string[];
   file_id: string;
   sha256: string;
   stage: Stage | null;
@@ -51,7 +54,7 @@ export interface RequirementResult {
   scope: ExpectedRequirement["scope"];
   outcome: RequirementOutcome;
   reasons: string[];
-  matched: { file_id: string }[];
+  matched: { file_id: string; document_id?: string; revision_ids?: string[] }[];
   missing_parts: string[];
 }
 

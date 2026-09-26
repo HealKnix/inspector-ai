@@ -3,14 +3,14 @@ import { useState } from "react";
 
 import { parsingErrorMessage, useParseResult } from "@/api/hooks/use-parsing";
 import type { ParsingFile } from "@/api/types/parsing";
+import type { ApiFindingDetail } from "@/api/types/verification";
 import { DocumentViewerModal } from "@/components/document-viewer-modal/DocumentViewerModal";
 import { RenderedDocumentPage } from "@/components/rendered-document-page/RenderedDocumentPage";
 import { UploadIcon } from "@/components/UploadIcon";
 import { cn } from "@/lib/utils";
 
+import { evidenceForPage, evidenceRectangle } from "../lib/evidence-navigation";
 import { VerificationIcon } from "./VerificationIcon";
-
-const emptyMatchIds: ReadonlySet<string> = new Set<string>();
 
 interface ParsedDocumentPaneProps {
   className?: string;
@@ -18,7 +18,7 @@ interface ParsedDocumentPaneProps {
   files: readonly ParsingFile[];
   label: string;
   /** Блоки доказательств — подсвечиваются на странице. */
-  matchIds?: ReadonlySet<string>;
+  detail?: ApiFindingDetail;
   objectId: string;
   onFileChange: (fileId: string) => void;
   onPageChange: (page: number) => void;
@@ -55,7 +55,7 @@ export function ParsedDocumentPane({
   file,
   files,
   label,
-  matchIds = emptyMatchIds,
+  detail,
   objectId,
   onFileChange,
   onPageChange,
@@ -65,10 +65,19 @@ export function ParsedDocumentPane({
   const result = query.isError ? undefined : query.data;
   const [zoom, setZoom] = useState<number | "fit">("fit");
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
-  const page =
-    result?.artifact.pages.find(
-      (candidate) => candidate.page_number === pageNumber,
-    ) ?? result?.artifact.pages[0];
+  const page = result?.artifact.pages.find(
+    (candidate) => candidate.page_number === pageNumber,
+  );
+  const evidence = page ? evidenceForPage(detail, file, page.page_number) : [];
+  const matchIds = new Set(
+    evidence.flatMap((fragment) =>
+      fragment.blockId ? [fragment.blockId] : [],
+    ),
+  );
+  const evidenceRects = evidence.flatMap((fragment) => {
+    const bbox = evidenceRectangle(fragment.bbox);
+    return bbox ? [{ bbox, quote: fragment.quote }] : [];
+  });
   const currentPage = page?.page_number ?? 1;
   const totalPages = result?.artifact.pages.length ?? 0;
 
@@ -98,7 +107,9 @@ export function ParsedDocumentPane({
               {file.original_name}
             </h2>
             <p className="text-copy-muted mt-1 text-xs">
-              Фактический результат обработки · попытка {file.attempt}
+              {detail?.run_id
+                ? "Зафиксированный источник находки"
+                : `Результат обработки · попытка ${file.attempt}`}
             </p>
           </div>
         </div>
@@ -200,7 +211,7 @@ export function ParsedDocumentPane({
                     ariaLabel="Предыдущая страница в полноэкранном просмотре"
                     icon="chevron-left"
                     isDisabled={currentPage <= 1}
-                    onPress={() => onPageChange(currentPage - 1)}
+                    onPress={() => changePage(currentPage - 1)}
                   />
                   <span className="text-foreground min-w-16 text-center text-xs tabular-nums">
                     {currentPage} / {totalPages}
@@ -209,7 +220,7 @@ export function ParsedDocumentPane({
                     ariaLabel="Следующая страница в полноэкранном просмотре"
                     icon="chevron-right"
                     isDisabled={currentPage >= totalPages}
-                    onPress={() => onPageChange(currentPage + 1)}
+                    onPress={() => changePage(currentPage + 1)}
                   />
                 </div>
                 <span
@@ -274,7 +285,8 @@ export function ParsedDocumentPane({
             )}
             {result && !page && (
               <p className="text-copy-muted p-8 text-center text-sm">
-                В результате обработки нет страниц для предпросмотра.
+                Запрошенная страница отсутствует в зафиксированном результате
+                обработки.
               </p>
             )}
             {page && (
@@ -282,6 +294,7 @@ export function ParsedDocumentPane({
                 className="h-full max-h-none rounded-none"
                 file={file}
                 matchIds={matchIds}
+                evidenceRects={evidenceRects}
                 objectId={objectId}
                 onSelect={setSelectedBlockId}
                 page={page}
@@ -293,6 +306,16 @@ export function ParsedDocumentPane({
         </div>
       </div>
 
+      {evidence.length > 0 ? (
+        <div
+          className="border-line border-b px-4 py-2 text-xs"
+          aria-label="Цитаты на этой странице"
+        >
+          {evidence.map((fragment, index) => (
+            <blockquote key={index}>{fragment.quote}</blockquote>
+          ))}
+        </div>
+      ) : null}
       <div className="bg-surface-low min-h-72 flex-1 overflow-hidden">
         {query.isPending && (
           <p role="status" className="text-copy-muted p-8 text-center text-sm">
@@ -317,7 +340,8 @@ export function ParsedDocumentPane({
         )}
         {result && !page && (
           <p className="text-copy-muted p-8 text-center text-sm">
-            В результате обработки нет страниц для предпросмотра.
+            Запрошенная страница отсутствует в зафиксированном результате
+            обработки.
           </p>
         )}
         {page && (
@@ -325,6 +349,7 @@ export function ParsedDocumentPane({
             className="h-full max-h-none rounded-none"
             file={file}
             matchIds={matchIds}
+            evidenceRects={evidenceRects}
             objectId={objectId}
             onSelect={setSelectedBlockId}
             page={page}

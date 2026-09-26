@@ -37,7 +37,7 @@ describe("формирование mock-протокола из проверки
 
   it("создаёт снимок после обработки всех расхождений и открывает его", () => {
     render(
-      <MemoryRouter initialEntries={["/verification"]}>
+      <MemoryRouter initialEntries={["/verification?demo=1"]}>
         <Routes>
           <Route element={<VerificationPage />} path="/verification" />
           <Route element={<LocationProbe />} path="/protocols/:protocolId" />

@@ -24,6 +24,7 @@ import { DiscrepancyList } from "./components/DiscrepancyList";
 import { DocumentPane } from "./components/DocumentPane";
 import { ObjectVerificationWorkspace } from "./components/ObjectVerificationWorkspace";
 import { VerificationHeader } from "./components/VerificationHeader";
+import { VerificationObjectIndex } from "./components/VerificationObjectIndex";
 
 export function VerificationPage() {
   const [searchParams] = useSearchParams();
@@ -31,8 +32,10 @@ export function VerificationPage() {
 
   return objectId ? (
     <ObjectVerificationWorkspace key={objectId} objectId={objectId} />
-  ) : (
+  ) : searchParams.get("demo") === "1" ? (
     <DemoVerificationPage />
+  ) : (
+    <VerificationObjectIndex />
   );
 }
 

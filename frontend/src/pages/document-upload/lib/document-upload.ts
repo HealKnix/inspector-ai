@@ -1,6 +1,7 @@
 import type { ClassificationFile } from "@/api/types/classification";
 import type { ObjectFile } from "@/api/types/objects";
 import type { ParsingFile } from "@/api/types/parsing";
+import { metadataIssueMessage, sourceIssueMessage } from "./review-status";
 
 import {
   DocumentStage,
@@ -126,9 +127,40 @@ export function remoteUploadRow(
   classification: ClassificationFile | undefined,
   declaredStage: DocumentStage | null,
 ): UploadRow {
-  const detectedStage = classification?.result?.stage ?? null;
-  const needsReview = classification?.result?.needs_review === true;
-  const reasons = classification?.result?.reasons ?? [];
+  // A result from a previous run/artifact must never dismiss a current question.
+  const currentClassification =
+    classification &&
+    parsing &&
+    classification.file_id === parsing.file_id &&
+    classification.process_id === parsing.process_id &&
+    classification.run_id === parsing.run_id &&
+    classification.artifact_id === parsing.artifact_id
+      ? classification
+      : undefined;
+  const review = currentClassification?.review;
+  const reviewedStage = review?.fields.stage;
+  const detectedStage =
+    reviewedStage === "PD" || reviewedStage === "RD" || reviewedStage === "ID"
+      ? reviewedStage
+      : (currentClassification?.result?.stage ?? null);
+  const reasons =
+    review?.reasons ?? currentClassification?.result?.reasons ?? [];
+  const sourceIssues =
+    review?.source_issues ??
+    reasons.filter(
+      (reason) =>
+        reason.startsWith("unsupported_") ||
+        [
+          "partial_parse_requires_review",
+          "possible_mixed_document",
+          "source_unreadable",
+          "source_integrity_mismatch",
+        ].includes(reason),
+    );
+  const needsReview =
+    sourceIssues.length > 0 ||
+    (review?.needs_review ??
+      currentClassification?.result?.needs_review === true);
 
   let status: UploadRowStatus = UploadRowStatus.ACCEPTED;
   let statusDetail: string | null = null;
@@ -147,22 +179,24 @@ export function remoteUploadRow(
         : `${parsing.pages_completed} / ${parsing.pages_total} стр.`;
   } else if (parsing?.state === "failed") {
     status = UploadRowStatus.FAILED;
-    statusDetail = parsing.error_code ?? "Ошибка обработки";
+    statusDetail = "Не удалось прочитать файл. Повторите обработку.";
     if (parsing.can_retry) retryKind = UploadRetryKind.PARSING;
   } else if (parsing?.state === "succeeded") {
     if (
-      !classification ||
-      classification.state === "queued" ||
-      classification.state === "processing"
+      !currentClassification ||
+      currentClassification.state === "queued" ||
+      currentClassification.state === "processing"
     ) {
       status = UploadRowStatus.CLASSIFYING;
-    } else if (classification.state === "failed") {
+    } else if (currentClassification.state === "failed") {
       status = UploadRowStatus.FAILED;
-      statusDetail = classification.error_code ?? "Ошибка классификации";
-      if (classification.can_retry) retryKind = UploadRetryKind.CLASSIFICATION;
+      statusDetail = "Не удалось определить сведения. Повторите обработку.";
+      if (currentClassification.can_retry)
+        retryKind = UploadRetryKind.CLASSIFICATION;
     } else if (needsReview) {
       status = UploadRowStatus.NEEDS_REVIEW;
-      statusDetail = reasons.join(" ") || null;
+      statusDetail =
+        sourceIssueMessage(sourceIssues) ?? metadataIssueMessage(reasons);
     } else {
       status = UploadRowStatus.READY;
     }
@@ -181,7 +215,15 @@ export function remoteUploadRow(
     pageCount: parsing?.pages_total ?? null,
     declaredStage,
     detectedStage,
-    documentKind: classification?.result?.document_kind ?? null,
+    documentKind:
+      review?.fields.title ||
+      review?.fields.kind_code ||
+      currentClassification?.result?.document_kind ||
+      null,
+    documentCode: review?.fields.code ?? null,
+    revisionLabel: review?.fields.revision_label ?? null,
+    reviewed: Boolean(review?.confirmed_fields.length) && !review?.needs_review,
+    sourceIssue: sourceIssues.length > 0,
     stage: detectedStage ?? declaredStage,
     stageMismatch: Boolean(
       declaredStage && detectedStage && declaredStage !== detectedStage,

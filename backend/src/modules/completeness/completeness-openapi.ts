@@ -286,6 +286,7 @@ const requirementOutcome: SchemaObject = {
           file_id: uuid,
           document_id: uuid,
           revision_id: uuid,
+          revision_ids: { type: "array", items: uuid },
         },
       },
     },
@@ -359,11 +360,16 @@ export const completenessResultSchema: SchemaObject = {
   properties: {
     schema_version: { type: "integer", enum: [1] },
     object_id: uuid,
-    process_id: uuid,
-    run_id: uuid,
+    process_id: { ...uuid, nullable: true },
+    run_id: { ...uuid, nullable: true },
+    resolved_input_hash: {
+      type: "string",
+      nullable: true,
+      pattern: "^[0-9a-f]{64}$",
+    },
     package_version: { type: "integer", minimum: 1, nullable: true },
     framework_version: { type: "integer", minimum: 1, nullable: true },
-    evaluated_at: { type: "string", format: "date-time" },
+    evaluated_at: { type: "string", format: "date-time", nullable: true },
     evaluation,
     evaluation_absent_reason: {
       type: "string",

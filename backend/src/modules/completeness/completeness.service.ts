@@ -5,44 +5,26 @@ import {
 } from "@nestjs/common";
 import type { Prisma } from "../../generated/prisma/client.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
-import type { ClassificationResult } from "../identification/classification-contract.js";
+import type { IdentificationSnapshot } from "../identification/identification-contract.js";
 import {
   ObjectAccessService,
   type AuditContext,
 } from "../objects/object-access.service.js";
 import { ArtifactStorageService } from "../parsing/artifact-storage.service.js";
 import type {
-  DocumentFact,
   ExpectedRequirement,
   RequirementQuantity,
   Stage,
 } from "./completeness-contract.js";
-import { evaluate, isApplicable } from "./completeness-engine.js";
-import { extractListItems, normalizeItemKey } from "./completeness-extract.js";
-
-// Отображение document_kind классификатора (свободная строка слоя ID) в коды
-// словаря каркаса. Несколько кодов = неоднозначность → kind_ambiguous.
-// Метки, совпадающие с каноническими названиями словаря каркаса, добавляются
-// из утверждённого набора; здесь остаются только перекрытия и неоднозначные
-// метки, которых в словаре нет.
-const DOCUMENT_KIND_CODES: Record<string, string[]> = {
-  "Исполнительная схема": ["GEO_SCHEME", "NET_SCHEME", "EXEC_DRAWING"],
-  "Реестр исполнительной документации": [],
-};
+import {
+  documentFactsFromSnapshot,
+  evaluate,
+  isApplicable,
+} from "./completeness-engine.js";
+import { extractListItems } from "./completeness-extract.js";
 
 function toApiQuantity(quantity: RequirementQuantity) {
   return { min: quantity.min, per: quantity.per ? "list_item" : "object" };
-}
-
-interface ClassificationRow {
-  file_id: string;
-  sha256: string;
-  result: ClassificationResult | null;
-  needs_review_source: boolean;
-  storage_key: string;
-  artifact_sha256: string;
-  source_sha256: string;
-  pipeline_fingerprint: string;
 }
 
 @Injectable()
@@ -528,124 +510,131 @@ export class CompletenessService {
     });
   }
 
-  private async facts(
+  /**
+   * Internal publication hook. The caller holds the object's mutation lock.
+   * Reuses a result only for the same Run, ID selection and confirmed package.
+   */
+  async evaluateForRun(
     tx: Prisma.TransactionClient,
-    objectId: string,
-    listItems: { itemKey: string }[],
-    runId?: string,
+    runId: string,
+    actor?: AuditContext,
   ) {
-    const rows = await tx.$queryRaw<ClassificationRow[]>`
-      SELECT f.id AS file_id, f.sha256, c.result,
-        COALESCE((c.result->>'needs_review')::boolean, false) AS needs_review_source,
-        a.storage_key, a.artifact_sha256, a.source_sha256, a.pipeline_fingerprint
-      FROM processes p
-      JOIN runs r ON r.process_id = p.id AND r.version = p.version
-      JOIN run_inputs ri ON ri.run_id = r.id
-      JOIN files f ON f.id = ri.file_id
-      JOIN LATERAL (SELECT * FROM parsing_tasks pt WHERE pt.run_id = r.id
-        AND pt.file_id = f.id ORDER BY cycle DESC LIMIT 1) t
-        ON t.state = 'succeeded'
-      JOIN parse_artifacts a ON a.task_id = t.id
-      LEFT JOIN LATERAL (SELECT * FROM classification_tasks ct
-        WHERE ct.artifact_id = a.id ORDER BY cycle DESC LIMIT 1) c ON true
-      WHERE p.object_id = ${objectId}::uuid
-        AND (${runId ?? null}::uuid IS NULL OR r.id = ${runId ?? null}::uuid)
-        AND f.corrupted_at IS NULL`;
-    const kindCodes = await this.kindCodeMap(tx);
-    // Пункты короче 4 символов слишком общие для текстового совпадения —
-    // их покрытие разрешается только вручную.
-    const targets = listItems
-      .map((item) => normalizeItemKey(item.itemKey))
-      .filter((key) => key.length >= 4);
-    const facts: DocumentFact[] = [];
-    for (const row of rows)
-      facts.push(
-        this.toFact(row, kindCodes, await this.coveredItems(row, targets)),
-      );
-    return facts;
-  }
-
-  // Покрытие пунктов перечня документом: нормализованный текст артефакта
-  // содержит нормализованный пункт. Нечитаемый артефакт — без покрытий.
-  private async coveredItems(
-    row: Pick<
-      ClassificationRow,
-      | "storage_key"
-      | "artifact_sha256"
-      | "source_sha256"
-      | "pipeline_fingerprint"
-    >,
-    targets: string[],
-  ) {
-    const covered = new Set<string>();
-    if (!targets.length) return covered;
-    try {
-      const artifact = await this.artifacts.read(
-        row.storage_key,
-        row.artifact_sha256,
-        row.source_sha256,
-        row.pipeline_fingerprint,
-        "stored",
-      );
-      const text = normalizeItemKey(
-        artifact.pages
-          .flatMap((page) =>
-            page.blocks.map((block) => block.normalized_text || block.raw_text),
-          )
-          .join(" "),
-      );
-      for (const key of targets) if (text.includes(key)) covered.add(key);
-    } catch {
-      // Повреждённый артефакт не должен ломать оценку.
-    }
-    return covered;
-  }
-
-  // Метка → коды: статичные перекрытия плюс канонические названия видов
-  // утверждённого каркаса (pd_section | rd_mark | rd_component | id_kind).
-  private async kindCodeMap(tx: Prisma.TransactionClient) {
-    const set = await tx.frameworkSet.findFirst({
-      where: { status: "approved" },
-      orderBy: { version: "desc" },
-      include: { vocabularies: true },
+    const run = await tx.run.findUnique({
+      where: { id: runId },
+      include: { process: true },
     });
-    const map: Record<string, string[]> = { ...DOCUMENT_KIND_CODES };
-    for (const entry of set?.vocabularies ?? []) {
-      if (
-        !["pd_section", "rd_mark", "rd_component", "id_kind"].includes(
-          entry.kind,
-        ) ||
-        entry.code === "SET"
-      )
-        continue;
-      if (!(entry.title in map)) map[entry.title] = [entry.code];
-    }
-    return map;
-  }
-
-  private toFact(
-    row: ClassificationRow,
-    kindCodes: Record<string, string[]>,
-    coveredItems: Set<string>,
-  ): DocumentFact {
-    const result = row.result;
-    const kindText = result?.document_kind ?? null;
-    // Ручное разрешение инспектором несёт код словаря напрямую и не зависит
-    // от словаря меток классификатора.
-    const codes = result?.kind_code
-      ? [result.kind_code]
-      : kindText
-        ? (kindCodes[kindText] ?? [])
-        : [];
-    return {
-      file_id: row.file_id,
-      sha256: row.sha256,
-      stage: result?.stage ?? null,
-      kind_code: codes.length === 1 ? (codes[0] ?? null) : null,
-      kind_ambiguous: codes.length > 1,
-      needs_review: row.needs_review_source || Boolean(result?.needs_review),
-      covered_items: [...coveredItems],
-    };
+    if (!run || run.version !== run.process.version) return null;
+    const selection = await tx.resolvedInputSnapshot.findFirst({
+      where: {
+        runId,
+        objectId: run.objectId,
+        inputManifestHash: run.inputManifestHash,
+      },
+      orderBy: { version: "desc" },
+    });
+    if (!selection) return null;
+    const pack = await tx.packageVersion.findFirst({
+      where: { objectId: run.objectId, status: "confirmed" },
+      orderBy: { version: "desc" },
+      include: { requirements: true, frameworkSet: true },
+    });
+    const author = actor?.userId ?? pack?.confirmedBy;
+    if (!pack || !author) return null;
+    const previous = await tx.completenessResult.findFirst({
+      where: {
+        runId,
+        packageVersionId: pack.id,
+        inputRefs: {
+          path: ["resolved_input_hash"],
+          equals: selection.resolvedInputHash,
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    if (previous)
+      return this.serializeResult(
+        previous,
+        previous.result,
+        pack.version,
+        pack.frameworkSet.version,
+        selection.resolvedInputHash,
+      );
+    const snapshot = selection.snapshot as unknown as IdentificationSnapshot;
+    if (
+      snapshot.schema_version !== 1 ||
+      !Array.isArray(snapshot.documents) ||
+      !Array.isArray(snapshot.contexts)
+    )
+      throw new ConflictException(
+        "Снимок идентификации несовместим — оценка невозможна",
+      );
+    const documents = documentFactsFromSnapshot(snapshot);
+    const requirements: ExpectedRequirement[] = pack.requirements.map(
+      (requirement) => ({
+        id: requirement.id,
+        code: requirement.code,
+        stage: requirement.stage as Stage,
+        kind_code: requirement.kindCode,
+        title: requirement.title,
+        scope: requirement.scope as ExpectedRequirement["scope"],
+        quantity: (requirement.quantity ?? {
+          min: 1,
+          per: null,
+        }) as unknown as RequirementQuantity,
+        alternatives:
+          (requirement.alternatives as ExpectedRequirement["alternatives"]) ??
+          null,
+        excluded: requirement.excluded,
+      }),
+    );
+    const evaluation = evaluate(requirements, documents);
+    const result = await tx.completenessResult.create({
+      data: {
+        objectId: run.objectId,
+        processId: run.processId,
+        runId,
+        packageVersionId: pack.id,
+        inputRefs: {
+          schema_version: 1,
+          input_manifest_hash: run.inputManifestHash,
+          resolved_input_hash: selection.resolvedInputHash,
+          resolved_input_snapshot_id: selection.id,
+          framework_set_id: pack.frameworkSetId,
+          framework_version: pack.frameworkSet.version,
+          package_version: pack.version,
+          documents: documents.length,
+          document_ids: documents.map((document) => document.document_id!),
+        },
+        result: evaluation as unknown as Prisma.InputJsonValue,
+        createdBy: author,
+      },
+    });
+    await tx.auditEvent.create({
+      data: {
+        userId: author,
+        requestId: actor?.requestId ?? selection.id,
+        ...(actor?.ip ? { ip: actor.ip } : {}),
+        objectId: run.objectId,
+        action: "completeness.evaluated",
+        details: {
+          schema_version: 1,
+          result_id: result.id,
+          run_id: runId,
+          resolved_input_hash: selection.resolvedInputHash,
+          package_version_id: pack.id,
+          package_version: pack.version,
+          scenario: evaluation.scenario,
+          counts: evaluation.counts,
+        },
+      },
+    });
+    return this.serializeResult(
+      result,
+      evaluation,
+      pack.version,
+      pack.frameworkSet.version,
+      selection.resolvedInputHash,
+    );
   }
 
   async evaluate(
@@ -656,85 +645,20 @@ export class CompletenessService {
     return this.prisma.$transaction(async (tx) => {
       await this.access.lock(tx, objectId);
       await this.access.requireAccess(tx, context.userId, objectId);
-      const pack = await tx.packageVersion.findFirst({
-        where: { objectId, status: "confirmed" },
-        orderBy: { version: "desc" },
-        include: {
-          requirements: true,
-          frameworkSet: true,
-          listItems: true,
-        },
+      const run = await tx.run.findFirst({
+        where: { objectId, ...(input.run_id ? { id: input.run_id } : {}) },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        include: { process: true },
       });
-      if (!pack)
-        throw new ConflictException(
-          "Ожидаемый состав не подтверждён — оценка невозможна",
-        );
-      const run = input.run_id
-        ? await tx.run.findFirst({
-            where: { id: input.run_id, objectId },
-            include: { process: true },
-          })
-        : await tx.run.findFirst({
-            where: { objectId },
-            orderBy: [{ processId: "desc" }, { version: "desc" }],
-            include: { process: true },
-          });
       if (!run) throw new NotFoundException("Запуск обработки недоступен");
-      const documents = await this.facts(tx, objectId, pack.listItems, run.id);
-      const requirements: ExpectedRequirement[] = pack.requirements.map(
-        (requirement) => ({
-          id: requirement.id,
-          code: requirement.code,
-          stage: requirement.stage as Stage,
-          kind_code: requirement.kindCode,
-          title: requirement.title,
-          scope: requirement.scope as ExpectedRequirement["scope"],
-          quantity: (requirement.quantity ?? {
-            min: 1,
-            per: null,
-          }) as unknown as RequirementQuantity,
-          alternatives:
-            (requirement.alternatives as ExpectedRequirement["alternatives"]) ??
-            null,
-          excluded: requirement.excluded,
-        }),
-      );
-      const evaluation = evaluate(requirements, documents);
-      const result = await tx.completenessResult.create({
-        data: {
-          objectId,
-          processId: run.processId,
-          runId: run.id,
-          packageVersionId: pack.id,
-          inputRefs: {
-            schema_version: 1,
-            input_manifest_hash: run.inputManifestHash,
-            framework_set_id: pack.frameworkSetId,
-            framework_version: pack.frameworkSet.version,
-            package_version: pack.version,
-            documents: documents.length,
-          },
-          result: evaluation as unknown as Prisma.InputJsonValue,
-          createdBy: context.userId,
-        },
-      });
-      await tx.auditEvent.create({
-        data: {
-          ...context,
-          objectId,
-          action: "completeness.evaluated",
-          details: {
-            schema_version: 1,
-            result_id: result.id,
-            run_id: run.id,
-            package_version_id: pack.id,
-            package_version: pack.version,
-            scenario: evaluation.scenario,
-            counts: evaluation.counts,
-          },
-        },
-      });
-      return this.serializeResult(result, evaluation, run, pack.version);
+      if (run.version !== run.process.version)
+        throw new ConflictException("Исторический запуск нельзя пересчитать");
+      const result = await this.evaluateForRun(tx, run.id, context);
+      if (!result)
+        throw new ConflictException(
+          "Нужны подтверждённый состав и готовый снимок идентификации этого запуска",
+        );
+      return result;
     });
   }
 
@@ -747,17 +671,18 @@ export class CompletenessService {
       createdAt: Date;
     },
     evaluation: unknown,
-    run: { id: string; processId: string },
-    packageVersion: number | null,
+    packageVersion: number,
+    frameworkVersion: number,
+    resolvedInputHash: string,
   ) {
-    void run;
     return {
       schema_version: 1,
       object_id: result.objectId,
       process_id: result.processId,
       run_id: result.runId,
+      resolved_input_hash: resolvedInputHash,
       package_version: packageVersion,
-      framework_version: null,
+      framework_version: frameworkVersion,
       evaluated_at: result.createdAt.toISOString(),
       evaluation,
       evaluation_absent_reason: null,
@@ -768,34 +693,68 @@ export class CompletenessService {
     return this.prisma.$transaction(async (tx) => {
       await this.access.lock(tx, objectId);
       await this.access.requireAccess(tx, userId, objectId);
-      const result = await tx.completenessResult.findFirst({
-        where: { objectId, ...(runId ? { runId } : {}) },
-        orderBy: { createdAt: "desc" },
-        include: { packageVersion: { include: { frameworkSet: true } } },
+      const run = await tx.run.findFirst({
+        where: { objectId, ...(runId ? { id: runId } : {}) },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        include: { process: true },
       });
-      if (!result)
+      if (runId && !run)
+        throw new NotFoundException("Запуск обработки недоступен");
+      const selection = run
+        ? await tx.resolvedInputSnapshot.findFirst({
+            where: {
+              runId: run.id,
+              objectId,
+              inputManifestHash: run.inputManifestHash,
+            },
+            orderBy: { version: "desc" },
+          })
+        : null;
+      const currentPackage =
+        run?.version === run?.process.version
+          ? await tx.packageVersion.findFirst({
+              where: { objectId, status: "confirmed" },
+              orderBy: { version: "desc" },
+            })
+          : null;
+      const result =
+        selection && run
+          ? await tx.completenessResult.findFirst({
+              where: {
+                objectId,
+                runId: run.id,
+                ...(currentPackage
+                  ? { packageVersionId: currentPackage.id }
+                  : {}),
+                inputRefs: {
+                  path: ["resolved_input_hash"],
+                  equals: selection.resolvedInputHash,
+                },
+              },
+              orderBy: { createdAt: "desc" },
+              include: { packageVersion: { include: { frameworkSet: true } } },
+            })
+          : null;
+      if (!result || !selection)
         return {
           schema_version: 1,
           object_id: objectId,
-          process_id: null,
-          run_id: runId ?? null,
+          process_id: run?.processId ?? null,
+          run_id: run?.id ?? runId ?? null,
+          resolved_input_hash: selection?.resolvedInputHash ?? null,
           package_version: null,
           framework_version: null,
           evaluated_at: null,
           evaluation: null,
           evaluation_absent_reason: "not_evaluated",
         };
-      return {
-        schema_version: 1,
-        object_id: objectId,
-        process_id: result.processId,
-        run_id: result.runId,
-        package_version: result.packageVersion.version,
-        framework_version: result.packageVersion.frameworkSet.version,
-        evaluated_at: result.createdAt.toISOString(),
-        evaluation: result.result,
-        evaluation_absent_reason: null,
-      };
+      return this.serializeResult(
+        result,
+        result.result,
+        result.packageVersion.version,
+        result.packageVersion.frameworkSet.version,
+        selection.resolvedInputHash,
+      );
     });
   }
 }

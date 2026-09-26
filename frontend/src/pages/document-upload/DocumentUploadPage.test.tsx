@@ -1,3 +1,7 @@
+import { getExtractions } from "@/api/endpoints/extraction";
+import { getIdentification } from "@/api/endpoints/identification";
+import { generateProtocol } from "@/api/endpoints/verification";
+import { idRegistry } from "@/pages/identification/lib/identification-test-fixtures";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   fireEvent,
@@ -6,7 +10,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 import {
   getClassificationStatus,
@@ -60,6 +64,11 @@ vi.mock("@/api/endpoints/completeness", () => ({
   evaluateCompleteness: vi.fn(),
   getCompletenessResult: vi.fn(),
 }));
+vi.mock("@/api/endpoints/identification", () => ({
+  getIdentification: vi.fn(),
+}));
+vi.mock("@/api/endpoints/extraction", () => ({ getExtractions: vi.fn() }));
+vi.mock("@/api/endpoints/verification", () => ({ generateProtocol: vi.fn() }));
 
 const object: ConstructionObject = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -191,6 +200,14 @@ const classificationStatus: ClassificationStatus = {
   ],
 };
 
+function Location() {
+  return (
+    <p data-testid="location">
+      {useLocation().pathname}
+      {useLocation().search}
+    </p>
+  );
+}
 function mount() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -203,6 +220,8 @@ function mount() {
             element={<DocumentUploadPage />}
             path={routeNames.OBJECT_UPLOAD(":objectId")}
           />
+          <Route path="/verification" element={<Location />} />
+          <Route path="/objects/:objectId/documents" element={<Location />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -221,6 +240,30 @@ beforeEach(() => {
   vi.resetAllMocks();
   window.localStorage.clear();
   vi.mocked(getObject).mockResolvedValue(object);
+  vi.mocked(getIdentification).mockResolvedValue({
+    ...idRegistry,
+    object_id: object.id,
+    process_id: projectFile.process_id,
+    run_id: projectFile.run_id,
+    current_run_id: projectFile.run_id,
+  });
+  vi.mocked(getExtractions).mockResolvedValue({
+    schema_version: 1,
+    active: false,
+    poll_after_ms: 2000,
+    ruleset_fingerprint: null,
+    items: [],
+    tasks: [],
+  });
+  vi.mocked(generateProtocol).mockResolvedValue({
+    schema_version: 1,
+    object_id: object.id,
+    protocol_id: object.id,
+    protocol_version: 1,
+    status: "active",
+    findings: 132,
+    reused: false,
+  });
   vi.mocked(listFiles).mockResolvedValue({
     items: [projectFile, reviewFile],
     total: 2,
@@ -290,7 +333,7 @@ describe("DocumentUploadPage", () => {
     expect(screen.getAllByText("Определено").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Требует уточнения").length).toBeGreaterThan(0);
     expect(
-      screen.getAllByText("Низкая уверенность классификатора").length,
+      screen.getAllByText("Подтвердите сведения в карточке документа.").length,
     ).toBeGreaterThan(0);
     expect(await screen.findByText("1 файлов готовы")).toBeInTheDocument();
     expect(
@@ -324,7 +367,7 @@ describe("DocumentUploadPage", () => {
       0,
     );
     expect(
-      await screen.findByText(/Эталонный состав не задан/),
+      await screen.findByText(/Состав комплекта ещё не задан/),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Загрузить документы" }),
@@ -460,5 +503,134 @@ describe("DocumentUploadPage", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Нет доступа к объекту",
     );
+  });
+
+  it("запускает проверку доступного комплекта и открывает экран результатов", async () => {
+    mount();
+    const button = await screen.findByRole("button", {
+      name: "Проверить документы",
+    });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+    expect(await screen.findByTestId("location")).toHaveTextContent(
+      `/verification?objectId=${object.id}`,
+    );
+    expect(generateProtocol).toHaveBeenCalledWith(object.id);
+  });
+
+  it("показывает сохранённое подтверждение и открывает карточку по нажатию статуса", async () => {
+    vi.mocked(getClassificationStatus).mockResolvedValue({
+      ...classificationStatus,
+      items: classificationStatus.items.map((file) => ({
+        ...file,
+        review: {
+          document_id: object.id,
+          revision_id: object.id,
+          card_version: 2,
+          resolved_input_hash: idRegistry.resolved_input_hash!,
+          fields: { stage: "RD", code: "Синтетический шифр" },
+          confirmed_fields: ["stage"],
+          needs_review: false,
+          reasons: [],
+          source_issues: [],
+        },
+      })),
+    });
+    mount();
+    await waitFor(() => expect(getClassificationStatus).toHaveBeenCalled());
+    await waitFor(
+      () =>
+        expect(
+          screen.getAllByText("Проверено инспектором").length,
+        ).toBeGreaterThan(0),
+      { timeout: 5000 },
+    );
+    const buttons = await screen.findAllByRole(
+      "button",
+      {
+        name: `Проверено инспектором: ${reviewFile.original_name}`,
+      },
+      { timeout: 5000 },
+    );
+    fireEvent.click(buttons[0]!);
+    expect(await screen.findByTestId("location")).toHaveTextContent(
+      `fileId=${reviewFile.id}`,
+    );
+    expect(generateProtocol).not.toHaveBeenCalled();
+  });
+
+  it("не запускает проверку пока текущие документы обрабатываются", async () => {
+    vi.mocked(getExtractions).mockResolvedValue({
+      schema_version: 1,
+      active: true,
+      poll_after_ms: 2000,
+      ruleset_fingerprint: null,
+      items: [],
+      tasks: [],
+    });
+    mount();
+    expect(
+      await screen.findByRole("button", { name: "Документы обрабатываются…" }),
+    ).toBeDisabled();
+    expect(generateProtocol).not.toHaveBeenCalled();
+  });
+
+  it("сохраняет видимое подтверждение реквизитов рядом с предупреждением о файле", async () => {
+    vi.mocked(getClassificationStatus).mockResolvedValue({
+      ...classificationStatus,
+      items: classificationStatus.items.map((file) => ({
+        ...file,
+        review: {
+          document_id: object.id,
+          revision_id: object.id,
+          card_version: 2,
+          resolved_input_hash: idRegistry.resolved_input_hash!,
+          fields: { stage: "RD" },
+          confirmed_fields: ["stage"],
+          needs_review: false,
+          reasons: [],
+          source_issues: ["partial_parse_requires_review"],
+        },
+      })),
+    });
+    mount();
+    await waitFor(() => expect(getClassificationStatus).toHaveBeenCalled());
+    expect(
+      (
+        await screen.findAllByText(
+          "Реквизиты подтверждены",
+          {},
+          { timeout: 5000 },
+        )
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("button", {
+        name: `Проверьте файл: ${reviewFile.original_name}`,
+      }).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("Часть файла не прочитана. Проверьте оригинал.")
+        .length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "Откройте отмеченные документы и проверьте указанные вопросы.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("2 требуют внимания")).toBeInTheDocument();
+  });
+
+  it("не использует исторический запуск для новой проверки", async () => {
+    vi.mocked(getIdentification).mockResolvedValue({
+      ...idRegistry,
+      current: false,
+    });
+    mount();
+    const button = await screen.findByRole("button", {
+      name: "Проверить документы",
+    });
+    expect(button).toBeDisabled();
+    expect(generateProtocol).not.toHaveBeenCalled();
   });
 });

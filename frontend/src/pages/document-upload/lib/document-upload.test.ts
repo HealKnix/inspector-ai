@@ -208,6 +208,78 @@ describe("localUploadRow", () => {
 });
 
 describe("remoteUploadRow", () => {
+  const review = {
+    document_id: "66666666-6666-4666-8666-666666666666",
+    revision_id: "77777777-7777-4777-8777-777777777777",
+    card_version: 2,
+    resolved_input_hash: "a".repeat(64),
+    fields: { stage: "RD", code: "Синтетический шифр", revision_label: "2" },
+    confirmed_fields: ["stage"],
+    needs_review: false,
+    reasons: [],
+    source_issues: [],
+  };
+  it("uses the confirmed current metadata instead of a legacy review flag", () => {
+    const classification = createClassificationFile();
+    const row = remoteUploadRow(
+      createObjectFile(),
+      createParsingFile(),
+      {
+        ...classification,
+        result: {
+          ...classification.result!,
+          needs_review: true,
+          reasons: ["own_stage_cell"],
+        },
+        review,
+      },
+      null,
+    );
+    expect(row).toMatchObject({
+      status: UploadRowStatus.READY,
+      reviewed: true,
+      needsReview: false,
+      stage: "RD",
+      documentCode: "Синтетический шифр",
+      revisionLabel: "2",
+      statusDetail: null,
+    });
+  });
+  it("keeps source limitations actionable after metadata confirmation without leaking codes", () => {
+    const row = remoteUploadRow(
+      createObjectFile(),
+      createParsingFile(),
+      createClassificationFile({
+        review: { ...review, source_issues: ["partial_parse_requires_review"] },
+      }),
+      null,
+    );
+    expect(row).toMatchObject({
+      needsReview: true,
+      sourceIssue: true,
+      status: UploadRowStatus.NEEDS_REVIEW,
+      statusDetail: "Часть файла не прочитана. Проверьте оригинал.",
+    });
+  });
+  it.each(["run_id", "artifact_id"] as const)(
+    "ignores a confirmed result with a stale %s",
+    (field) => {
+      const row = remoteUploadRow(
+        createObjectFile(),
+        createParsingFile(),
+        createClassificationFile({
+          review,
+          [field]: "88888888-8888-4888-8888-888888888888",
+        }),
+        null,
+      );
+      expect(row).toMatchObject({
+        status: UploadRowStatus.CLASSIFYING,
+        reviewed: false,
+        documentCode: null,
+      });
+    },
+  );
   it("маппит файл без обработки как «принят»", () => {
     const row = remoteUploadRow(createObjectFile(), undefined, undefined, null);
 
@@ -260,7 +332,9 @@ describe("remoteUploadRow", () => {
     );
 
     expect(row.status).toBe(UploadRowStatus.FAILED);
-    expect(row.statusDetail).toBe("ocr_failed");
+    expect(row.statusDetail).toBe(
+      "Не удалось прочитать файл. Повторите обработку.",
+    );
     expect(row.retryKind).toBe(UploadRetryKind.PARSING);
   });
 
@@ -291,7 +365,9 @@ describe("remoteUploadRow", () => {
     );
     expect(needsReview.status).toBe(UploadRowStatus.NEEDS_REVIEW);
     expect(needsReview.needsReview).toBe(true);
-    expect(needsReview.statusDetail).toBe("Низкая уверенность");
+    expect(needsReview.statusDetail).toBe(
+      "Подтвердите сведения в карточке документа.",
+    );
 
     const failed = remoteUploadRow(
       file,

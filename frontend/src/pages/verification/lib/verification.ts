@@ -68,6 +68,7 @@ export function searchVerificationFindings(
       finding.id,
       finding.title,
       finding.description,
+      finding.contextLabel,
       finding.expectedEvidence.location,
       finding.expectedEvidence.excerpt,
       finding.expectedEvidence.value,

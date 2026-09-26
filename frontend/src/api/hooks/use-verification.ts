@@ -25,20 +25,39 @@ export function verificationErrorMessage(error: unknown) {
   return "Не удалось получить данные проверки. Повторите запрос.";
 }
 
-export function useProtocol(objectId: string, enabled = true) {
+export function useProtocol(
+  objectId: string,
+  enabled = true,
+  protocolId?: string,
+) {
   return useQuery({
-    queryKey: queryKeys.objects.protocol(objectId),
-    queryFn: ({ signal }) => getProtocol(objectId, signal),
+    queryKey: [
+      ...queryKeys.objects.protocol(objectId),
+      ...(protocolId ? [protocolId] : []),
+    ],
+    queryFn: ({ signal }) => getProtocol(objectId, signal, protocolId),
     enabled: enabled && Boolean(objectId),
     staleTime: 0,
     retry: (attempt, error) => !isPermanentError(error) && attempt < 2,
   });
 }
 
-export function useFindings(objectId: string, enabled = true) {
+export function useFindings(
+  objectId: string,
+  enabled = true,
+  protocolId?: string,
+) {
   return useQuery({
-    queryKey: queryKeys.objects.findings(objectId),
-    queryFn: ({ signal }) => listFindings(objectId, {}, signal),
+    queryKey: [
+      ...queryKeys.objects.findings(objectId),
+      ...(protocolId ? [protocolId] : []),
+    ],
+    queryFn: ({ signal }) =>
+      listFindings(
+        objectId,
+        protocolId ? { protocol_id: protocolId } : {},
+        signal,
+      ),
     enabled: enabled && Boolean(objectId),
     staleTime: 0,
     retry: (attempt, error) => !isPermanentError(error) && attempt < 2,

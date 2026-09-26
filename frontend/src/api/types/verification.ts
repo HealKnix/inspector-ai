@@ -36,6 +36,24 @@ const comparisonPairSchema = z.object({
   detail: z.string().nullable(),
 });
 
+const revisionReferenceSchema = z.object({
+  document_id: z.string(),
+  revision_id: z.string(),
+});
+
+export const comparisonContextSchema = z.object({
+  context_id: z.string(),
+  scope: z.string(),
+  works_period: z.object({
+    from: z.string().nullable(),
+    to: z.string().nullable(),
+  }),
+  reference: revisionReferenceSchema.nullable(),
+  actual: revisionReferenceSchema,
+  status: z.enum(["READY", "CLARIFICATION_REQUIRED"]),
+  blockers: z.array(z.string()),
+});
+
 export const groupVerdictSchema = z.object({
   engine: z.string(),
   status: z.enum([
@@ -54,6 +72,7 @@ export const groupVerdictSchema = z.object({
   pairs: z.array(comparisonPairSchema),
   warnings: z.array(z.string()),
   evaluated_at: z.string(),
+  context: comparisonContextSchema.nullish(),
 });
 
 export type GroupVerdict = z.infer<typeof groupVerdictSchema>;
@@ -68,6 +87,18 @@ export const findingItemSchema = z.object({
   reason_code: z.string().nullable(),
   comment: z.string().nullable(),
   decided_at: z.string().nullable(),
+  has_evidence: z.boolean().default(false),
+  evidence_preview: z
+    .object({
+      file_id: z.uuid(),
+      role: z.enum(["expected", "actual", "unknown"]),
+      value: z.union([z.number(), z.string()]).nullable(),
+      value_raw: z.string().nullable(),
+      unit: z.string().nullable(),
+      quote: z.string(),
+    })
+    .nullable()
+    .default(null),
   finding_version: z.number().int().positive(),
   gate_reasons: z.array(z.string()).nullable(),
   verdict: groupVerdictSchema.nullable(),
@@ -83,6 +114,8 @@ const evidenceFragmentSchema = z.object({
   blockId: z.string().nullable(),
   quote: z.string(),
   bbox: z.array(z.number()).nullable(),
+  artifactId: z.uuid().optional(),
+  structuralPath: z.string().nullable().optional(),
 });
 
 export type EvidenceFragment = z.infer<typeof evidenceFragmentSchema>;
@@ -90,6 +123,7 @@ export type EvidenceFragment = z.infer<typeof evidenceFragmentSchema>;
 const groupMemberSchema = z.object({
   extraction_id: z.uuid(),
   file_id: z.uuid(),
+  artifact_id: z.uuid().optional(),
   stage: z.string().nullable(),
   role: z.enum(["expected", "actual", "unknown"]),
   status: z.string(),
@@ -128,6 +162,11 @@ export const findingDetailSchema = findingItemSchema.extend({
   protocol_version: z.number().int(),
   members: z.array(groupMemberSchema),
   decisions: z.array(findingDecisionSchema),
+  evidence_absent_reason: z.string().nullable().optional(),
+  run_id: z.uuid().optional(),
+  resolved_input_hash: z.string().nullable().optional(),
+  context: comparisonContextSchema.nullish(),
+  selection_basis: z.unknown().optional(),
 });
 
 export type ApiFindingDetail = z.infer<typeof findingDetailSchema>;
@@ -146,12 +185,21 @@ const protocolVersionSchema = z.object({
   created_at: z.string(),
   finalized_at: z.string().nullable(),
   findings: z.number().int(),
+  parameters: z.number().int().nonnegative().nullable().optional(),
+  parameters_compared: z.number().int().nonnegative().nullable().optional(),
+  run_id: z.uuid().optional(),
+  resolved_input_hash: z.string().nullable().optional(),
+  is_current: z.boolean().optional(),
 });
 
 export const protocolResponseSchema = z.object({
   schema_version: z.literal(1),
   object_id: z.uuid(),
   process_status: z.string(),
+  current_run_id: z.uuid().nullable().optional(),
+  run_id: z.uuid().nullable().optional(),
+  is_current: z.boolean().optional(),
+  resolved_input_hash: z.string().nullable().optional(),
   protocol: protocolVersionSchema.nullable(),
   versions: z.array(protocolVersionSchema),
   protocol_absent_reason: z.string().nullable(),

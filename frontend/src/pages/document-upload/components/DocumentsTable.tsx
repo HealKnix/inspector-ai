@@ -9,7 +9,6 @@ import {
   type Key,
 } from "@heroui/react";
 
-import type { KindOptions } from "@/api/types/classification";
 import {
   DocumentStage,
   UploadDocumentFilter,
@@ -25,7 +24,6 @@ import { UploadIcon } from "@/components/UploadIcon";
 interface DocumentsTableProps {
   failedCount: number;
   filter: UploadDocumentFilter;
-  kindOptions: KindOptions | null;
   needsReviewCount: number;
   onAcceptDetectedStage: (fileId: string, stage: DocumentStage) => void;
   onChangeDeclaredStage: (clientFileId: string, stage: DocumentStage) => void;
@@ -33,11 +31,7 @@ interface DocumentsTableProps {
   onFilterChange: (filter: UploadDocumentFilter) => void;
   onQueryChange: (query: string) => void;
   onRemovePending: (clientFileId: string) => void;
-  onResolveKind: (
-    row: UploadRow,
-    kindCode: string,
-    stage: DocumentStage,
-  ) => void;
+  onIdentify: (row: UploadRow) => void;
   onRetry: (row: UploadRow) => void;
   onSelectedIdsChange: (selectedIds: Set<string>) => void;
   query: string;
@@ -148,13 +142,23 @@ const statusPresentation: Record<
   },
 };
 
-function StatusBadge({ row }: { row: UploadRow }) {
+function StatusBadge({ row, onOpen }: { row: UploadRow; onOpen: () => void }) {
   const presentation = statusPresentation[row.status];
+  const label = row.sourceIssue
+    ? "Проверьте файл"
+    : row.reviewed && row.status === UploadRowStatus.READY
+      ? "Проверено инспектором"
+      : presentation.label;
 
   return (
     <div className="flex flex-col gap-1">
-      <span
-        className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${presentation.className}`}
+      <Button
+        className={`h-auto min-h-7 w-fit min-w-0 gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${presentation.className}`}
+        variant="ghost"
+        size="sm"
+        isDisabled={!row.fileId}
+        onPress={onOpen}
+        aria-label={`${label}: ${row.name}`}
       >
         {row.status === UploadRowStatus.READY ? (
           <span className="bg-success text-success-foreground grid size-4 place-items-center rounded-full">
@@ -166,8 +170,11 @@ function StatusBadge({ row }: { row: UploadRow }) {
           row.status === UploadRowStatus.REJECTED ? (
           <span className="bg-danger size-2 rounded-full" />
         ) : null}
-        {presentation.label}
-      </span>
+        {label}
+      </Button>
+      {row.reviewed && row.sourceIssue ? (
+        <span className="text-success text-xs">Реквизиты подтверждены</span>
+      ) : null}
       {row.statusDetail ? (
         <span className="text-copy-muted max-w-56 truncate text-xs">
           {row.statusDetail}
@@ -235,33 +242,21 @@ function SelectionCheckbox({
 }
 
 interface RowActionsProps {
-  kindOptions: KindOptions | null;
   onAcceptDetectedStage: (fileId: string, stage: DocumentStage) => void;
   onChangeDeclaredStage: (clientFileId: string, stage: DocumentStage) => void;
   onDownload: (row: UploadRow) => void;
   onRemovePending: (clientFileId: string) => void;
-  onResolveKind: (
-    row: UploadRow,
-    kindCode: string,
-    stage: DocumentStage,
-  ) => void;
+  onIdentify: (row: UploadRow) => void;
   onRetry: (row: UploadRow) => void;
   row: UploadRow;
 }
 
-const documentStages = [
-  DocumentStage.PD,
-  DocumentStage.RD,
-  DocumentStage.ID,
-] as const;
-
 function RowActions({
-  kindOptions,
   onAcceptDetectedStage,
   onChangeDeclaredStage,
   onDownload,
   onRemovePending,
-  onResolveKind,
+  onIdentify,
   onRetry,
   row,
 }: RowActionsProps) {
@@ -269,18 +264,6 @@ function RowActions({
     row.origin === UploadRowOrigin.LOCAL &&
     row.status !== UploadRowStatus.UPLOADING &&
     row.status !== UploadRowStatus.ACCEPTED;
-  const canResolveKind =
-    row.origin === UploadRowOrigin.REMOTE &&
-    Boolean(row.fileId) &&
-    !row.integrityError &&
-    (row.status === UploadRowStatus.READY ||
-      row.status === UploadRowStatus.NEEDS_REVIEW) &&
-    kindOptions !== null;
-  const kindGroups = canResolveKind
-    ? (row.stage ? [row.stage] : documentStages).map(
-        (stage) => [stage, kindOptions[stage]] as const,
-      )
-    : [];
 
   return (
     <Popover>
@@ -383,38 +366,15 @@ function RowActions({
               Принять стадию «{stageLabels[row.detectedStage]}»
             </Button>
           ) : null}
-          {kindGroups.length > 0 ? (
-            <>
-              <p className="text-copy-muted border-border mt-1 border-t px-2.5 pt-2 pb-1 text-xs font-medium">
-                Вид документа{row.documentKind ? `: ${row.documentKind}` : ""}
-              </p>
-              <div className="max-h-56 overflow-y-auto">
-                {kindGroups.map(([stage, options]) => (
-                  <div key={stage}>
-                    {kindGroups.length > 1 ? (
-                      <p className="text-copy-muted px-2.5 pt-1.5 pb-0.5 text-xs">
-                        {stageLabels[stage]}
-                      </p>
-                    ) : null}
-                    {options.map((option) => (
-                      <Button
-                        className="h-auto w-full justify-start rounded-lg px-2 py-1.5 text-left whitespace-normal"
-                        key={option.code}
-                        onPress={() => onResolveKind(row, option.code, stage)}
-                        size="sm"
-                        variant={
-                          row.documentKind === option.title
-                            ? "secondary"
-                            : "ghost"
-                        }
-                      >
-                        {option.title}
-                      </Button>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </>
+          {row.fileId ? (
+            <Button
+              className="w-full justify-start rounded-lg"
+              variant="ghost"
+              size="sm"
+              onPress={() => onIdentify(row)}
+            >
+              Карточка документа и уточнения
+            </Button>
           ) : null}
           {isLocalPending ? (
             <Button
@@ -446,7 +406,6 @@ function RowActions({
 export function DocumentsTable({
   failedCount,
   filter,
-  kindOptions,
   needsReviewCount,
   onAcceptDetectedStage,
   onChangeDeclaredStage,
@@ -454,7 +413,7 @@ export function DocumentsTable({
   onFilterChange,
   onQueryChange,
   onRemovePending,
-  onResolveKind,
+  onIdentify,
   onRetry,
   onSelectedIdsChange,
   query,
@@ -506,12 +465,11 @@ export function DocumentsTable({
 
   const rowActions = (row: UploadRow) => (
     <RowActions
-      kindOptions={kindOptions}
       onAcceptDetectedStage={onAcceptDetectedStage}
       onChangeDeclaredStage={onChangeDeclaredStage}
       onDownload={onDownload}
       onRemovePending={onRemovePending}
-      onResolveKind={onResolveKind}
+      onIdentify={onIdentify}
       onRetry={onRetry}
       row={row}
     />
@@ -630,13 +588,13 @@ export function DocumentsTable({
                       </span>
                     </Table.Cell>
                     <Table.Cell className="text-copy-muted text-sm">
-                      —
+                      {row.documentCode ?? "—"}
                     </Table.Cell>
                     <Table.Cell className="text-copy-muted text-sm">
-                      —
+                      {row.revisionLabel ?? "—"}
                     </Table.Cell>
                     <Table.Cell>
-                      <StatusBadge row={row} />
+                      <StatusBadge row={row} onOpen={() => onIdentify(row)} />
                     </Table.Cell>
                     <Table.Cell>{rowActions(row)}</Table.Cell>
                   </Table.Row>
@@ -671,7 +629,7 @@ export function DocumentsTable({
                 <p className="truncate text-sm font-medium">{row.name}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <StageCell row={row} />
-                  <StatusBadge row={row} />
+                  <StatusBadge row={row} onOpen={() => onIdentify(row)} />
                 </div>
               </div>
               {rowActions(row)}

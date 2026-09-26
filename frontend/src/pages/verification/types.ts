@@ -95,10 +95,12 @@ export interface VerificationEvidence {
 }
 
 export interface VerificationFinding {
+  sourcePreview?: string;
   id: string;
   ordinal: number;
   title: string;
   description: string;
+  contextLabel?: string;
   uiMarker: VerificationUiMarker;
   findingStatus: FindingStatus;
   reviewPriority: ReviewPriority;
@@ -112,6 +114,7 @@ export interface VerificationFinding {
   verdictStatus?: string;
   /** row_version находки — оптимистичная блокировка решения через API. */
   findingVersion?: number;
+  statusLabel?: string;
   source: VerificationSource;
   isSynthetic: boolean;
 }

@@ -49,7 +49,10 @@ export class OutboxService {
             ? "inspector.documents.accepted"
             : event.eventType === "parsing.requested"
               ? "inspector.parsing.files"
-              : event.eventType === "classification.requested"
+              : [
+                    "classification.requested",
+                    "identification.requested",
+                  ].includes(event.eventType)
                 ? "inspector.classification.files"
                 : event.eventType === "extraction.requested"
                   ? "inspector.extraction.artifacts"

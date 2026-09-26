@@ -2,11 +2,11 @@ import { Injectable } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
 import type { ExtractionTask, Prisma } from "../../generated/prisma/client.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
-import type { ClassificationResult } from "../identification/classification-contract.js";
+import type { IdentificationSnapshot } from "../identification/identification-contract.js";
+import { identificationSources } from "../identification/identification-state.js";
 import { ObjectAccessService } from "../objects/object-access.service.js";
 import { ArtifactStorageService } from "../parsing/artifact-storage.service.js";
 import { validateComparisonSpec } from "./comparison-contract.js";
-import { evaluateGroup } from "./comparison-engine.js";
 import {
   validateExtractionPlan,
   type ExtractionOutcome,
@@ -16,6 +16,10 @@ import {
   rulesetFingerprint,
   type ApprovedRule,
 } from "./extraction-engine.js";
+import {
+  identifiedGroups,
+  type IdentifiedExtraction,
+} from "./identified-groups.js";
 
 export const EXTRACTION_QUEUE = "inspector.extraction.artifacts";
 
@@ -95,7 +99,16 @@ export class ExtractionJobsService {
       file.sha256 !== artifact.sourceSha256
     )
       return null;
-    return { artifact, task, file, process };
+    const snapshot = await tx.resolvedInputSnapshot.findFirst({
+      where: { runId: task.runId },
+      orderBy: { version: "desc" },
+    });
+    if (snapshot) {
+      const sources = await identificationSources(tx, task.runId);
+      if (!sources.ready || sources.fingerprint !== snapshot.sourceFingerprint)
+        return null;
+    }
+    return { artifact, task, file, process, snapshot };
   }
 
   async enqueue(tx: Prisma.TransactionClient, task: ExtractionTask) {
@@ -126,35 +139,22 @@ export class ExtractionJobsService {
         SELECT a.id FROM parse_artifacts a
         JOIN parsing_tasks t ON t.id=a.task_id JOIN runs r ON r.id=t.run_id
         JOIN processes p ON p.id=t.process_id JOIN files f ON f.id=t.file_id
-        LEFT JOIN LATERAL (SELECT fingerprint FROM extraction_tasks e WHERE e.artifact_id=a.id ORDER BY cycle DESC LIMIT 1) e ON true
+        JOIN LATERAL (SELECT resolved_input_hash FROM resolved_input_snapshots s WHERE s.run_id=r.id ORDER BY version DESC LIMIT 1) s ON true
+        LEFT JOIN LATERAL (SELECT fingerprint,resolved_input_hash FROM extraction_tasks e WHERE e.artifact_id=a.id ORDER BY cycle DESC LIMIT 1) e ON true
         WHERE t.state='succeeded' AND r.version=p.version AND p.status IN ('PENDING','PARSING','READY','VERIFYING')
           AND f.corrupted_at IS NULL AND a.source_sha256=f.sha256
           AND NOT EXISTS (SELECT 1 FROM parsing_tasks newer WHERE newer.run_id=t.run_id AND newer.file_id=t.file_id AND newer.cycle>t.cycle)
           AND (
-            e.fingerprint IS NULL OR e.fingerprint <> ${fingerprint}
-            OR EXISTS (
-              SELECT 1 FROM extraction_tasks lt
-              JOIN extractions x ON x.task_id = lt.id
-              JOIN LATERAL (
-                SELECT c.result->>'stage' AS stage
-                FROM classification_tasks c
-                WHERE c.artifact_id = a.id AND c.state = 'succeeded'
-                ORDER BY c.cycle DESC LIMIT 1
-              ) cls ON true
-              WHERE lt.artifact_id = a.id
-                AND lt.state = 'succeeded'
-                AND lt.cycle = (
-                  SELECT MAX(prev.cycle) FROM extraction_tasks prev
-                  WHERE prev.artifact_id = a.id AND prev.state = 'succeeded'
-                )
-                AND cls.stage IS DISTINCT FROM x.stage
-            )
+            e.fingerprint IS NULL OR e.fingerprint <> ${fingerprint} OR e.resolved_input_hash IS DISTINCT FROM s.resolved_input_hash
           )
         ORDER BY a.created_at LIMIT 25`;
       for (const { id } of missing) {
         await this.prisma.$transaction(async (tx) => {
           const context = await this.current(tx, id);
-          if (!context || !ACTIVE_STATUSES.includes(context.process.status))
+          if (
+            !context?.snapshot ||
+            !ACTIVE_STATUSES.includes(context.process.status)
+          )
             return;
           const previous = await tx.extractionTask.findFirst({
             where: { artifactId: id },
@@ -163,7 +163,10 @@ export class ExtractionJobsService {
           // An in-flight cycle with the current fingerprint already reads the
           // fresh stage at persist time; only a finished divergent one needs
           // a follow-up cycle.
-          if (previous?.fingerprint === fingerprint) {
+          if (
+            previous?.fingerprint === fingerprint &&
+            previous.resolvedInputHash === context.snapshot.resolvedInputHash
+          ) {
             const terminal =
               previous.state === "succeeded" || previous.state === "failed";
             if (!terminal || !(await this.stageDiverged(tx, id))) return;
@@ -173,6 +176,7 @@ export class ExtractionJobsService {
               artifactId: id,
               cycle: (previous?.cycle ?? 0) + 1,
               fingerprint,
+              resolvedInputHash: context.snapshot.resolvedInputHash,
             },
           });
           await this.enqueue(tx, next);
@@ -217,6 +221,7 @@ export class ExtractionJobsService {
           return;
         if (
           !context ||
+          task.resolvedInputHash !== context.snapshot?.resolvedInputHash ||
           latest?.id !== task.id ||
           task.fingerprint !==
             rulesetFingerprint(await this.approvedRules(tx)) ||
@@ -241,12 +246,25 @@ export class ExtractionJobsService {
     tx: Prisma.TransactionClient,
     artifactId: string,
   ): Promise<string | null> {
-    const classified = await tx.classificationTask.findFirst({
-      where: { artifactId, state: "succeeded" },
-      orderBy: { cycle: "desc" },
+    const artifact = await tx.parseArtifact.findUnique({
+      where: { id: artifactId },
+      include: { task: true },
     });
-    const result = classified?.result as ClassificationResult | null;
-    return result?.stage ?? null;
+    const snapshot = artifact
+      ? await tx.resolvedInputSnapshot.findFirst({
+          where: { runId: artifact.task.runId },
+          orderBy: { version: "desc" },
+        })
+      : null;
+    const data = snapshot?.snapshot as unknown as
+      IdentificationSnapshot | undefined;
+    return (
+      data?.documents
+        .flatMap((doc) => doc.revisions)
+        .find((rev) =>
+          rev.representations.some((rep) => rep.artifact_id === artifactId),
+        )?.fields.stage ?? null
+    );
   }
 
   // Classification may land after extraction; the stored stage snapshot then
@@ -287,6 +305,7 @@ export class ExtractionJobsService {
       const rules = await this.approvedRules(tx);
       if (
         !context ||
+        task.resolvedInputHash !== context.snapshot?.resolvedInputHash ||
         latest?.id !== task.id ||
         task.fingerprint !== rulesetFingerprint(rules) ||
         !ACTIVE_STATUSES.includes(context.process.status)
@@ -356,6 +375,8 @@ export class ExtractionJobsService {
         return;
       if (
         !current ||
+        task.resolvedInputHash !== current.snapshot?.resolvedInputHash ||
+        task.fingerprint !== rulesetFingerprint(await this.approvedRules(tx)) ||
         latest?.id !== owned.id ||
         !ACTIVE_STATUSES.includes(current.process.status)
       ) {
@@ -438,6 +459,10 @@ export class ExtractionJobsService {
       await this.rebuildGroups(tx, {
         objectId: context.task.objectId,
         processId: context.task.processId,
+        runId: context.task.runId,
+        resolvedInputHash: owned.resolvedInputHash!,
+        snapshot: current.snapshot
+          .snapshot as unknown as IdentificationSnapshot,
         rulesetHash: owned.fingerprint,
         parameterCodes: [
           ...new Set(outcomes.map((item) => item.parameter_code)),
@@ -471,11 +496,17 @@ export class ExtractionJobsService {
     scope: {
       objectId: string;
       processId: string;
+      runId: string;
+      resolvedInputHash: string;
+      snapshot: IdentificationSnapshot;
       rulesetHash: string;
       parameterCodes: string[];
       rules: ApprovedRule[];
     },
   ) {
+    const matrix = await tx.matrixImport.findFirst({
+      orderBy: { importedAt: "desc" },
+    });
     for (const parameterCode of scope.parameterCodes) {
       const rows = await tx.$queryRaw<
         {
@@ -501,56 +532,106 @@ export class ExtractionJobsService {
         ) latest ON latest.id = t.id
         WHERE e.object_id = ${scope.objectId}::uuid
           AND e.process_id = ${scope.processId}::uuid
+          AND e.run_id = ${scope.runId}::uuid
           AND e.parameter_code = ${parameterCode}
+          AND t.resolved_input_hash = ${scope.resolvedInputHash}
           AND t.fingerprint = ${scope.rulesetHash}`;
-      const members = rows.map((row) => ({
+      const fragments = await tx.evidenceFragment.findMany({
+        where: { extractionId: { in: rows.map((row) => row.id) } },
+        select: {
+          extractionId: true,
+          fileId: true,
+          artifactId: true,
+          pageNumber: true,
+          sheetLabel: true,
+          blockId: true,
+          tableId: true,
+          tableRow: true,
+          tableColumn: true,
+          quote: true,
+          bbox: true,
+          structuralPath: true,
+        },
+      });
+      const members: IdentifiedExtraction[] = rows.map((row) => ({
         extraction_id: row.id,
         file_id: row.file_id,
         artifact_id: row.artifact_id,
         stage: row.stage,
-        role:
-          row.stage === "PD"
-            ? ("expected" as const)
-            : row.stage === null
-              ? ("unknown" as const)
-              : ("actual" as const),
+        role: "unknown",
         status: row.status,
         value: row.value as number | string | null,
         value_raw: row.value_raw,
         unit: row.unit,
         rule_version_id: row.rule_version_id,
+        evidence: fragments.filter(
+          (fragment) => fragment.extractionId === row.id,
+        ),
       }));
       const rule = scope.rules.find(
         (item) => item.parameter_code === parameterCode,
       );
-      const verdict = evaluateGroup(members, rule?.comparison ?? null);
-      const verdictJson = JSON.parse(
-        JSON.stringify(verdict),
-      ) as Prisma.InputJsonValue;
-      await tx.evidenceGroup.upsert({
-        where: {
-          objectId_processId_parameterCode_scopeKey: {
+      const row = matrix
+        ? await tx.matrixRow.findFirst({
+            where: { importId: matrix.id, parameterCode },
+          })
+        : null;
+      const allowedStages = (
+        [
+          ["PD", row?.sourcePd],
+          ["RD", row?.sourceRd],
+          ["ID", row?.sourceId],
+        ] as const
+      )
+        .filter(([, source]) => Boolean(source))
+        .map(([stage]) => stage);
+      for (const group of identifiedGroups(
+        scope.snapshot,
+        members,
+        rule?.comparison ?? null,
+        allowedStages,
+      )) {
+        // Append-only versions. The object lock serializes concurrent completions.
+        const exists = await tx.evidenceGroup.findFirst({
+          where: {
+            runId: scope.runId,
+            resolvedInputHash: scope.resolvedInputHash,
+            parameterCode,
+            contextKey: group.contextKey,
+            contentHash: group.contentHash,
+          },
+        });
+        if (exists) continue;
+        const previous = await tx.evidenceGroup.findFirst({
+          where: {
+            runId: scope.runId,
+            resolvedInputHash: scope.resolvedInputHash,
+            parameterCode,
+            contextKey: group.contextKey,
+          },
+          orderBy: { version: "desc" },
+        });
+        await tx.evidenceGroup.create({
+          data: {
+            version: (previous?.version ?? 0) + 1,
             objectId: scope.objectId,
             processId: scope.processId,
+            runId: scope.runId,
+            resolvedInputHash: scope.resolvedInputHash,
             parameterCode,
-            scopeKey: "",
+            scopeKey: group.scopeKey,
+            contextKey: group.contextKey,
+            contentHash: group.contentHash,
+            rulesetHash: scope.rulesetHash,
+            members: JSON.parse(
+              JSON.stringify(group.members),
+            ) as Prisma.InputJsonValue,
+            verdict: JSON.parse(
+              JSON.stringify(group.verdict),
+            ) as Prisma.InputJsonValue,
           },
-        },
-        create: {
-          objectId: scope.objectId,
-          processId: scope.processId,
-          parameterCode,
-          scopeKey: "",
-          rulesetHash: scope.rulesetHash,
-          members: JSON.parse(JSON.stringify(members)) as Prisma.InputJsonValue,
-          verdict: verdictJson,
-        },
-        update: {
-          rulesetHash: scope.rulesetHash,
-          members: JSON.parse(JSON.stringify(members)) as Prisma.InputJsonValue,
-          verdict: verdictJson,
-        },
-      });
+        });
+      }
     }
   }
 

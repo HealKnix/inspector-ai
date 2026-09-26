@@ -24,7 +24,10 @@ import {
 } from "@/pages/verification/types";
 
 import { VerificationIcon } from "./VerificationIcon";
-import { markerPresentation, statusLabels } from "./verification-presentation";
+import {
+  findingMarkerPresentation,
+  statusLabels,
+} from "./verification-presentation";
 
 type DetailTab =
   "comparison" | "rationale" | "documents" | "evidence" | "history";
@@ -116,7 +119,7 @@ function EvidenceValue({
   return (
     <div className="min-w-0">
       <p className="text-copy-muted text-xs">{label}</p>
-      <p className="text-danger mt-1 text-base font-semibold break-words">
+      <p className="text-foreground mt-1 text-base font-semibold break-words">
         {value}
       </p>
       <p className="text-copy-muted mt-1 text-xs break-words">{location}</p>
@@ -201,7 +204,7 @@ export function DiscrepancyDetails({
     tabState.findingId === finding.id ? tabState.tab : "comparison";
   const currentDraft =
     reviewDraft?.findingId === finding.id ? reviewDraft : null;
-  const marker = markerPresentation[finding.uiMarker];
+  const marker = findingMarkerPresentation(finding);
   const actions = decisionsDisabled
     ? []
     : availableActions(finding.findingStatus);
@@ -368,7 +371,12 @@ export function DiscrepancyDetails({
                   marker.dotClassName,
                 )}
               >
-                {finding.uiMarker === "formality" ? "i" : "!"}
+                {(!finding.isSynthetic &&
+                  finding.findingStatus !==
+                    FindingStatus.CONFIRMED_VIOLATION) ||
+                finding.uiMarker === "formality"
+                  ? "i"
+                  : "!"}
               </span>
               <h2
                 className="text-lg leading-6 font-semibold"
@@ -376,6 +384,11 @@ export function DiscrepancyDetails({
               >
                 {finding.title}
               </h2>
+              {finding.contextLabel ? (
+                <p className="text-copy-muted mt-1 text-sm">
+                  {finding.contextLabel}
+                </p>
+              ) : null}
               <span
                 className={cn(
                   "rounded-full px-2.5 py-1 text-xs font-medium",
@@ -385,7 +398,7 @@ export function DiscrepancyDetails({
                 {marker.label}
               </span>
               <span className="bg-surface-high text-foreground rounded-full px-2.5 py-1 text-xs">
-                {statusLabels[finding.findingStatus]}
+                {finding.statusLabel ?? statusLabels[finding.findingStatus]}
               </span>
             </div>
             <p className="text-copy-muted mt-2 max-w-3xl text-sm leading-5">
@@ -627,7 +640,7 @@ export function DiscrepancyDetails({
               <div className="bg-surface-high rounded-[16px] p-4">
                 <h3 className="text-sm font-semibold">Текущее решение</h3>
                 <p className="text-copy-muted mt-2 text-sm">
-                  {statusLabels[finding.findingStatus]}
+                  {finding.statusLabel ?? statusLabels[finding.findingStatus]}
                 </p>
                 {finding.decisionReason ? (
                   <p className="text-copy-muted mt-3 text-xs leading-5">

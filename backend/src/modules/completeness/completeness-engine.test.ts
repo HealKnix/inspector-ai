@@ -1,11 +1,161 @@
 import { describe, expect, it } from "vitest";
 import type {
+  IdentificationRevision,
+  IdentificationSnapshot,
+} from "../identification/identification-contract.js";
+import type {
   DocumentFact,
   ExpectedRequirement,
 } from "./completeness-contract.js";
-import { evaluate, parameterGate } from "./completeness-engine.js";
+import {
+  documentFactsFromSnapshot,
+  evaluate,
+  parameterGate,
+} from "./completeness-engine.js";
 
 let seq = 0;
+
+function snapshotRevision(id: string): IdentificationRevision {
+  return {
+    revision_id: id,
+    fields: { stage: "ID", kind_code: "AOSR", scope: "Устройство свай" },
+    candidates: [],
+    representations: [
+      {
+        file_id: "file",
+        artifact_id: "artifact",
+        artifact_sha256: "a",
+        source_sha256: "sha",
+        format: "PDF",
+        page_count: 1,
+      },
+    ],
+    approval: {
+      confirmed: true,
+      effective_from: "2026-01-01",
+      effective_to: null,
+      replaces_revision_id: null,
+      basis: "Синтетическое подтверждение",
+    },
+    blockers: [],
+  };
+}
+
+describe("completeness uses the selected logical documents", () => {
+  const snapshot = (
+    ...revisions: IdentificationRevision[]
+  ): IdentificationSnapshot => ({
+    schema_version: 1,
+    documents: [{ document_id: "logical-doc", card_version: 1, revisions }],
+    contexts: [],
+    blockers: [],
+  });
+  it("PDF and XML with different bytes count as one logical document", () => {
+    const revision = snapshotRevision("revision");
+    revision.representations.push({
+      ...revision.representations[0]!,
+      file_id: "xml",
+      artifact_id: "xml-artifact",
+      source_sha256: "different-xml-sha",
+      format: "XML",
+    });
+    const facts = documentFactsFromSnapshot(snapshot(revision));
+    expect(facts).toHaveLength(1);
+    const result = evaluate(
+      [
+        req({
+          stage: "ID",
+          kind_code: "AOSR",
+          quantity: { min: 2, per: null },
+        }),
+      ],
+      facts,
+    );
+    expect(result.requirements[0]!.outcome).toBe("missing");
+  });
+  it("different logical documents are not collapsed merely because bytes match", () => {
+    const result = evaluate(
+      [
+        req({
+          stage: "ID",
+          kind_code: "AOSR",
+          quantity: { min: 2, per: null },
+        }),
+      ],
+      [
+        doc({
+          stage: "ID",
+          kind_code: "AOSR",
+          document_id: "one",
+          sha256: "same",
+        }),
+        doc({
+          stage: "ID",
+          kind_code: "AOSR",
+          document_id: "two",
+          sha256: "same",
+        }),
+      ],
+    );
+    expect(result.requirements[0]!.outcome).toBe("fulfilled");
+  });
+  it("only confirmed own scope covers an item, without substring inference", () => {
+    const revision = snapshotRevision("revision");
+    const requirement = req({
+      stage: "ID",
+      kind_code: "AOSR",
+      scope: { item: "Устройство свай" },
+    });
+    expect(
+      evaluate([requirement], documentFactsFromSnapshot(snapshot(revision)))
+        .requirements[0]!.outcome,
+    ).toBe("fulfilled");
+    revision.approval.confirmed = false;
+    const facts = documentFactsFromSnapshot(snapshot(revision));
+    expect(facts[0]!.needs_review).toBe(false);
+    expect(evaluate([requirement], facts).requirements[0]!.outcome).toBe(
+      "unverifiable",
+    );
+    revision.approval.confirmed = true;
+    revision.fields.scope = "Устройство свай в осях 1–3";
+    expect(
+      evaluate([requirement], documentFactsFromSnapshot(snapshot(revision)))
+        .requirements[0]!.outcome,
+    ).toBe("unverifiable");
+  });
+  it("unresolved multiple revisions or unsupported mixed input cannot give FULL", () => {
+    expect(
+      documentFactsFromSnapshot(
+        snapshot(snapshotRevision("one"), snapshotRevision("two")),
+      )[0]!.needs_review,
+    ).toBe(true);
+    const revision = snapshotRevision("mixed");
+    revision.blockers = ["unsupported_mixed_document"];
+    expect(documentFactsFromSnapshot(snapshot(revision))[0]!.needs_review).toBe(
+      true,
+    );
+  });
+  it("uses the reference revision pinned in a READY context instead of an older revision", () => {
+    const old = snapshotRevision("old");
+    old.fields.kind_code = "OTHER";
+    const selected = snapshotRevision("new");
+    const input = snapshot(old, selected);
+    input.contexts.push({
+      context_id: "context",
+      scope: "Устройство свай",
+      works_period: { from: "2026-01-01", to: "2026-01-02" },
+      reference: { document_id: "logical-doc", revision_id: "new" },
+      actual: { document_id: "another-doc", revision_id: "act" },
+      status: "READY",
+      blockers: [],
+    });
+    expect(documentFactsFromSnapshot(input)[0]).toMatchObject({
+      revision_ids: ["new"],
+      kind_code: "AOSR",
+      needs_review: false,
+    });
+  });
+});
 function req(partial: Partial<ExpectedRequirement>): ExpectedRequirement {
   seq += 1;
   return {

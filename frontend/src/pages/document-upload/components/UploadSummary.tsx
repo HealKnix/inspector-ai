@@ -84,9 +84,7 @@ export function UploadSummary({
             <UploadIcon className="text-warning size-5.5" name="sparkles" />
           </span>
           <div>
-            <dt className="text-copy-muted text-sm">
-              Распознавание метаданных
-            </dt>
+            <dt className="text-copy-muted text-sm">Сведения о документах</dt>
             <dd className="mt-2 space-y-1.5 text-sm">
               <span className="text-foreground flex items-center gap-2">
                 <span className="bg-success text-success-foreground grid size-4 place-items-center rounded-full">
@@ -96,7 +94,7 @@ export function UploadSummary({
               </span>
               <span className="text-foreground flex items-center gap-2">
                 <span className="bg-warning size-2 rounded-full" />
-                {needsReviewCount} требуют уточнения
+                {needsReviewCount} требуют внимания
               </span>
             </dd>
           </div>

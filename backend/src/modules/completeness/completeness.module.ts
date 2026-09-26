@@ -9,5 +9,6 @@ import { CompletenessService } from "./completeness.service.js";
   imports: [AuthModule, ObjectsModule, ParsingCoreModule],
   providers: [CompletenessService],
   controllers: [CompletenessController],
+  exports: [CompletenessService],
 })
 export class CompletenessModule {}

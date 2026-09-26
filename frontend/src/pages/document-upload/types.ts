@@ -115,6 +115,10 @@ export interface UploadRow {
   declaredStage: DocumentStage | null;
   detectedStage: DocumentStage | null;
   documentKind: string | null;
+  documentCode?: string | null;
+  revisionLabel?: string | null;
+  reviewed?: boolean;
+  sourceIssue?: boolean;
   stage: DocumentStage | null;
   stageMismatch: boolean;
   status: UploadRowStatus;

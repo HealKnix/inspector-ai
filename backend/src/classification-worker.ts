@@ -18,6 +18,8 @@ import {
   ClassificationJobsService,
 } from "./modules/identification/classification-jobs.service.js";
 import { ClassificationCoreModule } from "./modules/identification/classification.module.js";
+import { IdentificationJobsService } from "./modules/identification/identification-jobs.service.js";
+import { IdentificationCoreModule } from "./modules/identification/identification.module.js";
 import { UUID } from "./modules/parsing/parsing-contract.js";
 import { ParsingDeliveryScope } from "./modules/parsing/parsing-delivery-scope.js";
 
@@ -28,12 +30,15 @@ const DEAD_QUEUE = "inspector.classification.dead";
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnvironment }),
     PrismaModule,
     ClassificationCoreModule,
+    IdentificationCoreModule,
   ],
   providers: [OutboxService],
 })
 class ClassificationWorkerModule {}
 
-function readTaskId(content: Buffer): string | null {
+function readTaskId(
+  content: Buffer,
+): { id: string; identification: boolean } | null {
   if (content.length > 16_384) return null;
   let payload: unknown;
   try {
@@ -49,13 +54,18 @@ function readTaskId(content: Buffer): string | null {
     !("schema_version" in payload) ||
     payload.schema_version !== 1 ||
     !("event_type" in payload) ||
-    payload.event_type !== "classification.requested" ||
+    !["classification.requested", "identification.requested"].includes(
+      String(payload.event_type),
+    ) ||
     !("task_id" in payload) ||
     typeof payload.task_id !== "string" ||
     !UUID.test(payload.task_id)
   )
     return null;
-  return payload.task_id;
+  return {
+    id: payload.task_id,
+    identification: payload.event_type === "identification.requested",
+  };
 }
 
 async function main() {
@@ -65,6 +75,7 @@ async function main() {
   const config = app.get(ConfigService);
   const logger = new Logger("ClassificationWorker");
   const jobs = app.get(ClassificationJobsService);
+  const identification = app.get(IdentificationJobsService);
   const outbox = app.get(OutboxService);
   const stopping = new AbortController();
   let connected = false;
@@ -116,7 +127,9 @@ async function main() {
           ),
         );
       } else {
-        await jobs.execute(taskId, signal);
+        if (taskId.identification)
+          await identification.execute(taskId.id, signal);
+        else await jobs.execute(taskId.id, signal);
       }
       owner.ack(message);
     } catch {
@@ -176,6 +189,7 @@ async function main() {
         }
         if (Date.now() >= recoverAt) {
           await jobs.recover();
+          await identification.recover();
           recoverAt = Date.now() + 5000;
         }
         await outbox.dispatchOne();

@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -15,6 +14,13 @@ import type {
   ClassificationStage,
 } from "./classification-contract.js";
 import { ClassificationJobsService } from "./classification-jobs.service.js";
+import {
+  classificationReview,
+  type ClassificationReview,
+  type ClassificationReviewSnapshot,
+} from "./classification-review.js";
+import { identificationSources } from "./identification-state.js";
+import { IdentificationService } from "./identification.service.js";
 
 export interface ClassificationRow {
   file_id: string;
@@ -27,6 +33,7 @@ export interface ClassificationRow {
   can_retry: boolean;
   error_code: string | null;
   result: ClassificationResult | null;
+  review?: ClassificationReview | null;
 }
 
 @Injectable()
@@ -35,6 +42,7 @@ export class ClassificationService {
     private readonly prisma: PrismaService,
     private readonly access: ObjectAccessService,
     private readonly jobs: ClassificationJobsService,
+    private readonly identification: IdentificationService,
   ) {}
 
   async list(userId: string, objectId: string) {
@@ -54,8 +62,54 @@ export class ClassificationService {
         WHERE p.object_id=${objectId}::uuid AND f.corrupted_at IS NULL
           AND (c.id IS NOT NULL OR p.status IN ('PENDING','PARSING'))
         ORDER BY p.created_at DESC,f.created_at,f.id`;
+      let identificationActive = false;
+      for (const runId of new Set(items.map((item) => item.run_id))) {
+        const selection = await IdentificationService.readSnapshot(tx, runId);
+        const sources = await identificationSources(tx, runId);
+        const current = Boolean(
+          selection &&
+          sources?.ready &&
+          sources.run.version === sources.run.process.version &&
+          selection.inputManifestHash === sources.run.inputManifestHash &&
+          selection.sourceFingerprint === sources.fingerprint,
+        );
+        if (!current) {
+          const task = await tx.identificationTask.findUnique({
+            where: {
+              runId_fingerprint: { runId, fingerprint: sources.fingerprint },
+            },
+          });
+          const sourceWorkActive =
+            sources.sources.some((source) =>
+              ["queued", "processing"].includes(source.parsing?.state ?? ""),
+            ) ||
+            items.some(
+              (item) =>
+                item.run_id === runId &&
+                ["queued", "processing"].includes(item.state) &&
+                item.error_code !== "classification_configuration_changed",
+            );
+          identificationActive ||=
+            sources.run.process.status !== "FINALIZED" &&
+            task?.state !== "failed" &&
+            (sources.ready || sourceWorkActive);
+        }
+        for (const item of items.filter((row) => row.run_id === runId))
+          item.review =
+            current && selection && sources
+              ? classificationReview(
+                  selection.snapshot as unknown as ClassificationReviewSnapshot,
+                  selection.resolvedInputHash,
+                  item.file_id,
+                  item.artifact_id,
+                  item.result,
+                  sources.decisions,
+                )
+              : null;
+      }
       return {
         schema_version: 1,
+        review_active: identificationActive,
         active: items.some(
           (item) =>
             ["queued", "processing"].includes(item.state) &&
@@ -118,128 +172,22 @@ export class ClassificationService {
     });
   }
 
-  // Ручное разрешение вида: инспектор фиксирует код словаря каркаса новым
-  // циклом классификации — машинный результат остаётся в истории, а факт для
-  // комплектности берётся из последнего цикла.
+  // Legacy URL is a bridge to the versioned document-resolution workflow.
+  // It cannot overwrite a classifier result or bypass the new-Run boundary.
   async resolve(
     context: AuditContext,
     objectId: string,
     fileId: string,
-    input: { kind_code: string; stage?: ClassificationStage },
+    input: {
+      request_id: string;
+      expected_run_id: string;
+      expected_version: number;
+      basis: string;
+      kind_code: string;
+      stage: ClassificationStage;
+    },
   ) {
-    return this.prisma.$transaction(async (tx) => {
-      await this.access.lock(tx, objectId);
-      await this.access.requireAccess(tx, context.userId, objectId);
-      const byCode = await this.kindVocabulary(tx);
-      const entry = byCode.get(input.kind_code);
-      if (!entry)
-        throw new BadRequestException(
-          `Код «${input.kind_code}» отсутствует в словаре каркаса`,
-        );
-      if (input.stage && !entry.stages.has(input.stage))
-        throw new BadRequestException(
-          `Код «${input.kind_code}» не относится к стадии ${input.stage}`,
-        );
-      const candidates = [...entry.stages];
-      const stage =
-        input.stage ?? (candidates.length === 1 ? candidates[0]! : null);
-      if (!stage)
-        throw new ConflictException(
-          `Код «${input.kind_code}» используется в нескольких стадиях — укажите stage`,
-        );
-      const file = await tx.file.findFirst({
-        where: { id: fileId, objectId },
-      });
-      if (!file) throw new NotFoundException("Файл недоступен");
-      await tx.$queryRaw`SELECT id FROM processes WHERE id=${file.processId}::uuid FOR UPDATE`;
-      const process = await tx.process.findUniqueOrThrow({
-        where: { id: file.processId },
-      });
-      if (process.status === "FINALIZED")
-        throw new ConflictException(
-          "Протокол финализирован — вид документа изменить нельзя",
-        );
-      const run = await tx.run.findUnique({
-        where: {
-          processId_version: {
-            processId: process.id,
-            version: process.version,
-          },
-        },
-      });
-      const parsed = run
-        ? await tx.parsingTask.findFirst({
-            where: { fileId, runId: run.id },
-            orderBy: { cycle: "desc" },
-            include: { artifact: true },
-          })
-        : null;
-      if (!parsed?.artifact)
-        throw new ConflictException(
-          "Нет результата распознавания — вид назначить нельзя",
-        );
-      const previous = await tx.classificationTask.findFirst({
-        where: { artifactId: parsed.artifact.id },
-        orderBy: { cycle: "desc" },
-      });
-      const previousResult = (previous?.result ??
-        null) as ClassificationResult | null;
-      if (
-        previous?.state === "succeeded" &&
-        previousResult?.method === "manual" &&
-        previousResult.kind_code === input.kind_code &&
-        previousResult.stage === stage &&
-        previousResult.needs_review === false
-      )
-        return { task_id: previous.id, unchanged: true };
-      const result: ClassificationResult = {
-        schema_version: 1,
-        stage,
-        document_kind: entry.title,
-        kind_code: input.kind_code,
-        method: "manual",
-        needs_review: false,
-        reasons: [],
-        evidence: [],
-        candidates: [],
-        versions: {
-          classifier: "manual",
-          rules: "manual",
-          context: "manual",
-          prompt: "manual",
-          model: null,
-        },
-      };
-      const next = await tx.classificationTask.create({
-        data: {
-          artifactId: parsed.artifact.id,
-          cycle: (previous?.cycle ?? 0) + 1,
-          fingerprint: this.jobs.fingerprint,
-          state: "succeeded",
-          attempts: 1,
-          result: JSON.parse(JSON.stringify(result)) as Prisma.InputJsonValue,
-          completedAt: new Date(),
-        },
-      });
-      await tx.auditEvent.create({
-        data: {
-          ...context,
-          objectId,
-          action: "classification.kind_resolved",
-          details: {
-            schema_version: 1,
-            file_id: fileId,
-            artifact_id: parsed.artifact.id,
-            task_id: next.id,
-            kind_code: input.kind_code,
-            stage,
-            previous_task_id: previous?.id ?? null,
-            previous_document_kind: previousResult?.document_kind ?? null,
-          },
-        },
-      });
-      return { task_id: next.id, unchanged: false };
-    });
+    return this.identification.resolveKind(context, objectId, fileId, input);
   }
 
   async retry(

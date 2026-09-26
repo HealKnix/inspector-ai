@@ -50,9 +50,13 @@ export function useCompletenessResult(
   objectId: string,
   runId: string | undefined,
   enabled = true,
+  resolvedInputHash?: string | null,
 ) {
   return useQuery({
-    queryKey: queryKeys.objects.completenessResult(objectId, runId),
+    queryKey: [
+      ...queryKeys.objects.completenessResult(objectId, runId),
+      resolvedInputHash ?? "latest",
+    ],
     queryFn: ({ signal }) => getCompletenessResult(objectId, runId, signal),
     enabled: (query) =>
       enabled && Boolean(objectId) && !isPermanentError(query.state.error),
@@ -82,13 +86,16 @@ export function useGeneratePackage(objectId: string) {
 }
 
 export function useConfirmPackage(objectId: string) {
-  const invalidate = useInvalidateCompleteness(objectId);
+  const client = useQueryClient();
   return useMutation({
     mutationFn: (
       input: Omit<Parameters<typeof confirmExpectedPackage>[0], "objectId">,
     ) => confirmExpectedPackage({ ...input, objectId }),
     retry: false,
-    onSettled: invalidate,
+    onSettled: () =>
+      client.invalidateQueries({
+        queryKey: queryKeys.objects.detail(objectId),
+      }),
   });
 }
 

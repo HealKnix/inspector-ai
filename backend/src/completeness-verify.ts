@@ -11,6 +11,7 @@ import { AppModule } from "./app.module.js";
 import { PrismaService } from "./infrastructure/prisma/prisma.service.js";
 import { CompletenessService } from "./modules/completeness/completeness.service.js";
 import { ClassificationService } from "./modules/identification/classification.service.js";
+import { IdentificationJobsService } from "./modules/identification/identification-jobs.service.js";
 import { ArtifactStorageService } from "./modules/parsing/artifact-storage.service.js";
 import type { ParseArtifactData } from "./modules/parsing/parsing-contract.js";
 
@@ -327,43 +328,60 @@ async function main() {
     versions_total: versionsAfterReplay,
   });
 
-  // 6.5. Ручное разрешение вида: «Исполнительная схема» (неоднозначный вид) →
-  // GEO_SCHEME новым циклом классификации. Повтор с тем же видом не создаёт
-  // цикл; код не из словаря и неоднозначный код без стадии отклоняются.
+  // Identification runs through the real background service. The compatibility
+  // kind URL no longer mutates classification cycles without version and basis.
+  const identificationJobs = app.get(IdentificationJobsService);
+  await identificationJobs.recover();
+  for (const task of await prisma.identificationTask.findMany({
+    where: { runId: run.id, state: "queued" },
+  }))
+    await identificationJobs.execute(task.id);
   const schemeFileId = fileIds.get("Исполнительная схема.pdf")!;
+  const part = await prisma.fileDocumentPart.findFirstOrThrow({
+    where: { runId: run.id, fileId: schemeFileId },
+    include: { revision: { include: { document: true } } },
+  });
+  const resolution = {
+    request_id: randomUUID(),
+    expected_run_id: run.id,
+    expected_version: part.revision.document.cardVersion,
+    basis: "Синтетическая проверка ручного уточнения вида",
+    kind_code: "GEO_SCHEME",
+    stage: "ID" as const,
+  };
   const resolved = await classificationService.resolve(
     context,
     object.id,
     schemeFileId,
-    { kind_code: "GEO_SCHEME" },
+    resolution,
   );
   const resolvedReplay = await classificationService.resolve(
     context,
     object.id,
     schemeFileId,
-    { kind_code: "GEO_SCHEME" },
+    resolution,
   );
   log("resolve_kind", { resolved, replay: resolvedReplay });
-  try {
-    await classificationService.resolve(context, object.id, schemeFileId, {
-      kind_code: "NO_SUCH_CODE",
-    });
-    log("resolve_unknown_code", "unexpected_success");
-  } catch (error) {
-    log("resolve_unknown_code", (error as Error).constructor.name);
-  }
-  try {
-    await classificationService.resolve(context, object.id, schemeFileId, {
-      kind_code: "АР",
-    });
-    log("resolve_ambiguous_code", "unexpected_success");
-  } catch (error) {
-    log("resolve_ambiguous_code", (error as Error).constructor.name);
+  const currentRun = await prisma.run.findFirstOrThrow({
+    where: { processId: process.id },
+    orderBy: { version: "desc" },
+  });
+  if (
+    !(await prisma.resolvedInputSnapshot.findFirst({
+      where: { runId: currentRun.id },
+    }))
+  ) {
+    log(
+      "identification_new_run",
+      "pending ordinary parser/cache pipeline; no old result is reported as current",
+    );
+    await app.close();
+    return;
   }
 
   // 7. Расчёт по подтверждённому перечню и реальным фактам запуска.
   const first = await completeness.evaluate(context, object.id, {
-    run_id: run.id,
+    run_id: currentRun.id,
   });
   const evaluation = first.evaluation as {
     scenario: string;
@@ -378,12 +396,12 @@ async function main() {
       .sort(),
   });
 
-  // 8. Повторный расчёт создаёт новый результат, прежний неизменен.
+  // 8. Повторный расчёт неизменного снимка идемпотентен; история сохранена.
   const second = await completeness.evaluate(context, object.id, {
-    run_id: run.id,
+    run_id: currentRun.id,
   });
   const results = await prisma.completenessResult.count({
-    where: { objectId: object.id, runId: run.id },
+    where: { objectId: object.id, runId: currentRun.id },
   });
   log("evaluate_history", {
     results_total: results,

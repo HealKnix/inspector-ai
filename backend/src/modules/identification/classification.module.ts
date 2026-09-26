@@ -5,6 +5,7 @@ import { ParsingCoreModule } from "../parsing/parsing.module.js";
 import { ClassificationJobsService } from "./classification-jobs.service.js";
 import { ClassificationController } from "./classification.controller.js";
 import { ClassificationService } from "./classification.service.js";
+import { IdentificationCoreModule } from "./identification.module.js";
 
 @Module({
   imports: [ObjectsModule, ParsingCoreModule],
@@ -14,7 +15,12 @@ import { ClassificationService } from "./classification.service.js";
 export class ClassificationCoreModule {}
 
 @Module({
-  imports: [AuthModule, ObjectsModule, ClassificationCoreModule],
+  imports: [
+    AuthModule,
+    ObjectsModule,
+    ClassificationCoreModule,
+    IdentificationCoreModule,
+  ],
   providers: [ClassificationService],
   controllers: [ClassificationController],
 })

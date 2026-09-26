@@ -120,6 +120,7 @@ export const completenessResultSchema = z.object({
   object_id: z.string(),
   process_id: z.string().nullable(),
   run_id: z.string().nullable(),
+  resolved_input_hash: z.string().nullable().optional(),
   package_version: z.number().int().positive().nullable(),
   framework_version: z.number().int().positive().nullable(),
   evaluated_at: z.string().nullable(),

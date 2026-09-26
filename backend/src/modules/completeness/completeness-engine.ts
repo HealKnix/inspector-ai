@@ -1,4 +1,8 @@
 import type {
+  IdentificationField,
+  IdentificationSnapshot,
+} from "../identification/identification-contract.js";
+import type {
   DocumentFact,
   Evaluation,
   ExpectedRequirement,
@@ -12,6 +16,86 @@ import type {
 import { normalizeItemKey } from "./completeness-extract.js";
 
 const STAGES: Stage[] = ["PD", "RD", "ID"];
+
+/** Whole logical documents from this immutable selection, never live classifier heads. */
+export function documentFactsFromSnapshot(
+  snapshot: IdentificationSnapshot,
+): DocumentFact[] {
+  return snapshot.documents.flatMap((document) => {
+    const selected = new Set(
+      snapshot.contexts
+        .filter(
+          (context) =>
+            context.status === "READY" &&
+            context.reference?.document_id === document.document_id,
+        )
+        .map((context) => context.reference!.revision_id),
+    );
+    const revisions = selected.size
+      ? document.revisions.filter((revision) =>
+          selected.has(revision.revision_id),
+        )
+      : document.revisions;
+    const representations = revisions
+      .flatMap((revision) => revision.representations)
+      .sort((a, b) => a.file_id.localeCompare(b.file_id));
+    const first = representations[0];
+    if (!first) return [];
+    const stages = new Set(
+      revisions
+        .map((revision) => revision.fields.stage)
+        .filter((stage): stage is Stage => STAGES.includes(stage as Stage)),
+    );
+    const kinds = new Set(
+      revisions
+        .map((revision) => revision.fields.kind_code)
+        .filter((kind): kind is string => Boolean(kind)),
+    );
+    const blocked = revisions.some((revision) =>
+      revision.blockers.some(
+        (blocker) =>
+          !blocker.startsWith("field_conflict:") ||
+          !revision.fields[
+            blocker.slice("field_conflict:".length) as IdentificationField
+          ],
+      ),
+    );
+    const needsReview =
+      blocked ||
+      (!selected.size && revisions.length !== 1) ||
+      revisions.some(
+        (revision) =>
+          !STAGES.includes(revision.fields.stage as Stage) ||
+          !revision.fields.kind_code,
+      ) ||
+      stages.size !== 1 ||
+      kinds.size !== 1;
+    const covered = new Set<string>();
+    if (!needsReview)
+      for (const revision of revisions) {
+        // A mention of a work item in arbitrary document text is no longer proof.
+        if (
+          revision.approval.confirmed &&
+          revision.approval.basis?.trim() &&
+          revision.fields.scope?.trim()
+        )
+          covered.add(normalizeItemKey(revision.fields.scope));
+      }
+    return [
+      {
+        document_id: document.document_id,
+        revision_ids: revisions.map((revision) => revision.revision_id).sort(),
+        file_id: first.file_id,
+        sha256: first.source_sha256,
+        stage: stages.size === 1 ? [...stages][0]! : null,
+        kind_code: kinds.size === 1 ? [...kinds][0]! : null,
+        kind_ambiguous: kinds.size > 1,
+        needs_review: needsReview,
+        covered_items: [...covered].sort(),
+      },
+    ];
+  });
+}
 
 interface ApplicabilityCondition {
   attr?: string;
@@ -49,11 +133,13 @@ function acceptedKinds(requirement: ExpectedRequirement): Set<string> {
   return kinds;
 }
 
-// Same binary under two file ids is one logical document (D3).
+// New facts are deduplicated by logical identity. SHA is legacy-only fallback.
 function distinctDocuments(facts: DocumentFact[]): DocumentFact[] {
   const seen = new Set<string>();
   return facts.filter((fact) => {
-    const key = fact.sha256;
+    const key = fact.document_id
+      ? `document:${fact.document_id}`
+      : `sha256:${fact.sha256}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -70,7 +156,7 @@ function evaluateRequirement(
     title: requirement.title,
     stage: requirement.stage,
     scope: requirement.scope,
-    matched: [] as { file_id: string }[],
+    matched: [] as RequirementResult["matched"],
     missing_parts: [] as string[],
   };
   if (requirement.excluded)
@@ -97,19 +183,24 @@ function evaluateRequirement(
   const scoped = Boolean(scopedItem);
 
   let outcome: RequirementOutcome;
-  let matched = kindMatched.map((fact) => ({ file_id: fact.file_id }));
+  const sourceRef = (fact: DocumentFact) => ({
+    file_id: fact.file_id,
+    ...(fact.document_id ? { document_id: fact.document_id } : {}),
+    ...(fact.revision_ids ? { revision_ids: fact.revision_ids } : {}),
+  });
+  let matched = kindMatched.map(sourceRef);
   const missingParts: string[] = [];
 
   if (scoped) {
-    // Документ закрывает пункт перечня, если его текст упоминает пункт
-    // (связь извлекается из артефакта распознавания, D6).
+    // Подтверждённая собственная область выбранной редакции должна точно
+    // совпасть с пунктом; произвольное упоминание в тексте не является связью.
     const itemKey = scopedItem ? normalizeItemKey(scopedItem) : null;
     const covering = itemKey
       ? kindMatched.filter((fact) => fact.covered_items.includes(itemKey))
       : [];
     if (covering.length >= requirement.quantity.min) {
       outcome = "fulfilled";
-      matched = covering.map((fact) => ({ file_id: fact.file_id }));
+      matched = covering.map(sourceRef);
     } else if (kindMatched.length > 0 || ambiguous || unresolved) {
       // Кандидат по виду есть, но покрытие пункта не доказано — ни исполнено,
       // ни отсутствует (D6).

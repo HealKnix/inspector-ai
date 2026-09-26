@@ -9,6 +9,7 @@ export const queryKeys = {
       ["objects", id, "receipt", uploadId] as const,
     parsing: (id: string) => ["objects", id, "parsing"] as const,
     classification: (id: string) => ["objects", id, "classification"] as const,
+    identification: (id: string) => ["objects", id, "identification"] as const,
     completenessPackage: (id: string) =>
       ["objects", id, "completeness", "package"] as const,
     completenessResult: (id: string, runId?: string) =>

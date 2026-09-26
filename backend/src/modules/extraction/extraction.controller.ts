@@ -3,10 +3,11 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Query,
   Req,
   Res,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
 import { type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { apiErrorSchema } from "../documents/upload-contract.js";
@@ -21,6 +22,7 @@ export class ExtractionController {
   constructor(private readonly extraction: ExtractionService) {}
 
   @Get("extractions")
+  @ApiQuery({ name: "run_id", required: false, type: String, format: "uuid" })
   @ApiResponse({
     status: 200,
     description:
@@ -30,23 +32,26 @@ export class ExtractionController {
     @Req() request: AuthenticatedRequest,
     @Param("objectId", ParseUUIDPipe) objectId: string,
     @Res({ passthrough: true }) response: Response,
+    @Query("run_id", new ParseUUIDPipe({ optional: true })) runId?: string,
   ) {
     response.setHeader("Cache-Control", "private, no-store");
-    return this.extraction.list(request.user.id, objectId);
+    return this.extraction.list(request.user.id, objectId, runId);
   }
 
   @Get("evidence-groups")
+  @ApiQuery({ name: "run_id", required: false, type: String, format: "uuid" })
   @ApiResponse({
     status: 200,
     description:
-      "Группы доказательств по параметрам: expected — из ПД, actual — из РД/ИД; verdict — предварительный итог сравнения (match/discrepancy/*_missing/*_ambiguous/not_comparable/no_comparison), не решение инспектора",
+      "Группы по выбранным редакциям и областям указанного запуска; verdict — предварительное сравнение, не решение инспектора",
   })
   groups(
     @Req() request: AuthenticatedRequest,
     @Param("objectId", ParseUUIDPipe) objectId: string,
     @Res({ passthrough: true }) response: Response,
+    @Query("run_id", new ParseUUIDPipe({ optional: true })) runId?: string,
   ) {
     response.setHeader("Cache-Control", "private, no-store");
-    return this.extraction.groups(request.user.id, objectId);
+    return this.extraction.groups(request.user.id, objectId, runId);
   }
 }

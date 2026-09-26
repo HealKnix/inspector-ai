@@ -103,6 +103,7 @@ model Process {
   object    ConstructionObject @relation(fields: [objectId], references: [id], onDelete: Restrict)
   runs      Run[]
   protocols Protocol[]
+  documents Document[]
 
   @@unique([id, objectId])
   @@index([objectId, createdAt])
@@ -110,21 +111,24 @@ model Process {
 }
 
 model Run {
-  id                  String               @id @default(uuid()) @db.Uuid
-  processId           String               @map("process_id") @db.Uuid
-  objectId            String               @map("object_id") @db.Uuid
-  version             Int
-  inputManifest       Json                 @map("input_manifest")
-  inputManifestHash   String               @map("input_manifest_hash") @db.Char(64)
-  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
-  process             Process              @relation(fields: [processId, objectId], references: [id, objectId], onDelete: Restrict)
-  files               File[]
-  inputs              RunInput[]
-  receipts            UploadReceipt[]
-  jobs                Job[]
-  parsingTasks        ParsingTask[]
-  completenessResults CompletenessResult[]
-  protocols           Protocol[]
+  id                      String                  @id @default(uuid()) @db.Uuid
+  processId               String                  @map("process_id") @db.Uuid
+  objectId                String                  @map("object_id") @db.Uuid
+  version                 Int
+  inputManifest           Json                    @map("input_manifest")
+  inputManifestHash       String                  @map("input_manifest_hash") @db.Char(64)
+  createdAt               DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  process                 Process                 @relation(fields: [processId, objectId], references: [id, objectId], onDelete: Restrict)
+  files                   File[]
+  inputs                  RunInput[]
+  receipts                UploadReceipt[]
+  jobs                    Job[]
+  parsingTasks            ParsingTask[]
+  completenessResults     CompletenessResult[]
+  protocols               Protocol[]
+  documentParts           FileDocumentPart[]
+  identificationSnapshots ResolvedInputSnapshot[]
+  evidenceGroups          EvidenceGroup[]
 
   @@unique([id, processId, objectId])
   @@unique([processId, version])
@@ -151,6 +155,7 @@ model File {
   inputs             RunInput[]
   content            ObjectFileContent?
   parsingTasks       ParsingTask[]
+  documentParts      FileDocumentPart[]
 
   @@unique([id, processId, objectId])
   @@unique([id, objectId, sha256])
@@ -307,6 +312,7 @@ model ParseArtifact {
   task                ParsingTask          @relation(fields: [taskId], references: [id], onDelete: Restrict)
   classifications     ClassificationTask[]
   extractions         ExtractionTask[]
+  documentParts       FileDocumentPart[]
 
   @@index([sourceSha256, pipelineFingerprint])
   @@map("parse_artifacts")
@@ -432,21 +438,22 @@ model RuleVersion {
 // Same lifecycle as ClassificationTask: one task per artifact per ruleset
 // fingerprint; a changed approved ruleset starts a new cycle.
 model ExtractionTask {
-  id           String        @id @default(uuid()) @db.Uuid
-  artifactId   String        @map("artifact_id") @db.Uuid
-  cycle        Int           @default(1)
-  fingerprint  String        @db.Char(64)
-  state        String        @default("queued")
-  attempts     Int           @default(0)
-  availableAt  DateTime      @default(now()) @map("available_at") @db.Timestamptz(3)
-  dispatchedAt DateTime?     @map("dispatched_at") @db.Timestamptz(3)
-  leaseUntil   DateTime?     @map("lease_until") @db.Timestamptz(3)
-  leaseToken   String?       @map("lease_token") @db.Uuid
-  errorCode    String?       @map("error_code")
-  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  completedAt  DateTime?     @map("completed_at") @db.Timestamptz(3)
-  artifact     ParseArtifact @relation(fields: [artifactId], references: [id], onDelete: Restrict)
-  extractions  Extraction[]
+  resolvedInputHash String?       @map("resolved_input_hash") @db.Char(64)
+  id                String        @id @default(uuid()) @db.Uuid
+  artifactId        String        @map("artifact_id") @db.Uuid
+  cycle             Int           @default(1)
+  fingerprint       String        @db.Char(64)
+  state             String        @default("queued")
+  attempts          Int           @default(0)
+  availableAt       DateTime      @default(now()) @map("available_at") @db.Timestamptz(3)
+  dispatchedAt      DateTime?     @map("dispatched_at") @db.Timestamptz(3)
+  leaseUntil        DateTime?     @map("lease_until") @db.Timestamptz(3)
+  leaseToken        String?       @map("lease_token") @db.Uuid
+  errorCode         String?       @map("error_code")
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt       DateTime?     @map("completed_at") @db.Timestamptz(3)
+  artifact          ParseArtifact @relation(fields: [artifactId], references: [id], onDelete: Restrict)
+  extractions       Extraction[]
 
   @@unique([artifactId, cycle])
   @@index([state, availableAt, leaseUntil])
@@ -504,18 +511,27 @@ model EvidenceFragment {
 // Grouped extractions for one parameter on one object: expected role comes
 // from PD-stage files, actual from RD/ID; unknown stage is kept explicit.
 model EvidenceGroup {
-  id            String   @id @default(uuid()) @db.Uuid
-  objectId      String   @map("object_id") @db.Uuid
-  processId     String   @map("process_id") @db.Uuid
-  parameterCode String   @map("parameter_code") @db.VarChar(32)
-  scopeKey      String   @default("") @map("scope_key")
-  rulesetHash   String   @map("ruleset_hash") @db.Char(64)
-  members       Json
-  verdict       Json?
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                String                 @id @default(uuid()) @db.Uuid
+  version           Int                    @default(1)
+  objectId          String                 @map("object_id") @db.Uuid
+  processId         String                 @map("process_id") @db.Uuid
+  runId             String?                @map("run_id") @db.Uuid
+  resolvedInputHash String?                @map("resolved_input_hash") @db.Char(64)
+  contextKey        String                 @default("") @map("context_key")
+  contentHash       String?                @map("content_hash") @db.Char(64)
+  parameterCode     String                 @map("parameter_code") @db.VarChar(32)
+  scopeKey          String                 @default("") @map("scope_key")
+  rulesetHash       String                 @map("ruleset_hash") @db.Char(64)
+  members           Json
+  verdict           Json?
+  createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+  run               Run?                   @relation(fields: [runId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+  resolvedInput     ResolvedInputSnapshot? @relation(fields: [runId, resolvedInputHash], references: [runId, resolvedInputHash], onDelete: Restrict)
 
-  @@unique([objectId, processId, parameterCode, scopeKey])
+  @@unique([runId, resolvedInputHash, parameterCode, contextKey, contentHash], map: "evidence_groups_snapshot_content_key")
+  @@unique([runId, resolvedInputHash, parameterCode, contextKey, version], map: "evidence_groups_snapshot_version_key")
+  @@index([objectId, processId, runId])
   @@map("evidence_groups")
 }
 
@@ -727,25 +743,27 @@ enum FindingStatus {
 // inspector action. Old versions stay readable; only one `active` per
 // process at a time (enforced by the service, not the schema).
 model Protocol {
-  id                   String         @id @default(uuid()) @db.Uuid
-  objectId             String         @map("object_id") @db.Uuid
-  processId            String         @map("process_id") @db.Uuid
-  runId                String         @map("run_id") @db.Uuid
+  id                   String                 @id @default(uuid()) @db.Uuid
+  objectId             String                 @map("object_id") @db.Uuid
+  processId            String                 @map("process_id") @db.Uuid
+  runId                String                 @map("run_id") @db.Uuid
   version              Int
-  status               ProtocolStatus @default(active)
+  status               ProtocolStatus         @default(active)
   scenario             String
-  rulesetHash          String?        @map("ruleset_hash") @db.Char(64)
-  inputManifestHash    String         @map("input_manifest_hash") @db.Char(64)
-  findingsHash         String         @map("findings_hash") @db.Char(64)
-  completenessResultId String?        @map("completeness_result_id") @db.Uuid
+  rulesetHash          String?                @map("ruleset_hash") @db.Char(64)
+  inputManifestHash    String                 @map("input_manifest_hash") @db.Char(64)
+  resolvedInputHash    String?                @map("resolved_input_hash") @db.Char(64)
+  findingsHash         String                 @map("findings_hash") @db.Char(64)
+  completenessResultId String?                @map("completeness_result_id") @db.Uuid
   content              Json
-  createdBy            String         @map("created_by") @db.Uuid
-  createdAt            DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  finalizedBy          String?        @map("finalized_by") @db.Uuid
-  finalizedAt          DateTime?      @map("finalized_at") @db.Timestamptz(3)
-  process              Process        @relation(fields: [processId, objectId], references: [id, objectId], onDelete: Restrict)
-  run                  Run            @relation(fields: [runId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+  createdBy            String                 @map("created_by") @db.Uuid
+  createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  finalizedBy          String?                @map("finalized_by") @db.Uuid
+  finalizedAt          DateTime?              @map("finalized_at") @db.Timestamptz(3)
+  process              Process                @relation(fields: [processId, objectId], references: [id, objectId], onDelete: Restrict)
+  run                  Run                    @relation(fields: [runId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
   findings             Finding[]
+  resolvedInput        ResolvedInputSnapshot? @relation(fields: [runId, resolvedInputHash], references: [runId, resolvedInputHash], onDelete: Restrict)
 
   @@unique([processId, version])
   @@index([objectId, createdAt])
@@ -758,26 +776,27 @@ model Protocol {
 // are rebuilt in place. members_fingerprint decides whether an inspector
 // decision carries over to the next protocol version.
 model Finding {
-  id                 String            @id @default(uuid()) @db.Uuid
-  protocolId         String            @map("protocol_id") @db.Uuid
-  objectId           String            @map("object_id") @db.Uuid
-  processId          String            @map("process_id") @db.Uuid
-  parameterCode      String            @map("parameter_code") @db.VarChar(32)
-  scopeKey           String            @default("") @map("scope_key")
+  id                 String                   @id @default(uuid()) @db.Uuid
+  protocolId         String                   @map("protocol_id") @db.Uuid
+  objectId           String                   @map("object_id") @db.Uuid
+  processId          String                   @map("process_id") @db.Uuid
+  parameterCode      String                   @map("parameter_code") @db.VarChar(32)
+  scopeKey           String                   @default("") @map("scope_key")
   status             FindingStatus
   risk               String?
-  evidenceGroupId    String?           @map("evidence_group_id") @db.Uuid
+  evidenceGroupId    String?                  @map("evidence_group_id") @db.Uuid
   verdict            Json?
-  gateReasons        Json?             @map("gate_reasons")
-  membersFingerprint String            @map("members_fingerprint") @db.Char(64)
-  decidedBy          String?           @map("decided_by") @db.Uuid
-  decidedAt          DateTime?         @map("decided_at") @db.Timestamptz(3)
-  reasonCode         String?           @map("reason_code")
+  evidenceSnapshot   Json?                    @map("evidence_snapshot")
+  gateReasons        Json?                    @map("gate_reasons")
+  membersFingerprint String                   @map("members_fingerprint") @db.Char(64)
+  decidedBy          String?                  @map("decided_by") @db.Uuid
+  decidedAt          DateTime?                @map("decided_at") @db.Timestamptz(3)
+  reasonCode         String?                  @map("reason_code")
   comment            String?
-  rowVersion         Int               @default(1) @map("row_version")
-  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
-  protocol           Protocol          @relation(fields: [protocolId], references: [id], onDelete: Restrict)
+  rowVersion         Int                      @default(1) @map("row_version")
+  createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
+  protocol           Protocol                 @relation(fields: [protocolId], references: [id], onDelete: Restrict)
   decisions          FindingDecision[]
   decisionReceipts   FindingDecisionReceipt[]
 
@@ -789,17 +808,17 @@ model Finding {
 // Immutable decision history: who moved a finding between statuses, on what
 // basis and when. The finding's own columns are the denormalized head.
 model FindingDecision {
-  id         String        @id @default(uuid()) @db.Uuid
-  findingId  String        @map("finding_id") @db.Uuid
-  actorId    String        @map("actor_id")
+  id         String                   @id @default(uuid()) @db.Uuid
+  findingId  String                   @map("finding_id") @db.Uuid
+  actorId    String                   @map("actor_id")
   action     String
-  fromStatus FindingStatus @map("from_status")
-  toStatus   FindingStatus @map("to_status")
-  reasonCode String?       @map("reason_code")
+  fromStatus FindingStatus            @map("from_status")
+  toStatus   FindingStatus            @map("to_status")
+  reasonCode String?                  @map("reason_code")
   comment    String?
-  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  finding    Finding       @relation(fields: [findingId], references: [id], onDelete: Restrict)
-  actor      User          @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  createdAt  DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  finding    Finding                  @relation(fields: [findingId], references: [id], onDelete: Restrict)
+  actor      User                     @relation(fields: [actorId], references: [id], onDelete: Restrict)
   receipts   FindingDecisionReceipt[]
 
   @@index([findingId, createdAt])
@@ -820,4 +839,155 @@ model FindingDecisionReceipt {
 
   @@id([userId, objectId, requestId])
   @@map("finding_decision_receipts")
+}
+
+// Logical identity is independent of storage. Only whole-document parts are
+// supported by this slice; mixed bundles remain explicitly unresolved.
+model Document {
+  id          String             @id @default(uuid()) @db.Uuid
+  objectId    String             @map("object_id") @db.Uuid
+  processId   String             @map("process_id") @db.Uuid
+  identityKey String             @map("identity_key")
+  cardVersion Int                @default(1) @map("card_version")
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  process     Process            @relation(fields: [processId, objectId], references: [id, objectId], onDelete: Restrict)
+  revisions   DocumentRevision[]
+
+  @@unique([processId, identityKey])
+  @@unique([id, processId, objectId])
+  @@map("documents")
+}
+
+model DocumentRevision {
+  id             String             @id @default(uuid()) @db.Uuid
+  documentId     String             @map("document_id") @db.Uuid
+  objectId       String             @map("object_id") @db.Uuid
+  processId      String             @map("process_id") @db.Uuid
+  identityKey    String             @map("identity_key")
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  document       Document           @relation(fields: [documentId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+  parts          FileDocumentPart[]
+  clarifications Clarification[]
+
+  @@unique([documentId, identityKey])
+  @@unique([id, documentId, processId, objectId])
+  @@map("document_revisions")
+}
+
+model FileDocumentPart {
+  id                String           @id @default(uuid()) @db.Uuid
+  documentId        String           @map("document_id") @db.Uuid
+  revisionId        String           @map("revision_id") @db.Uuid
+  objectId          String           @map("object_id") @db.Uuid
+  processId         String           @map("process_id") @db.Uuid
+  runId             String           @map("run_id") @db.Uuid
+  fileId            String           @map("file_id") @db.Uuid
+  artifactId        String           @map("artifact_id") @db.Uuid
+  sourceFingerprint String           @map("source_fingerprint") @db.Char(64)
+  firstPage         Int              @default(1) @map("first_page")
+  lastPage          Int              @map("last_page")
+  machine           Json
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  revision          DocumentRevision @relation(fields: [revisionId, documentId, processId, objectId], references: [id, documentId, processId, objectId], onDelete: Restrict)
+  file              File             @relation(fields: [fileId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+  run               Run              @relation(fields: [runId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+  artifact          ParseArtifact    @relation(fields: [artifactId], references: [id], onDelete: Restrict)
+  candidates        FieldCandidate[]
+
+  @@unique([runId, fileId, sourceFingerprint])
+  @@index([artifactId])
+  @@map("file_document_parts")
+}
+
+model FieldCandidate {
+  id           String           @id @default(uuid()) @db.Uuid
+  partId       String           @map("part_id") @db.Uuid
+  field        String
+  raw          String
+  normalized   String?
+  role         String
+  evidence     Json
+  method       String
+  rulesVersion String           @map("rules_version")
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  part         FileDocumentPart @relation(fields: [partId], references: [id], onDelete: Restrict)
+
+  @@index([partId, field])
+  @@map("field_candidates")
+}
+
+// Human overrides never alter machine observations. Snapshots capture which
+// decisions were used; retries apply the same immutable decision history.
+model Clarification {
+  id          String           @id @default(uuid()) @db.Uuid
+  documentId  String           @map("document_id") @db.Uuid
+  revisionId  String           @map("revision_id") @db.Uuid
+  objectId    String           @map("object_id") @db.Uuid
+  processId   String           @map("process_id") @db.Uuid
+  runId       String           @map("run_id") @db.Uuid
+  actorId     String           @map("actor_id")
+  requestId   String           @map("request_id") @db.Uuid
+  cardVersion Int              @map("card_version")
+  basis       String
+  patch       Json
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  revision    DocumentRevision @relation(fields: [revisionId, documentId, processId, objectId], references: [id, documentId, processId, objectId], onDelete: Restrict)
+
+  @@index([revisionId, cardVersion])
+  @@map("document_clarifications")
+}
+
+model ResolvedInputSnapshot {
+  id                String          @id @default(uuid()) @db.Uuid
+  version           Int             @default(1)
+  objectId          String          @map("object_id") @db.Uuid
+  processId         String          @map("process_id") @db.Uuid
+  runId             String          @map("run_id") @db.Uuid
+  inputManifestHash String          @map("input_manifest_hash") @db.Char(64)
+  resolvedInputHash String          @map("resolved_input_hash") @db.Char(64)
+  sourceFingerprint String          @map("source_fingerprint") @db.Char(64)
+  snapshot          Json
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  run               Run             @relation(fields: [runId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+  evidenceGroups    EvidenceGroup[]
+  protocols         Protocol[]
+
+  @@unique([runId, sourceFingerprint])
+  @@unique([runId, version])
+  @@unique([runId, resolvedInputHash])
+  @@index([processId, createdAt])
+  @@map("resolved_input_snapshots")
+}
+
+model DocumentResolutionReceipt {
+  userId      String   @map("user_id")
+  processId   String   @map("process_id") @db.Uuid
+  requestId   String   @map("request_id") @db.Uuid
+  fingerprint String   @db.Char(64)
+  response    Json
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@id([userId, processId, requestId])
+  @@map("document_resolution_receipts")
+}
+
+model IdentificationTask {
+  id           String    @id @default(uuid()) @db.Uuid
+  runId        String    @map("run_id") @db.Uuid
+  processId    String    @map("process_id") @db.Uuid
+  objectId     String    @map("object_id") @db.Uuid
+  fingerprint  String    @db.Char(64)
+  state        String    @default("queued")
+  attempts     Int       @default(0)
+  leaseUntil   DateTime? @map("lease_until") @db.Timestamptz(3)
+  leaseToken   String?   @map("lease_token") @db.Uuid
+  availableAt  DateTime  @default(now()) @map("available_at") @db.Timestamptz(3)
+  dispatchedAt DateTime? @map("dispatched_at") @db.Timestamptz(3)
+  errorCode    String?   @map("error_code")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt  DateTime? @map("completed_at") @db.Timestamptz(3)
+
+  @@unique([runId, fingerprint])
+  @@index([state, availableAt, leaseUntil])
+  @@map("identification_tasks")
 }

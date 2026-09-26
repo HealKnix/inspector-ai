@@ -117,7 +117,14 @@ export function useRenderedPage(
       page,
     ),
     queryFn: ({ signal }) =>
-      getRenderedPage(objectId, file.file_id, file.artifact_id!, page, signal),
+      getRenderedPage(
+        objectId,
+        file.file_id,
+        file.artifact_id!,
+        page,
+        signal,
+        file.run_id,
+      ),
     enabled: enabled && Boolean(file.artifact_id) && page > 0,
     retry: false,
     staleTime: 0,

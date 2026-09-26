@@ -37,6 +37,11 @@ const ObjectsPage = lazy(() =>
     default: module.ObjectsPage,
   })),
 );
+const IdentificationPage = lazy(() =>
+  import("@/pages/identification/IdentificationPage").then((module) => ({
+    default: module.IdentificationPage,
+  })),
+);
 const ProtocolsPage = lazy(() =>
   import("@/pages/protocols/ProtocolsPage").then((module) => ({
     default: module.ProtocolsPage,
@@ -135,6 +140,10 @@ export function AppRoutes() {
           <Route element={<WorkspaceLayout />}>
             <Route element={<DashboardPage />} path={routeNames.ROOT} />
             <Route element={<RoleGuard roles={Role.INSPECTOR} />}>
+              <Route
+                element={<IdentificationPage />}
+                path={routeNames.OBJECT_DOCUMENTS(":objectId")}
+              />
               <Route
                 element={<DocumentUploadPage />}
                 path={routeNames.OBJECT_UPLOAD(":objectId")}

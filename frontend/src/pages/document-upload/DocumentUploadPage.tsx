@@ -1,14 +1,13 @@
 import { Button } from "@heroui/react";
 import { useMemo, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { downloadOriginal } from "@/api/endpoints/objects";
 import {
   useClassificationStatus,
-  useKindOptions,
-  useResolveClassification,
   useRetryClassification,
 } from "@/api/hooks/use-classification";
+import { useIdentification } from "@/api/hooks/use-identification";
 import {
   useFiles,
   useObject,
@@ -42,6 +41,7 @@ import { FileDropzone } from "@/components/file-dropzone/FileDropzone";
 import { UploadIcon } from "@/components/UploadIcon";
 import { ConstrainedLayout } from "@/layouts/ConstrainedLayout";
 import routeNames from "@/routes/routeNames";
+import { CheckDocumentsAction } from "./components/CheckDocumentsAction";
 import { CompletenessPanel } from "./components/CompletenessPanel";
 import { DocumentsTable } from "./components/DocumentsTable";
 import { MetadataAssistant } from "./components/MetadataAssistant";
@@ -54,6 +54,7 @@ const FILES_LIMIT = 100;
 
 export function DocumentUploadPage() {
   const { objectId = "" } = useParams();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const objectQuery = useObject(objectId);
@@ -64,18 +65,22 @@ export function DocumentUploadPage() {
   const remoteFiles = filesQuery.isError ? undefined : filesQuery.data;
   const parsingQuery = useParsingStatus(objectId, Boolean(object));
   const parsing = parsingQuery.isError ? undefined : parsingQuery.data;
+  const processId = parsing?.items[0]?.process_id ?? "";
+  const identificationQuery = useIdentification(objectId, processId);
+  const registry = identificationQuery.isError
+    ? undefined
+    : identificationQuery.data;
   const classificationQuery = useClassificationStatus(
     objectId,
-    parsing,
+    parsing
+      ? { ...parsing, active: parsing.active || Boolean(registry?.active) }
+      : undefined,
     Boolean(object) && !parsingQuery.isError,
+    registry?.resolved_input_hash,
   );
   const classification = classificationQuery.isError
     ? undefined
     : classificationQuery.data;
-  const kindOptionsQuery = useKindOptions(objectId, Boolean(object));
-  const kindOptions = kindOptionsQuery.isError
-    ? null
-    : (kindOptionsQuery.data?.options ?? null);
 
   const [packageStage, setPackageStage] = useState<DocumentStage>(
     DocumentStage.PD,
@@ -102,7 +107,6 @@ export function DocumentUploadPage() {
   const receiptResult = receipt.isError ? undefined : receipt.data;
   const retryParsing = useRetryParsing();
   const retryClassification = useRetryClassification();
-  const resolveClassification = useResolveClassification();
 
   const parsingByFileId = useMemo(
     () =>
@@ -142,7 +146,9 @@ export function DocumentUploadPage() {
         remoteUploadRow(
           file,
           parsingByFileId.get(file.id),
-          classificationByFileId.get(file.id),
+          classification?.review_active
+            ? undefined
+            : classificationByFileId.get(file.id),
           declaredStages[file.id] ?? null,
         ),
       ),
@@ -152,6 +158,7 @@ export function DocumentUploadPage() {
       remoteFiles,
       parsingByFileId,
       classificationByFileId,
+      classification?.review_active,
       declaredStages,
       upload.isPending,
     ],
@@ -309,18 +316,18 @@ export function DocumentUploadPage() {
     }
   };
 
-  const handleResolveKind = (
-    row: UploadRow,
-    kindCode: string,
-    stage: DocumentStage,
-  ) => {
-    if (!row.fileId) return;
-    resolveClassification.mutate({
-      objectId,
-      fileId: row.fileId,
-      kindCode,
-      stage,
-    });
+  const openIdentification = (row?: UploadRow) => {
+    const file =
+      (row?.fileId ? parsingByFileId.get(row.fileId) : undefined) ??
+      parsing?.items[0];
+    if (!file) return;
+    void navigate(
+      routeNames.OBJECT_DOCUMENTS(objectId, {
+        processId: file.process_id,
+        runId: file.run_id,
+        fileId: row?.fileId ?? undefined,
+      }),
+    );
   };
 
   if (objectQuery.isPending) {
@@ -432,10 +439,38 @@ export function DocumentUploadPage() {
           </div>
 
           <div className="min-[1100px]:col-span-4">
-            <CompletenessPanel objectId={objectId} rows={rows} />
+            <CompletenessPanel
+              objectId={objectId}
+              registry={registry}
+              canEdit={canUpload}
+            />
           </div>
 
           <div className="min-w-0 min-[1100px]:col-span-8">
+            {parsingQuery.isError ||
+            classificationQuery.isError ||
+            identificationQuery.isError ? (
+              <div
+                role="alert"
+                className="bg-danger/10 mb-3 rounded-xl p-4 text-sm"
+              >
+                <p>Не удалось обновить состояние документов.</p>
+                <Button
+                  className="mt-2"
+                  size="sm"
+                  variant="outline"
+                  onPress={() => {
+                    if (parsingQuery.isError) void parsingQuery.refetch();
+                    if (classificationQuery.isError)
+                      void classificationQuery.refetch();
+                    if (identificationQuery.isError)
+                      void identificationQuery.refetch();
+                  }}
+                >
+                  Повторить
+                </Button>
+              </div>
+            ) : null}
             {mismatchCount > 0 && (
               <div
                 role="alert"
@@ -453,7 +488,6 @@ export function DocumentUploadPage() {
             <DocumentsTable
               failedCount={summary.failedCount}
               filter={filter}
-              kindOptions={kindOptions}
               needsReviewCount={summary.needsReviewCount}
               onAcceptDetectedStage={handleAcceptDetectedStage}
               onChangeDeclaredStage={handleChangeDeclaredStage}
@@ -461,7 +495,7 @@ export function DocumentUploadPage() {
               onFilterChange={setFilter}
               onQueryChange={setQuery}
               onRemovePending={handleRemovePending}
-              onResolveKind={handleResolveKind}
+              onIdentify={openIdentification}
               onRetry={handleRetry}
               onSelectedIdsChange={setSelectedIds}
               query={query}
@@ -479,7 +513,15 @@ export function DocumentUploadPage() {
           </div>
 
           <div className="min-[1100px]:col-span-4">
-            <MetadataAssistant needsReviewCount={summary.needsReviewCount} />
+            <MetadataAssistant
+              needsReviewCount={summary.needsReviewCount}
+              onOpen={
+                parsing?.items.length
+                  ? () =>
+                      openIdentification(rows.find((row) => row.needsReview))
+                  : undefined
+              }
+            />
           </div>
         </div>
       </div>
@@ -488,41 +530,62 @@ export function DocumentUploadPage() {
         <p className="text-copy-muted mr-auto hidden text-sm min-[720px]:block">
           {pendingFiles.length > 0
             ? `В пакете ${pendingFiles.length} файлов · выбрано ${selectedIds.size}`
-            : `Выбрано ${selectedIds.size} файлов`}
+            : "Проверка всего загруженного комплекта"}
         </p>
-        <Button
-          aria-label={
-            selectedIds.size > 0 ? "Удалить выбранные файлы" : "Очистить список"
-          }
-          className="rounded-xl"
-          isDisabled={pendingFiles.length === 0}
-          onPress={
-            selectedIds.size > 0 ? handleRemoveSelected : handleClearPending
-          }
-          variant={selectedIds.size > 0 ? "danger-soft" : "outline"}
-        >
-          <UploadIcon className="size-4.5" name="trash" />
-          <span className="hidden sm:inline">
-            {selectedIds.size > 0
-              ? `Удалить выбранные (${selectedIds.size})`
-              : "Очистить список"}
-          </span>
-        </Button>
-        <Button className="rounded-xl" isDisabled>
-          <UploadIcon className="size-4.5" name="play" />
-          Проверить метаданные
-        </Button>
-        <Button
-          className="min-w-0 flex-1 rounded-xl min-[520px]:min-w-52 min-[520px]:flex-none"
-          isDisabled={
-            sendablePendingFiles.length === 0 || !canUpload || upload.isPending
-          }
-          isPending={upload.isPending}
-          onPress={submit}
-        >
-          <UploadIcon className="size-4.5" name="upload" />
-          {attemptId ? "Повторить отправку" : "Загрузить документы"}
-        </Button>
+        {pendingFiles.length > 0 ? (
+          <Button
+            aria-label={
+              selectedIds.size > 0
+                ? "Удалить выбранные файлы"
+                : "Очистить список"
+            }
+            className="rounded-xl"
+            isDisabled={pendingFiles.length === 0}
+            onPress={
+              selectedIds.size > 0 ? handleRemoveSelected : handleClearPending
+            }
+            variant={selectedIds.size > 0 ? "danger-soft" : "outline"}
+          >
+            <UploadIcon className="size-4.5" name="trash" />
+            <span className="hidden sm:inline">
+              {selectedIds.size > 0
+                ? `Удалить выбранные (${selectedIds.size})`
+                : "Очистить список"}
+            </span>
+          </Button>
+        ) : null}
+        {sendablePendingFiles.length > 0 || !processId ? (
+          <Button
+            className="min-w-0 flex-1 rounded-xl min-[520px]:min-w-52 min-[520px]:flex-none"
+            isDisabled={
+              sendablePendingFiles.length === 0 ||
+              !canUpload ||
+              upload.isPending
+            }
+            isPending={upload.isPending}
+            onPress={submit}
+          >
+            <UploadIcon className="size-4.5" name="upload" />
+            {attemptId ? "Повторить отправку" : "Загрузить документы"}
+          </Button>
+        ) : (
+          <CheckDocumentsAction
+            objectId={objectId}
+            registry={registry}
+            preparing={Boolean(
+              parsing?.active ||
+              classification?.active ||
+              classification?.review_active ||
+              identificationQuery.isPending,
+            )}
+            unavailable={
+              upload.isPending ||
+              parsingQuery.isError ||
+              classificationQuery.isError ||
+              identificationQuery.isError
+            }
+          />
+        )}
       </div>
     </ConstrainedLayout>
   );

@@ -14,6 +14,7 @@ import { DocumentsModule } from "./modules/documents/documents.module.js";
 import { ExtractionModule } from "./modules/extraction/extraction.module.js";
 import { HealthModule } from "./modules/health/health.module.js";
 import { ClassificationModule } from "./modules/identification/classification.module.js";
+import { IdentificationModule } from "./modules/identification/identification.module.js";
 import { ObjectsModule } from "./modules/objects/objects.module.js";
 import { ParsingModule } from "./modules/parsing/parsing.module.js";
 import { UsersAdminModule } from "./modules/users/users-admin.module.js";
@@ -30,6 +31,7 @@ import { VerificationModule } from "./modules/verification/verification.module.j
     DocumentsModule,
     ParsingModule,
     ClassificationModule,
+    IdentificationModule,
     ExtractionModule,
     CompletenessModule,
     VerificationModule,

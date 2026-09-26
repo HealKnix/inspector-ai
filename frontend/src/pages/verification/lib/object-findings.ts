@@ -16,6 +16,7 @@ import {
   type VerificationEvidence,
   type VerificationFinding,
 } from "@/pages/verification/types";
+import { verificationReason } from "./verification-messages";
 
 /**
  * Машинные коды причин отклонения — 1:1 по смыслу с backend
@@ -128,15 +129,14 @@ export function priorityForRisk(risk: string | null): ReviewPriority {
 const verdictStatusText: Record<string, string> = {
   match: "Извлечённые значения совпадают.",
   discrepancy: "Извлечённые значения различаются.",
-  expected_missing: "Значение не найдено в документах ожидаемой стадии (ПД).",
-  actual_missing:
-    "Значение не найдено в документах проверяемой стадии (РД/ИД).",
+  expected_missing: "Значение не найдено в эталонном документе.",
+  actual_missing: "Значение не найдено в проверяемом документе.",
   expected_ambiguous:
     "В документах ожидаемой стадии найдено несколько разных значений.",
   actual_ambiguous:
     "В проверяемых документах найдено несколько разных значений.",
   not_comparable: "Извлечённые значения несопоставимы по типу правила.",
-  no_comparison: "Для параметра не задано правило сравнения.",
+  no_comparison: "Сравнение по этому параметру не выполнено.",
 };
 
 export function describeFinding(finding: ApiFinding): string {
@@ -144,17 +144,20 @@ export function describeFinding(finding: ApiFinding): string {
   const parts: string[] = [];
   if (verdict) {
     parts.push(
-      verdictStatusText[verdict.status] ?? `Вердикт: ${verdict.status}.`,
+      verdictStatusText[verdict.status] ??
+        "Результат сравнения требует уточнения.",
     );
     const detail = verdict.pairs.find((pair) => pair.detail)?.detail;
-    if (detail) parts.push(detail);
-    parts.push(...verdict.warnings);
-  } else if (finding.gate_reasons?.length) {
-    parts.push(...finding.gate_reasons);
-  } else {
+    if (detail) parts.push(verificationReason(detail));
+    parts.push(...verdict.warnings.map(verificationReason));
+  }
+  if (finding.gate_reasons?.length) {
+    parts.push(...finding.gate_reasons.map(verificationReason));
+  }
+  if (!parts.length) {
     parts.push("Доказательства по параметру не собраны.");
   }
-  return parts.join(" ");
+  return [...new Set(parts)].join(" ");
 }
 
 function refValue(member: {
@@ -257,8 +260,26 @@ export function toVerificationFinding(
       documentId: actualRef?.file_id ?? "",
       value: actualRef ? refValue(actualRef) : "—",
     };
+    // A gated comparison may have no verdict values despite a real extraction.
+    const preview = item.evidence_preview;
+    if (preview) {
+      const evidence = {
+        ...emptyEvidence,
+        documentId: preview.file_id,
+        excerpt: preview.quote,
+        value: refValue(preview),
+      };
+      if (preview.role === "expected" && !expectedRef) expected = evidence;
+      if (preview.role === "actual" && !actualRef) actual = evidence;
+    }
   }
 
+  const context = detail?.context ?? item.verdict?.context;
+  const contextLabel = context
+    ? `${context.scope || "Область не определена"} · ${context.works_period.from ?? "начало не определено"} — ${context.works_period.to ?? "окончание не определено"}`
+    : item.scope_key && item.scope_key !== "object"
+      ? `Область: ${item.scope_key}`
+      : undefined;
   return {
     id: item.id,
     ordinal,
@@ -266,16 +287,24 @@ export function toVerificationFinding(
       ? `${item.parameter_code} · ${item.parameter_name}`
       : item.parameter_code,
     description: describeFinding(item),
+    contextLabel,
     uiMarker: markerForRisk(item.risk),
     findingStatus: item.status,
     reviewPriority: priorityForRisk(item.risk),
     expectedEvidence: expected,
     actualEvidence: actual,
+    sourcePreview: item.evidence_preview?.quote,
     decisionReason: labelForRejectionCode(item.reason_code),
     reviewComment: item.comment,
     parameterCode: item.parameter_code,
     verdictStatus: item.verdict?.status,
     findingVersion: item.finding_version,
+    statusLabel:
+      item.status === "NEGATIVE_VERIFIED" &&
+      item.verdict?.status === "match" &&
+      !item.decided_at
+        ? "Совпадает"
+        : undefined,
     source: VERIFICATION_API_SOURCE,
     isSynthetic: false,
   };

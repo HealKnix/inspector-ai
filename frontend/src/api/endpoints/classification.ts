@@ -1,11 +1,11 @@
 import { apiClient } from "@/api/client";
 import { ApiError } from "@/api/errors";
 import {
-  classificationResolveSchema,
   classificationRetrySchema,
   classificationStatusSchema,
   kindOptionsSchema,
 } from "@/api/types/classification";
+import { clarificationResultSchema } from "@/api/types/identification";
 
 export async function getClassificationStatus(
   objectId: string,
@@ -48,11 +48,30 @@ export async function resolveClassification(input: {
   objectId: string;
   fileId: string;
   kindCode: string;
-  stage?: "PD" | "RD" | "ID";
+  stage: "PD" | "RD" | "ID";
+  requestId: string;
+  expectedRunId: string;
+  expectedVersion: number;
+  basis: string;
 }) {
   const response = await apiClient.post<unknown>(
     `/v1/objects/${input.objectId}/files/${input.fileId}/classification/resolve`,
-    { kind_code: input.kindCode, stage: input.stage },
+    {
+      kind_code: input.kindCode,
+      stage: input.stage,
+      request_id: input.requestId,
+      expected_run_id: input.expectedRunId,
+      expected_version: input.expectedVersion,
+      basis: input.basis,
+    },
   );
-  return classificationResolveSchema.parse(response.data);
+  const result = clarificationResultSchema.parse(response.data);
+  if (
+    result.request_id !== input.requestId ||
+    result.previous_run_id !== input.expectedRunId
+  )
+    throw new ApiError("Не удалось подтвердить уточнение классификации.", {
+      status: 409,
+    });
+  return result;
 }

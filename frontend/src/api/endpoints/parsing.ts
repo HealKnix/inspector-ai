@@ -19,7 +19,7 @@ export async function getParseResult(
 ) {
   const response = await apiClient.get<unknown>(
     `/v1/objects/${objectId}/files/${fileId}/parse`,
-    { signal },
+    { signal, params: { run_id: runId, artifact_id: artifactId } },
   );
   const result = parseResultSchema.parse(response.data);
   if (
@@ -41,12 +41,13 @@ export async function getRenderedPage(
   artifactId: string,
   page: number,
   signal?: AbortSignal,
+  runId?: string,
 ) {
   const response = await apiClient.get<Blob>(
     `/v1/objects/${objectId}/files/${fileId}/parse/pages/${page}`,
     {
       signal,
-      params: { artifact_id: artifactId },
+      params: { artifact_id: artifactId, ...(runId ? { run_id: runId } : {}) },
       responseType: "blob",
       timeout: 60_000,
     },

@@ -112,7 +112,34 @@ export class ParsingService {
     objectId: string,
     fileId: string,
     expectedArtifact?: string,
+    historicalRunId?: string,
   ) {
+    if (historicalRunId) {
+      if (!expectedArtifact)
+        throw new ConflictException(
+          "Для исторического результата требуется artifact_id",
+        );
+      const metadata = await tx.parseArtifact.findFirst({
+        where: {
+          id: expectedArtifact,
+          task: {
+            objectId,
+            fileId,
+            runId: historicalRunId,
+            state: "succeeded",
+          },
+        },
+        include: { task: { include: { file: true, run: true } } },
+      });
+      if (!metadata)
+        throw new NotFoundException("Историческое доказательство недоступно");
+      const { file, run } = metadata.task;
+      if (file.corruptedAt || metadata.sourceSha256 !== file.sha256)
+        throw new ServiceUnavailableException(
+          "Нарушена целостность исторического результата",
+        );
+      return { file, run, metadata };
+    }
     const { file, run, task } = await this.current(tx, objectId, fileId);
     if (file.corruptedAt)
       throw new ServiceUnavailableException("Нарушена целостность оригинала");
@@ -134,11 +161,18 @@ export class ParsingService {
     objectId: string,
     fileId: string,
     expectedArtifact?: string,
+    historicalRunId?: string,
   ) {
     return this.prisma.$transaction(async (tx) => {
       await this.access.lock(tx, objectId);
       await this.access.requireAccess(tx, userId, objectId);
-      return this.publishedState(tx, objectId, fileId, expectedArtifact);
+      return this.publishedState(
+        tx,
+        objectId,
+        fileId,
+        expectedArtifact,
+        historicalRunId,
+      );
     });
   }
   private async publishedAsAdmin(fileId: string, expectedArtifact?: string) {
@@ -182,10 +216,24 @@ export class ParsingService {
       throw new ServiceUnavailableException("Сохранённый результат недоступен");
     }
   }
-  async artifact(userId: string, objectId: string, fileId: string) {
+  async artifact(
+    userId: string,
+    objectId: string,
+    fileId: string,
+    expectedArtifact?: string,
+    historicalRunId?: string,
+  ) {
     const result = await this.readArtifact(
-      () => this.published(userId, objectId, fileId),
-      (expected) => this.published(userId, objectId, fileId, expected),
+      () =>
+        this.published(
+          userId,
+          objectId,
+          fileId,
+          expectedArtifact,
+          historicalRunId,
+        ),
+      (expected) =>
+        this.published(userId, objectId, fileId, expected, historicalRunId),
     );
     return { ...result, file_id: fileId };
   }
@@ -235,9 +283,16 @@ export class ParsingService {
     fileId: string,
     pageNumber: number,
     expectedArtifact?: string,
+    historicalRunId?: string,
   ) {
     return this.readPage(pageNumber, (expected) =>
-      this.published(userId, objectId, fileId, expected ?? expectedArtifact),
+      this.published(
+        userId,
+        objectId,
+        fileId,
+        expected ?? expectedArtifact,
+        historicalRunId,
+      ),
     );
   }
   async adminPage(

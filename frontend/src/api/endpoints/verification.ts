@@ -1,4 +1,5 @@
 import { apiClient } from "@/api/client";
+import { ApiError } from "@/api/errors";
 import {
   decisionResponseSchema,
   finalizeResponseSchema,
@@ -9,24 +10,44 @@ import {
   type DecisionRequest,
 } from "@/api/types/verification";
 
-export async function getProtocol(objectId: string, signal?: AbortSignal) {
+export async function getProtocol(
+  objectId: string,
+  signal?: AbortSignal,
+  protocolId?: string,
+) {
   const response = await apiClient.get<unknown>(
     `/v1/objects/${objectId}/protocol`,
-    { signal },
+    { signal, ...(protocolId ? { params: { protocol_id: protocolId } } : {}) },
   );
-  return protocolResponseSchema.parse(response.data);
+  const result = protocolResponseSchema.parse(response.data);
+  if (
+    result.object_id !== objectId ||
+    (protocolId && result.protocol?.id !== protocolId)
+  )
+    throw new ApiError("Версия протокола изменилась. Обновите результаты.", {
+      status: 409,
+    });
+  return result;
 }
 
 export async function listFindings(
   objectId: string,
-  filter: { status?: string; q?: string } = {},
+  filter: { status?: string; q?: string; protocol_id?: string } = {},
   signal?: AbortSignal,
 ) {
   const response = await apiClient.get<unknown>(
     `/v1/objects/${objectId}/findings`,
     { params: filter, signal },
   );
-  return findingsResponseSchema.parse(response.data);
+  const result = findingsResponseSchema.parse(response.data);
+  if (
+    result.object_id !== objectId ||
+    (filter.protocol_id && result.protocol_id !== filter.protocol_id)
+  )
+    throw new ApiError("Находки относятся к другой версии протокола.", {
+      status: 409,
+    });
+  return result;
 }
 
 export async function getFinding(
@@ -38,7 +59,12 @@ export async function getFinding(
     `/v1/objects/${objectId}/findings/${findingId}`,
     { signal },
   );
-  return findingDetailResponseSchema.parse(response.data);
+  const result = findingDetailResponseSchema.parse(response.data);
+  if (result.object_id !== objectId || result.finding.id !== findingId)
+    throw new ApiError("Источник находки изменился. Обновите результаты.", {
+      status: 409,
+    });
+  return result;
 }
 
 export async function postDecision(

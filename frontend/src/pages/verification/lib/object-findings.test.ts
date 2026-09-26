@@ -33,6 +33,8 @@ function listItem(overrides: Partial<ApiFinding> = {}): ApiFinding {
     reason_code: null,
     comment: null,
     decided_at: null,
+    has_evidence: true,
+    evidence_preview: null,
     finding_version: 3,
     gate_reasons: null,
     verdict: {
@@ -128,6 +130,53 @@ function detail(overrides: Partial<ApiFindingDetail> = {}): ApiFindingDetail {
 }
 
 describe("toVerificationFinding", () => {
+  it("показывает найденное значение и цитату одной стороны до загрузки карточки", () => {
+    const finding = toVerificationFinding(
+      listItem({
+        status: "CLARIFICATION_REQUIRED",
+        verdict: null,
+        evidence_preview: {
+          file_id: fileRd,
+          role: "actual",
+          value: 163.46,
+          value_raw: "163,46",
+          unit: "м²",
+          quote: "Синтетическая площадь 163,46 м²",
+        },
+      }),
+      1,
+    );
+
+    expect(finding.expectedEvidence.value).toBe("—");
+    expect(finding.actualEvidence).toMatchObject({
+      documentId: fileRd,
+      value: "163,46 м²",
+      excerpt: "Синтетическая площадь 163,46 м²",
+    });
+  });
+
+  it("сохраняет цитату неоднозначного фрагмента без выдуманного значения", () => {
+    const finding = toVerificationFinding(
+      listItem({
+        status: "CLARIFICATION_REQUIRED",
+        verdict: null,
+        evidence_preview: {
+          file_id: fileRd,
+          role: "unknown",
+          value: null,
+          value_raw: null,
+          unit: null,
+          quote: "Синтетический неоднозначный фрагмент",
+        },
+      }),
+      1,
+    );
+
+    expect(finding.expectedEvidence.value).toBe("—");
+    expect(finding.actualEvidence.value).toBe("—");
+    expect(finding.sourcePreview).toBe("Синтетический неоднозначный фрагмент");
+  });
+
   it("маппит элемент списка в модель формы со значениями вердикта", () => {
     const finding = toVerificationFinding(listItem(), 7);
 

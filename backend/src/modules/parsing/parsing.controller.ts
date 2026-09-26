@@ -43,6 +43,15 @@ export class ParsingPageQueryDto {
   @IsOptional()
   @IsUUID()
   artifact_id?: string;
+
+  @ApiProperty({
+    format: "uuid",
+    required: false,
+    description: "Запуск исторического доказательства; требует artifact_id",
+  })
+  @IsOptional()
+  @IsUUID()
+  run_id?: string;
 }
 
 @ApiTags("parsing")
@@ -225,10 +234,17 @@ export class ParsingController {
     @Req() request: AuthenticatedRequest,
     @Param("objectId", ParseUUIDPipe) objectId: string,
     @Param("fileId", ParseUUIDPipe) fileId: string,
+    @Query() query: ParsingPageQueryDto,
     @Res({ passthrough: true }) response: Response,
   ) {
     response.setHeader("Cache-Control", "private, no-store");
-    return this.parsing.artifact(request.user.id, objectId, fileId);
+    return this.parsing.artifact(
+      request.user.id,
+      objectId,
+      fileId,
+      query.artifact_id,
+      query.run_id,
+    );
   }
   @Get("files/:fileId/parse/pages/:pageNumber")
   @ApiResponse({
@@ -251,6 +267,7 @@ export class ParsingController {
       fileId,
       pageNumber,
       query.artifact_id,
+      query.run_id,
     );
     response.setHeader("Cache-Control", "private, no-store");
     response.setHeader("Content-Type", "image/png");

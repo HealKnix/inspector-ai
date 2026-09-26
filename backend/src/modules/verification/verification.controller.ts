@@ -15,6 +15,7 @@ import {
   ApiProperty,
   ApiResponse,
   ApiTags,
+  type OpenAPIObject,
 } from "@nestjs/swagger";
 import {
   IsIn,
@@ -48,6 +49,47 @@ const FINDING_STATUSES: FindingStatusValue[] = [
   "NOT_COMPARABLE",
   "NOT_APPLICABLE",
 ];
+
+type SchemaObject = NonNullable<
+  NonNullable<OpenAPIObject["components"]>["schemas"]
+>[string];
+
+const findingEvidenceSchema: SchemaObject = {
+  type: "object",
+  required: ["has_evidence", "evidence_preview"],
+  properties: {
+    has_evidence: {
+      type: "boolean",
+      description:
+        "В неизменяемом снимке находки есть распознанное или неоднозначное " +
+        "значение с цитатой и локатором собственного источника. Не подтверждает " +
+        "нарушение и не восстанавливает исторические доказательства из текущих данных.",
+    },
+    evidence_preview: {
+      type: "object",
+      nullable: true,
+      description:
+        "Первый подтверждённый локатором фрагмент неизменяемого снимка; null при отсутствии доказательства.",
+      required: ["file_id", "role", "value", "value_raw", "unit", "quote"],
+      properties: {
+        file_id: { type: "string", format: "uuid" },
+        role: { type: "string", enum: ["expected", "actual", "unknown"] },
+        value: {
+          oneOf: [{ type: "number", nullable: true }, { type: "string" }],
+        },
+        value_raw: { type: "string", nullable: true },
+        unit: { type: "string", nullable: true },
+        quote: { type: "string" },
+      },
+    },
+  },
+};
+
+const findingResponseSchema: SchemaObject = {
+  type: "object",
+  required: ["finding"],
+  properties: { finding: findingEvidenceSchema },
+};
 
 class DecisionDto {
   @ApiProperty({
@@ -93,6 +135,10 @@ class CancelFinalizationDto {
 }
 
 class FindingQueryDto {
+  @ApiProperty({ required: false, format: "uuid" })
+  @IsOptional()
+  @IsUUID()
+  protocol_id?: string;
   @ApiProperty({ required: false, enum: FINDING_STATUSES })
   @IsOptional()
   @IsIn(FINDING_STATUSES)
@@ -141,16 +187,26 @@ export class VerificationController {
   getProtocol(
     @Req() request: AuthenticatedRequest,
     @Param("objectId", ParseUUIDPipe) objectId: string,
+    @Query() query: FindingQueryDto,
     @Res({ passthrough: true }) response: Response,
   ) {
     response.setHeader("Cache-Control", "private, no-store");
-    return this.verification.getProtocol(request.user.id, objectId);
+    return this.verification.getProtocol(
+      request.user.id,
+      objectId,
+      query.protocol_id,
+    );
   }
 
   @Get("findings")
   @ApiResponse({
     status: 200,
     description: "Находки активной версии протокола с фильтром по статусу",
+    schema: {
+      type: "object",
+      required: ["items"],
+      properties: { items: { type: "array", items: findingEvidenceSchema } },
+    },
   })
   listFindings(
     @Req() request: AuthenticatedRequest,
@@ -162,6 +218,7 @@ export class VerificationController {
     return this.verification.listFindings(request.user.id, objectId, {
       status: query.status,
       q: query.q,
+      protocol_id: query.protocol_id,
     });
   }
 
@@ -171,6 +228,7 @@ export class VerificationController {
     description:
       "Карточка находки: снимок вердикта, члены группы с локаторами " +
       "доказательств, история решений",
+    schema: findingResponseSchema,
   })
   getFinding(
     @Req() request: AuthenticatedRequest,
@@ -189,6 +247,7 @@ export class VerificationController {
       "Решение инспектора; 409 — статус процесса не READY/VERIFYING, " +
       "устаревшая finding_version или недопустимый переход; 400 — отклонение " +
       "без reason_code/комментария",
+    schema: findingResponseSchema,
   })
   decide(
     @Req() request: AuthenticatedRequest,

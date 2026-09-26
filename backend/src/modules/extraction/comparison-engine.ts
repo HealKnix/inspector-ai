@@ -15,6 +15,13 @@ export interface GroupMember {
   value: number | string | null;
   value_raw: string | null;
   unit: string | null;
+  artifact_id?: string;
+  artifact_sha256?: string;
+  source_sha256?: string;
+  document_id?: string;
+  revision_id?: string;
+  rule_version_id?: string;
+  evidence?: unknown[];
 }
 
 export type PairResult = "match" | "mismatch" | "not_comparable";
@@ -55,6 +62,9 @@ export interface GroupVerdict {
   pairs: ComparisonPair[];
   warnings: string[];
   evaluated_at: string;
+  context?: unknown;
+  selection_basis?: unknown;
+  identity_blockers?: string[];
 }
 
 const EPSILON = 1e-9;

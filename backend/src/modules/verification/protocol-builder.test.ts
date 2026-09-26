@@ -8,6 +8,7 @@ import type {
 import {
   buildProtocol,
   membersFingerprint,
+  protocolContent,
   type BuilderGroup,
   type BuilderParameter,
 } from "./protocol-builder.js";
@@ -106,6 +107,45 @@ describe("statusForVerdict", () => {
 });
 
 describe("buildProtocol", () => {
+  it("сохраняет два контекста одного параметра и считает покрытие отдельно", () => {
+    const result = build(
+      [parameter("P022")],
+      [
+        { ...group("P022", "match"), id: "jan", scope_key: "work-jan" },
+        { ...group("P022", "discrepancy"), id: "feb", scope_key: "work-feb" },
+      ],
+    );
+    expect(result.findings).toHaveLength(2);
+    expect(
+      result.findings.map((item) => item.evidence_group_id).sort(),
+    ).toEqual(["feb", "jan"]);
+    expect(protocolContent(result, null)).toMatchObject({
+      findings_count: 2,
+      parameters_count: 1,
+    });
+  });
+
+  it("неустановленная применимость блокирует даже численно совпавший результат", () => {
+    const item = group("P022", "match");
+    item.verdict = verdict("match", {
+      identity_blockers: ["approval_unknown"],
+    });
+    const result = build([parameter("P022")], [item]);
+    expect(result.findings[0]?.status).toBe("CLARIFICATION_REQUIRED");
+    expect(result.findings[0]?.gate_reasons).toContain("approval_unknown");
+    const mixed = build(
+      [parameter("P022")],
+      [
+        { ...group("P022", "match"), scope_key: "resolved" },
+        { ...item, scope_key: "unresolved" },
+      ],
+    );
+    expect(protocolContent(mixed, null)).toMatchObject({
+      findings_count: 2,
+      parameters_count: 1,
+      parameters_compared: 0,
+    });
+  });
   it("discrepancy с gate READY даёт CANDIDATE", () => {
     const result = build(
       [parameter("P022")],
@@ -248,6 +288,39 @@ describe("buildProtocol", () => {
 });
 
 describe("membersFingerprint", () => {
+  it("одно значение не переносит решение при смене редакции, правила, области или цитаты", () => {
+    const baseMember = member({
+      value: 100,
+      revision_id: "r1",
+      rule_version_id: "rule1",
+      evidence: [{ quote: "100 м2", pageNumber: 1 }],
+    });
+    const original = membersFingerprint(
+      [baseMember],
+      verdict("match", { context: { scope: "A" } }),
+      new Map(),
+    );
+    for (const changed of [
+      { ...baseMember, revision_id: "r2" },
+      { ...baseMember, rule_version_id: "rule2" },
+      { ...baseMember, evidence: [{ quote: "100 м2", pageNumber: 2 }] },
+    ]) {
+      expect(
+        membersFingerprint(
+          [changed],
+          verdict("match", { context: { scope: "A" } }),
+          new Map(),
+        ),
+      ).not.toBe(original);
+    }
+    expect(
+      membersFingerprint(
+        [baseMember],
+        verdict("match", { context: { scope: "B" } }),
+        new Map(),
+      ),
+    ).not.toBe(original);
+  });
   const members = [
     member({ role: "expected", value: 100, unit: "m2" }),
     member({ role: "actual", value: 100, unit: "m2" }),
