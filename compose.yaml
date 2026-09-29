@@ -1,17 +1,23 @@
+# LLM-контур включён по умолчанию — это основной сценарий проверки.
+# BASE_URL по умолчанию указывает на сервис ollama из compose.ollama.yaml.
+# Для запуска без встроенного Ollama задайте в .env внешний
+# OpenAI-совместимый endpoint и модель (например OpenRouter
+# https://openrouter.ai/api/v1 + qwen/qwen3.8-27b + CLASSIFICATION_LLM_API_KEY).
 x-classification-env: &classification-env
-  CLASSIFICATION_LLM_ENABLED: ${CLASSIFICATION_LLM_ENABLED:-false}
-  CLASSIFICATION_LLM_BASE_URL: ${CLASSIFICATION_LLM_BASE_URL:-https://openrouter.ai/api/v1}
-  CLASSIFICATION_LLM_MODEL: ${CLASSIFICATION_LLM_MODEL:-qwen/qwen3.8-27b}
+  CLASSIFICATION_LLM_ENABLED: ${CLASSIFICATION_LLM_ENABLED:-true}
+  CLASSIFICATION_LLM_BASE_URL: ${CLASSIFICATION_LLM_BASE_URL:-http://ollama:11434/v1}
+  CLASSIFICATION_LLM_MODEL: ${CLASSIFICATION_LLM_MODEL:-qwen3.8:27b}
   CLASSIFICATION_LLM_API_KEY: ${CLASSIFICATION_LLM_API_KEY:-}
   CLASSIFICATION_LLM_RESPONSE_FORMAT: ${CLASSIFICATION_LLM_RESPONSE_FORMAT:-json_schema}
   CLASSIFICATION_LLM_TIMEOUT_MS: ${CLASSIFICATION_LLM_TIMEOUT_MS:-240000}
   CLASSIFICATION_LLM_MAX_RESPONSE_BYTES: ${CLASSIFICATION_LLM_MAX_RESPONSE_BYTES:-131072}
 
-# Section-first comparison provider. Disabled by default; empty endpoint
-# values inherit the CLASSIFICATION_LLM_* settings inside the container.
+# Section-first comparison provider. Enabled by default like the
+# classification contour; empty endpoint values inherit the
+# CLASSIFICATION_LLM_* settings inside the container.
 # Forwarded only to backend and extraction-worker — never to the frontend.
 x-section-env: &section-env
-  SECTION_LLM_ENABLED: ${SECTION_LLM_ENABLED:-false}
+  SECTION_LLM_ENABLED: ${SECTION_LLM_ENABLED:-true}
   SECTION_LLM_BASE_URL: ${SECTION_LLM_BASE_URL:-}
   SECTION_LLM_MODEL: ${SECTION_LLM_MODEL:-}
   SECTION_LLM_API_KEY: ${SECTION_LLM_API_KEY:-}
