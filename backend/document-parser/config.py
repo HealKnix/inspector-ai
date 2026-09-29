@@ -86,7 +86,7 @@ class Settings:
             Path(os.environ.get("STORAGE_ROOT", "/data")).resolve(),
             Path(os.environ.get("PARSER_MODEL_ROOT", "/models")).resolve(),
             Path(os.environ.get("PARSER_FONT_PATH", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")).resolve(),
-            integer("PARSER_FILE_TIMEOUT_SECONDS", 600, 1, 3600),
+            integer("PARSER_FILE_TIMEOUT_SECONDS", 600, 1, 86400),
             integer("PARSER_MAX_PAGES", 500, 1, 10000),
             integer("PARSER_MAX_RENDER_PIXELS", 20_000_000, 100000, 80000000),
             integer("PARSER_MAX_FILE_BYTES", 104857600, 1, 1073741824),
@@ -102,10 +102,11 @@ class Settings:
         # Hash executable source too, so an implementation change cannot reuse stale output.
         sources = {p.name: digest_file(p) for p in sorted(Path(__file__).parent.glob("*.py"))}
         return {
-            "parser": "par-local-1", "normalization": "nfc-horizontal-space-v1",
-            "renderer": "pymupdf-pillow-semantic-v1", "table_detector": "pp-structure-v3-guarded-v1",
+            "parser": "par-local-2", "normalization": "nfc-horizontal-space-v1",
+            "renderer": "pymupdf-pillow-semantic-v1", "table_detector": "pp-structure-v3-guarded-v2",
             "ocr_engine": "PP-StructureV3",
-            "pdf_region_profile": "paddle-regions-v1",
+            "pdf_region_profile": "paddle-regions-v2",
+            "text_provenance": "par-text-provenance-v1",
             "pdf_region_config": hashlib.sha256(json.dumps(REGION_OPTIONS, sort_keys=True).encode()).hexdigest(),
             "ocr_profile": "mobile1536-eslav-cpu-mkldnn-off-v1",
             "ocr_config": hashlib.sha256(json.dumps({"models": MODEL_ROLES, "init": OCR_OPTIONS, "predict": PREDICT_OPTIONS,

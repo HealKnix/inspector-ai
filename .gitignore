@@ -25,3 +25,6 @@ __pycache__/
 .pytest_cache/
 backend/document-parser/models/
 backend/document-parser/.cache/
+
+# Локальные операционные скрипты и артефакты прогонов (могут содержать токены)
+tmp/

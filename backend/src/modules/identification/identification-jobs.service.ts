@@ -4,6 +4,7 @@ import type {
   IdentificationTask,
   Prisma,
 } from "../../generated/prisma/client.js";
+import { writeOutboxEvent } from "../../infrastructure/observability/trace-context.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import { ObjectAccessService } from "../objects/object-access.service.js";
 import { ArtifactStorageService } from "../parsing/artifact-storage.service.js";
@@ -41,7 +42,7 @@ export class IdentificationJobsService {
     tx: Prisma.TransactionClient,
     task: IdentificationTask,
   ) {
-    await tx.outbox.create({
+    await writeOutboxEvent(tx, {
       data: {
         eventType: "identification.requested",
         availableAt: task.availableAt,
@@ -299,7 +300,7 @@ export class IdentificationJobsService {
       });
       if (retry) await this.enqueue(tx, next);
       else
-        await tx.outbox.create({
+        await writeOutboxEvent(tx, {
           data: {
             eventType: "identification.failed",
             payload: {

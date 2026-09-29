@@ -5,6 +5,7 @@ import type {
   ClassificationTask,
   Prisma,
 } from "../../generated/prisma/client.js";
+import { writeOutboxEvent } from "../../infrastructure/observability/trace-context.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import { ObjectAccessService } from "../objects/object-access.service.js";
 import { ArtifactStorageService } from "../parsing/artifact-storage.service.js";
@@ -67,7 +68,7 @@ export class ClassificationJobsService {
   }
 
   async enqueue(tx: Prisma.TransactionClient, task: ClassificationTask) {
-    await tx.outbox.create({
+    await writeOutboxEvent(tx, {
       data: {
         eventType: "classification.requested",
         availableAt: task.availableAt,
@@ -302,7 +303,7 @@ export class ClassificationJobsService {
           leaseUntil: null,
         },
       });
-      await tx.outbox.create({
+      await writeOutboxEvent(tx, {
         data: {
           eventType: "classification.succeeded",
           payload: {
@@ -361,7 +362,7 @@ export class ClassificationJobsService {
       });
       if (retry) await this.enqueue(tx, next);
       else
-        await tx.outbox.create({
+        await writeOutboxEvent(tx, {
           data: {
             eventType: "classification.failed",
             payload: {

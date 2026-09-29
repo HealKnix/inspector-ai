@@ -1,0 +1,29 @@
+{
+  "image": "inspector-release-frontend:foundations-20260927-r6",
+  "image_id": "sha256:526ba5aa34e64dc983e75fd5520c0a9f23057a240c2fa89edff316d2e0d701ff",
+  "passed": 19,
+  "checks": [
+    "control receiver reachable via IPv4",
+    "control receiver reachable via IPv6",
+    "control DNS receiver answers",
+    "nginx serves host loopback",
+    "nginx reaches only backend:3000",
+    "IPv4 OUTPUT defaults DROP",
+    "IPv6 OUTPUT defaults DROP",
+    "CapBnd excludes NET_ADMIN and NET_RAW",
+    "CapEff excludes NET_ADMIN and NET_RAW",
+    "CapPrm excludes NET_ADMIN and NET_RAW",
+    "CapInh excludes NET_ADMIN and NET_RAW",
+    "CapAmb excludes NET_ADMIN and NET_RAW",
+    "nginx cannot gain privileges",
+    "same backend other port blocked",
+    "other host IPv4 HTTP blocked",
+    "other host IPv6 HTTP blocked",
+    "direct external DNS blocked",
+    "Docker DNS cannot forward external names",
+    "startup without NET_ADMIN fails closed"
+  ],
+  "manifest_sha256": "b899ad410f1307ffe767d07c4ec2711750506534e66c912a2a29ef41db0e7692",
+  "test_script_sha256": "a2725671f8153d0448eb023a7d43209bc0c466e5088af7ceceedec648b0ea052",
+  "captured_at": "2026-09-27T07:35:21.5910648Z"
+}

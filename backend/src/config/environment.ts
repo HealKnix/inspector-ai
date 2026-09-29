@@ -2,6 +2,7 @@ import {
   DEFAULT_ACCESS_TOKEN_TTL_SECONDS,
   DEFAULT_REFRESH_TOKEN_TTL_SECONDS,
 } from "../common/const/auth.constants.js";
+import { readSectionAnalysisConfig } from "../modules/extraction/section-config.js";
 import { readClassificationConfig } from "../modules/identification/classification-config.js";
 
 type NodeEnvironment = "development" | "production" | "test";
@@ -138,6 +139,17 @@ export function validateEnvironment(
   config: Record<string, unknown>,
 ): Record<string, unknown> {
   readClassificationConfig(config);
+  readSectionAnalysisConfig(config);
+  if (
+    config.METRICS_TOKEN !== undefined &&
+    config.METRICS_TOKEN !== "" &&
+    (typeof config.METRICS_TOKEN !== "string" ||
+      !/^[A-Za-z0-9+/_=.-]{32,256}$/.test(config.METRICS_TOKEN))
+  ) {
+    throw new Error(
+      "METRICS_TOKEN должен содержать 32–256 допустимых символов без пробелов",
+    );
+  }
   const jwtSecret = readRequiredString(config, "JWT_SECRET");
   const jwtRefreshSecret = readRequiredString(config, "JWT_REFRESH_SECRET");
 

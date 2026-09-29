@@ -21,6 +21,7 @@ Bun-workspace с React-приложением, NestJS API и контейнер�
 описаны в [инструкции парсинга](docs/document-parsing.md).
 Классификация ПД/РД/ИД по правилам и через OpenRouter/Ollama описана в
 [инструкции классификации](docs/document-classification.md).
+Секционный анализ контекстов Матрицы: [инструкция](docs/section-context-analysis.md).
 
 ## Планирование и выполнение OpenSpec
 

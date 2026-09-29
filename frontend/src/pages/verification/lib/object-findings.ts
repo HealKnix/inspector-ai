@@ -1,5 +1,10 @@
 import type { ParsingFile } from "@/api/types/parsing";
 import type {
+  SectionAnalysisSnapshot,
+  SectionAssessment,
+  SectionEvidence,
+} from "@/api/types/section-analysis";
+import type {
   ApiFinding,
   ApiFindingDetail,
   EvidenceFragment,
@@ -28,6 +33,7 @@ export const REJECTION_REASONS = [
   { code: "ocr_error", label: "Ошибка OCR" },
   { code: "evidence_binding_error", label: "Ошибка привязки доказательства" },
   { code: "not_applicable", label: "Параметр неприменим" },
+  { code: "no_discrepancy", label: "Расхождение не подтверждено" },
 ] as const;
 
 export type RejectionReasonCode = (typeof REJECTION_REASONS)[number]["code"];
@@ -65,6 +71,7 @@ export const FindingStatusGroup = {
   CLARIFICATION: "clarification",
   NO_EVIDENCE: "no_evidence",
   NOT_APPLICABLE: "not_applicable",
+  NOT_COMPARABLE: "not_comparable",
 } as const;
 
 export type FindingStatusGroup =
@@ -80,6 +87,7 @@ export const findingStatusGroupLabels: Record<
   [FindingStatusGroup.CLARIFICATION]: "Уточнения",
   [FindingStatusGroup.NO_EVIDENCE]: "Нет доказательств",
   [FindingStatusGroup.NOT_APPLICABLE]: "Неприменимые",
+  [FindingStatusGroup.NOT_COMPARABLE]: "Несопоставимые",
 };
 
 const groupStatuses: Record<FindingStatusGroup, readonly FindingStatus[]> = {
@@ -90,10 +98,8 @@ const groupStatuses: Record<FindingStatusGroup, readonly FindingStatus[]> = {
   ],
   [FindingStatusGroup.CLARIFICATION]: [FindingStatus.CLARIFICATION_REQUIRED],
   [FindingStatusGroup.NO_EVIDENCE]: [FindingStatus.MISSING_EVIDENCE],
-  [FindingStatusGroup.NOT_APPLICABLE]: [
-    FindingStatus.NOT_COMPARABLE,
-    FindingStatus.NOT_APPLICABLE,
-  ],
+  [FindingStatusGroup.NOT_APPLICABLE]: [FindingStatus.NOT_APPLICABLE],
+  [FindingStatusGroup.NOT_COMPARABLE]: [FindingStatus.NOT_COMPARABLE],
 };
 
 export function findingStatusGroup(status: FindingStatus): FindingStatusGroup {
@@ -139,6 +145,16 @@ const verdictStatusText: Record<string, string> = {
   no_comparison: "Сравнение по этому параметру не выполнено.",
 };
 
+/** Предварительная оценка анализа разделов — не решение инспектора. */
+export const sectionAssessmentText: Record<SectionAssessment, string> = {
+  potential_difference:
+    "Анализ разделов предварительно указывает на возможное расхождение.",
+  proposed_agreement:
+    "Анализ разделов предварительно не нашёл расхождения — решение остаётся за инспектором.",
+  insufficient_context:
+    "Анализ разделов не получил достаточного контекста для вывода.",
+};
+
 export function describeFinding(finding: ApiFinding): string {
   const verdict = finding.verdict;
   const parts: string[] = [];
@@ -150,6 +166,12 @@ export function describeFinding(finding: ApiFinding): string {
     const detail = verdict.pairs.find((pair) => pair.detail)?.detail;
     if (detail) parts.push(verificationReason(detail));
     parts.push(...verdict.warnings.map(verificationReason));
+  }
+  const section = finding.section_analysis;
+  if (section) {
+    parts.push(sectionAssessmentText[section.assessment]);
+    if (section.fact) parts.push(section.fact);
+    if (!section.coverage.complete) parts.push("Раздел проверен не полностью.");
   }
   if (finding.gate_reasons?.length) {
     parts.push(...finding.gate_reasons.map(verificationReason));
@@ -196,6 +218,18 @@ function evidenceFromMember(
   };
 }
 
+/** Цитата анализа разделов → сторона карточки (без числового значения). */
+function evidenceFromSection(item: SectionEvidence): VerificationEvidence {
+  return {
+    documentId: item.file_id,
+    page: item.page_number,
+    // Internal block ids stay out of the inspector view — page/sheet only.
+    location: item.sheet_label ?? `стр. ${item.page_number}`,
+    excerpt: item.quote,
+    value: "—",
+  };
+}
+
 /**
  * Выбор пары expected/actual для показа: приоритет — первая пара вердикта,
  * иначе первый член роли со значением. Членов может быть несколько —
@@ -225,6 +259,27 @@ export function pickEvidencePair(detail: ApiFindingDetail): {
     expected: resolve(pair?.expected_extraction_id, "expected"),
     actual: resolve(pair?.actual_extraction_id, "actual"),
   };
+}
+
+/**
+ * Первая цитата каждой роли из замороженной секционной записи. Результат —
+ * только реальные file_id/страницы источников; без extraction_id/rule_id,
+ * которые у этого анализа отсутствуют по контракту.
+ */
+export function sectionEvidencePair(
+  section: SectionAnalysisSnapshot | null | undefined,
+): {
+  expected: { file_id: string; page: number } | null;
+  actual: { file_id: string; page: number } | null;
+} {
+  const pick = (role: SectionEvidence["role"]) => {
+    const item =
+      section?.evidence.find(
+        (entry) => entry.role === role && entry.page_number > 0,
+      ) ?? section?.evidence.find((entry) => entry.role === role);
+    return item ? { file_id: item.file_id, page: item.page_number } : null;
+  };
+  return { expected: pick("reference"), actual: pick("actual") };
 }
 
 /**
@@ -274,6 +329,25 @@ export function toVerificationFinding(
     }
   }
 
+  // Секционная запись заполняет только стороны без скалярного доказательства;
+  // её цитаты не заменяют извлечённые значения детерминированного сравнения.
+  const section =
+    detail && detail.id === item.id
+      ? (detail.section_analysis ?? item.section_analysis)
+      : item.section_analysis;
+  if (section) {
+    if (!expected.documentId) {
+      const reference = section.evidence.find(
+        (entry) => entry.role === "reference",
+      );
+      if (reference) expected = evidenceFromSection(reference);
+    }
+    if (!actual.documentId) {
+      const target = section.evidence.find((entry) => entry.role === "actual");
+      if (target) actual = evidenceFromSection(target);
+    }
+  }
+
   const context = detail?.context ?? item.verdict?.context;
   const contextLabel = context
     ? `${context.scope || "Область не определена"} · ${context.works_period.from ?? "начало не определено"} — ${context.works_period.to ?? "окончание не определено"}`
@@ -285,7 +359,9 @@ export function toVerificationFinding(
     ordinal,
     title: item.parameter_name
       ? `${item.parameter_code} · ${item.parameter_name}`
-      : item.parameter_code,
+      : section?.matrix?.name
+        ? `${item.parameter_code} · ${section.matrix.name}`
+        : item.parameter_code,
     description: describeFinding(item),
     contextLabel,
     uiMarker: markerForRisk(item.risk),

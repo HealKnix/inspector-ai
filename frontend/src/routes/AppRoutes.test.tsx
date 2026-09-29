@@ -30,7 +30,6 @@ const lazyImports = vi.hoisted(() => {
   };
 
   return {
-    dashboard: deferred(),
     documentUpload: deferred(),
   };
 });
@@ -39,14 +38,6 @@ vi.mock("@/api/hooks/use-auth", () => ({
   useCurrentUser: () => ({ isError: false, isPending: false }),
   useLogout: () => ({ error: null, isPending: false, mutate: vi.fn() }),
 }));
-
-vi.mock("@/pages/dashboard/DashboardPage", async () => {
-  await lazyImports.dashboard.promise;
-
-  return {
-    DashboardPage: () => <p>Дашборд</p>,
-  };
-});
 
 vi.mock("@/pages/auth/AuthPage", () => ({
   AuthPage: () => <p>Страница входа</p>,
@@ -282,13 +273,8 @@ describe("AppRoutes", () => {
       useAuthSessionStore.getState().setSession("access-token", user);
     });
 
-    const fallback = await screen.findByText("Загружаем интерфейс…");
-    expect(fallback.closest("main")).toBeInTheDocument();
+    expect(await screen.findByText("Список объектов")).toBeInTheDocument();
     expect(screen.getByLabelText("Боковая панель")).toBeInTheDocument();
-
-    lazyImports.dashboard.resolve();
-
-    expect(await screen.findByText("Дашборд")).toBeInTheDocument();
   });
 
   it("открывает защищённую страницу загрузки по прямой ссылке", async () => {

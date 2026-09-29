@@ -1,25 +1,29 @@
 import { Injectable } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
 import type { ExtractionTask, Prisma } from "../../generated/prisma/client.js";
+import { writeOutboxEvent } from "../../infrastructure/observability/trace-context.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import type { IdentificationSnapshot } from "../identification/identification-contract.js";
 import { identificationSources } from "../identification/identification-state.js";
 import { ObjectAccessService } from "../objects/object-access.service.js";
 import { ArtifactStorageService } from "../parsing/artifact-storage.service.js";
 import { validateComparisonSpec } from "./comparison-contract.js";
-import {
-  validateExtractionPlan,
-  type ExtractionOutcome,
-} from "./extraction-contract.js";
-import {
-  executeArtifact,
-  rulesetFingerprint,
-  type ApprovedRule,
-} from "./extraction-engine.js";
+import { validateExtractionPlan } from "./extraction-contract.js";
+import { rulesetFingerprint, type ApprovedRule } from "./extraction-engine.js";
 import {
   identifiedGroups,
   type IdentifiedExtraction,
 } from "./identified-groups.js";
+import {
+  reviewHash,
+  validatePassportContent,
+} from "./matrix-review-contract.js";
+import type { NumericalEvidence } from "./numerical-policy.js";
+import { releaseRules, type ReleaseManifest } from "./rule-set-release.js";
+import {
+  executeSelectedArtifact,
+  type SelectedExtractionOutcome,
+} from "./selected-artifact.js";
 
 export const EXTRACTION_QUEUE = "inspector.extraction.artifacts";
 
@@ -39,7 +43,19 @@ export class ExtractionJobsService {
   /** Newest approved RuleVersion per parameter; drafts are never executed. */
   async approvedRules(
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
+    runId?: string,
   ): Promise<ApprovedRule[]> {
+    if (runId) {
+      const run = await tx.run.findUnique({
+        where: { id: runId },
+        include: { ruleSetRelease: true },
+      });
+      if (run?.ruleSetRelease)
+        return releaseRules(
+          run.ruleSetRelease.manifest as unknown as ReleaseManifest,
+          run.ruleSetRelease.manifestHash,
+        );
+    }
     const versions = await tx.ruleVersion.findMany({
       where: { status: "approved" },
       orderBy: [{ parameterCode: "asc" }, { version: "desc" }],
@@ -112,7 +128,7 @@ export class ExtractionJobsService {
   }
 
   async enqueue(tx: Prisma.TransactionClient, task: ExtractionTask) {
-    await tx.outbox.create({
+    await writeOutboxEvent(tx, {
       data: {
         eventType: "extraction.requested",
         availableAt: task.availableAt,
@@ -129,23 +145,25 @@ export class ExtractionJobsService {
     });
   }
 
-  // A changed approved ruleset (new/approved/deprecated rule version) changes
-  // the fingerprint and starts a new cycle for every current artifact.
+  // Pinned Runs only recover against their own executable manifest. A global
+  // rule approval does not start new cycles for already admitted inputs.
   async recover() {
     const rules = await this.approvedRules();
     const fingerprint = rulesetFingerprint(rules);
-    if (rules.length > 0) {
+    {
       const missing = await this.prisma.$queryRaw<{ id: string }[]>`
         SELECT a.id FROM parse_artifacts a
         JOIN parsing_tasks t ON t.id=a.task_id JOIN runs r ON r.id=t.run_id
         JOIN processes p ON p.id=t.process_id JOIN files f ON f.id=t.file_id
+        LEFT JOIN rule_set_releases rs ON rs.id=r.rule_set_release_id
         JOIN LATERAL (SELECT resolved_input_hash FROM resolved_input_snapshots s WHERE s.run_id=r.id ORDER BY version DESC LIMIT 1) s ON true
         LEFT JOIN LATERAL (SELECT fingerprint,resolved_input_hash FROM extraction_tasks e WHERE e.artifact_id=a.id ORDER BY cycle DESC LIMIT 1) e ON true
         WHERE t.state='succeeded' AND r.version=p.version AND p.status IN ('PENDING','PARSING','READY','VERIFYING')
           AND f.corrupted_at IS NULL AND a.source_sha256=f.sha256
+          AND (r.rule_set_release_id IS NULL OR jsonb_array_length(rs.manifest->'entries') > 0)
           AND NOT EXISTS (SELECT 1 FROM parsing_tasks newer WHERE newer.run_id=t.run_id AND newer.file_id=t.file_id AND newer.cycle>t.cycle)
           AND (
-            e.fingerprint IS NULL OR e.fingerprint <> ${fingerprint} OR e.resolved_input_hash IS DISTINCT FROM s.resolved_input_hash
+            e.fingerprint IS NULL OR e.fingerprint <> COALESCE(rs.manifest->>'extraction_fingerprint', ${fingerprint}) OR e.resolved_input_hash IS DISTINCT FROM s.resolved_input_hash
           )
         ORDER BY a.created_at LIMIT 25`;
       for (const { id } of missing) {
@@ -156,6 +174,9 @@ export class ExtractionJobsService {
             !ACTIVE_STATUSES.includes(context.process.status)
           )
             return;
+          const rules = await this.approvedRules(tx, context.task.runId);
+          if (!rules.length) return;
+          const fingerprint = rulesetFingerprint(rules);
           const previous = await tx.extractionTask.findFirst({
             where: { artifactId: id },
             orderBy: { cycle: "desc" },
@@ -224,7 +245,9 @@ export class ExtractionJobsService {
           task.resolvedInputHash !== context.snapshot?.resolvedInputHash ||
           latest?.id !== task.id ||
           task.fingerprint !==
-            rulesetFingerprint(await this.approvedRules(tx)) ||
+            rulesetFingerprint(
+              await this.approvedRules(tx, context.task.runId),
+            ) ||
           !ACTIVE_STATUSES.includes(context.process.status)
         ) {
           await tx.extractionTask.update({
@@ -302,7 +325,9 @@ export class ExtractionJobsService {
         where: { artifactId: task.artifactId },
         orderBy: { cycle: "desc" },
       });
-      const rules = await this.approvedRules(tx);
+      const rules = context
+        ? await this.approvedRules(tx, context.task.runId)
+        : [];
       if (
         !context ||
         task.resolvedInputHash !== context.snapshot?.resolvedInputHash ||
@@ -334,7 +359,7 @@ export class ExtractionJobsService {
     });
     if (!claimed) return;
     const { owned, context, rules } = claimed;
-    let outcomes: ExtractionOutcome[];
+    let outcomes: SelectedExtractionOutcome[];
     try {
       const artifact = await this.artifacts.read(
         context.artifact.storageKey,
@@ -343,7 +368,12 @@ export class ExtractionJobsService {
         context.artifact.pipelineFingerprint,
         "stored",
       );
-      outcomes = executeArtifact(artifact, rules);
+      outcomes = executeSelectedArtifact(
+        artifact,
+        owned.artifactId,
+        context.snapshot!.snapshot as unknown as IdentificationSnapshot,
+        rules,
+      );
       if (signal?.aborted) throw new ExtractionInterrupted();
     } catch (error) {
       await this.failure(
@@ -376,7 +406,10 @@ export class ExtractionJobsService {
       if (
         !current ||
         task.resolvedInputHash !== current.snapshot?.resolvedInputHash ||
-        task.fingerprint !== rulesetFingerprint(await this.approvedRules(tx)) ||
+        task.fingerprint !==
+          rulesetFingerprint(
+            await this.approvedRules(tx, current.task.runId),
+          ) ||
         latest?.id !== owned.id ||
         !ACTIVE_STATUSES.includes(current.process.status)
       ) {
@@ -405,6 +438,7 @@ export class ExtractionJobsService {
             parameterCode: outcome.parameter_code,
             ruleVersionId: outcome.rule_version_id,
             status: outcome.status,
+            selectionKey: outcome.selection_key,
             stage,
             valueRaw: outcome.value_raw,
             value:
@@ -414,6 +448,11 @@ export class ExtractionJobsService {
                     JSON.stringify(outcome.value),
                   ) as Prisma.InputJsonValue),
             unit: outcome.unit,
+            numerical: outcome.numerical
+              ? (JSON.parse(
+                  JSON.stringify(outcome.numerical),
+                ) as Prisma.InputJsonValue)
+              : undefined,
             alternatives:
               outcome.alternatives === null
                 ? undefined
@@ -464,12 +503,10 @@ export class ExtractionJobsService {
         snapshot: current.snapshot
           .snapshot as unknown as IdentificationSnapshot,
         rulesetHash: owned.fingerprint,
-        parameterCodes: [
-          ...new Set(outcomes.map((item) => item.parameter_code)),
-        ],
+        parameterCodes: [...new Set(rules.map((item) => item.parameter_code))],
         rules,
       });
-      await tx.outbox.create({
+      await writeOutboxEvent(tx, {
         data: {
           eventType: "extraction.succeeded",
           payload: {
@@ -504,9 +541,19 @@ export class ExtractionJobsService {
       rules: ApprovedRule[];
     },
   ) {
-    const matrix = await tx.matrixImport.findFirst({
-      orderBy: { importedAt: "desc" },
+    const run = await tx.run.findUniqueOrThrow({
+      where: { id: scope.runId },
+      include: { ruleSetRelease: true },
     });
+    const pinned = run.ruleSetRelease?.manifest as unknown as
+      ReleaseManifest | undefined;
+    const matrix = pinned?.catalog
+      ? await tx.matrixImport.findUnique({
+          where: { id: pinned.catalog.import_id },
+        })
+      : await tx.matrixImport.findFirst({
+          orderBy: { importedAt: "desc" },
+        });
     for (const parameterCode of scope.parameterCodes) {
       const rows = await tx.$queryRaw<
         {
@@ -518,11 +565,13 @@ export class ExtractionJobsService {
           value: unknown;
           value_raw: string | null;
           unit: string | null;
+          numerical: NumericalEvidence | null;
           rule_version_id: string;
+          selection_key: string | null;
         }[]
       >`
         SELECT e.id, e.file_id, e.artifact_id, e.stage, e.status, e.value,
-               e.value_raw, e.unit, e.rule_version_id
+               e.value_raw, e.unit, e.numerical, e.rule_version_id, e.selection_key
         FROM extractions e
         JOIN extraction_tasks t ON t.id = e.task_id
         JOIN LATERAL (
@@ -557,12 +606,14 @@ export class ExtractionJobsService {
         extraction_id: row.id,
         file_id: row.file_id,
         artifact_id: row.artifact_id,
+        selection_key: row.selection_key,
         stage: row.stage,
         role: "unknown",
         status: row.status,
         value: row.value as number | string | null,
         value_raw: row.value_raw,
         unit: row.unit,
+        ...(row.numerical ? { numerical: row.numerical } : {}),
         rule_version_id: row.rule_version_id,
         evidence: fragments.filter(
           (fragment) => fragment.extractionId === row.id,
@@ -585,11 +636,32 @@ export class ExtractionJobsService {
       )
         .filter(([, source]) => Boolean(source))
         .map(([stage]) => stage);
+      const entry = pinned?.entries.find(
+        (item) => item.parameter_code === parameterCode,
+      );
+      let ruleBasis;
+      if (entry?.passport_id) {
+        const passport = await tx.rulePassport.findUniqueOrThrow({
+          where: { id: entry.passport_id },
+        });
+        if (
+          passport.ruleVersionId !== entry.rule_version_id ||
+          passport.contentHash !== entry.passport_hash ||
+          reviewHash(passport.content) !== entry.passport_hash
+        )
+          throw new Error("Pinned passport integrity mismatch");
+        ruleBasis = {
+          passport_id: passport.id,
+          passport_hash: passport.contentHash,
+          content: validatePassportContent(passport.content),
+        };
+      }
       for (const group of identifiedGroups(
         scope.snapshot,
         members,
         rule?.comparison ?? null,
         allowedStages,
+        ruleBasis,
       )) {
         // Append-only versions. The object lock serializes concurrent completions.
         const exists = await tx.evidenceGroup.findFirst({
@@ -677,7 +749,7 @@ export class ExtractionJobsService {
       });
       if (retry) await this.enqueue(tx, next);
       else
-        await tx.outbox.create({
+        await writeOutboxEvent(tx, {
           data: {
             eventType: "extraction.failed",
             payload: {

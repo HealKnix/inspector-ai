@@ -15,6 +15,7 @@ import {
   JWT_ALGORITHM,
 } from "../../common/const/auth.constants.js";
 import { IS_PUBLIC_KEY } from "../../common/decorators/public.decorator.js";
+import { traceContext } from "../../infrastructure/observability/trace-context.js";
 import { type PublicUser, UsersService } from "../users/users.service.js";
 import { AuthSessionsService } from "./auth-sessions.service.js";
 
@@ -116,6 +117,8 @@ export class JwtAuthGuard implements CanActivate {
       }
 
       request.user = user;
+      const trace = traceContext.getStore();
+      if (trace) trace.user_id = user.id;
       request.authSessionId = subject.sessionId;
       return true;
     } catch {

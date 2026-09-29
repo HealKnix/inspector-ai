@@ -1,0 +1,173 @@
+{
+  "schema_version": 1,
+  "release": "foundations-20260927-r4",
+  "scope": "OFF-initial",
+  "created_at": "2026-09-27T00:36:18.582Z",
+  "runtime": {
+    "backend": "node-24.16.0",
+    "package_manager": "bun-1.4.2",
+    "parser": "existing-cpu-profile",
+    "gpu_acceptance": false
+  },
+  "qualification": "Initial implemented core; not a full 132-rule, H100 or final H/F acceptance.",
+  "images": [
+    {
+      "reference": "inspector-release-backend:foundations-20260927-r4",
+      "id": "sha256:273332cc8548ec32cc8520108bcfc3d6e46b36ecfa4b7e86a213bf87bee98626",
+      "repo_digests": [
+        "inspector-release-backend@sha256:273332cc8548ec32cc8520108bcfc3d6e46b36ecfa4b7e86a213bf87bee98626"
+      ],
+      "bytes": 248434471,
+      "platform": "linux/amd64"
+    },
+    {
+      "reference": "inspector-release-clamav:foundations-20260927-r4",
+      "id": "sha256:f25a6ca154e230079c31e9a5f2c2f5ff1d016c0cf972a0ce72b65a2d8c8d365c",
+      "repo_digests": [
+        "inspector-release-clamav@sha256:f25a6ca154e230079c31e9a5f2c2f5ff1d016c0cf972a0ce72b65a2d8c8d365c"
+      ],
+      "bytes": 143402500,
+      "platform": "linux/amd64"
+    },
+    {
+      "reference": "inspector-release-frontend:foundations-20260927-r4",
+      "id": "sha256:30a29df0dd293b11f860499af665c98a41847902fbe1e885d8a6af54f9b24a5a",
+      "repo_digests": [
+        "inspector-release-frontend@sha256:30a29df0dd293b11f860499af665c98a41847902fbe1e885d8a6af54f9b24a5a"
+      ],
+      "bytes": 28808643,
+      "platform": "linux/amd64"
+    },
+    {
+      "reference": "inspector-release-migrate:foundations-20260927-r4",
+      "id": "sha256:b92f5cabb5b935500d225510d4d7436c1ba92f1d1bd0ae2ee02d3f11568aaa67",
+      "repo_digests": [
+        "inspector-release-migrate@sha256:b92f5cabb5b935500d225510d4d7436c1ba92f1d1bd0ae2ee02d3f11568aaa67"
+      ],
+      "bytes": 373805043,
+      "platform": "linux/amd64"
+    },
+    {
+      "reference": "inspector-release-parser:foundations-20260927-r4",
+      "id": "sha256:1026a2b1b7704a04eef551b45cd17fb6f286f3a5fc605b08dfa7caa712c3d4e4",
+      "repo_digests": [
+        "inspector-release-parser@sha256:1026a2b1b7704a04eef551b45cd17fb6f286f3a5fc605b08dfa7caa712c3d4e4"
+      ],
+      "bytes": 624610366,
+      "platform": "linux/amd64"
+    },
+    {
+      "reference": "postgres:17.6-alpine",
+      "id": "sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+      "repo_digests": [
+        "postgres@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94"
+      ],
+      "bytes": 110633742,
+      "platform": "linux/amd64"
+    },
+    {
+      "reference": "rabbitmq:4.1-management-alpine",
+      "id": "sha256:6fb3095d1d579e11639d9033c9ded1287ca085664c97e9305ffc2a26cee433f5",
+      "repo_digests": [
+        "rabbitmq@sha256:6fb3095d1d579e11639d9033c9ded1287ca085664c97e9305ffc2a26cee433f5"
+      ],
+      "bytes": 87565743,
+      "platform": "linux/amd64"
+    },
+    {
+      "reference": "redis:7.4.2-alpine",
+      "id": "sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952",
+      "repo_digests": [
+        "redis@sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952"
+      ],
+      "bytes": 17238094,
+      "platform": "linux/amd64"
+    },
+    {
+      "reference": "inspector-release-validator:foundations-20260927-r4",
+      "id": "sha256:dcc695c6c56fb86097465a892aef9701a4bb70747fb523b6e9eee67e9b99ea42",
+      "repo_digests": [
+        "inspector-release-validator@sha256:dcc695c6c56fb86097465a892aef9701a4bb70747fb523b6e9eee67e9b99ea42"
+      ],
+      "bytes": 50277829,
+      "platform": "linux/amd64"
+    }
+  ],
+  "files": [
+    {
+      "path": "assets/clamav.json",
+      "bytes": 254,
+      "sha256": "96602eca4cf700f2f2175ab093fb88604ee5bcfaaa5021eac27babc326ea33d8"
+    },
+    {
+      "path": "assets/clamav.tar",
+      "bytes": 175544320,
+      "sha256": "9241718ca9a41da60c6779b83242c7ace449e37267829aa1eb34d60cb112e6bd"
+    },
+    {
+      "path": "assets/models.json",
+      "bytes": 3111,
+      "sha256": "2a3bbd6300c2066bad32159368a4bb383dd1287542f4b264325e2dc969ab97a4"
+    },
+    {
+      "path": "assets/models.tar",
+      "bytes": 790681600,
+      "sha256": "c5f55827f85e69e79b68066844686ced9dcddbad5acea6c1cfdb60d2104ef2fe"
+    },
+    {
+      "path": "catalog.json",
+      "bytes": 316967,
+      "sha256": "7fcb3ad82247cf91b29270712d90903977e7bea6129365368f25124597df2737"
+    },
+    {
+      "path": "compose.json",
+      "bytes": 18172,
+      "sha256": "99ebcf19c2bed28cd2faa737240f1888dad2f8f7b0c6d326059b98442f26d918"
+    },
+    {
+      "path": "images.tar",
+      "bytes": 1565835776,
+      "sha256": "3525b43357359309c2c282db3277b1bad82bce3d0db853349cf046e22494c939"
+    },
+    {
+      "path": "nginx.conf",
+      "bytes": 1248,
+      "sha256": "0649767788ba9b68562eb92bd416571f70cac8e4e5604b3c29f78ff631b52fae"
+    },
+    {
+      "path": "README.md",
+      "bytes": 10177,
+      "sha256": "088ea27bbbdfd02f34d70375ee308b154945913b3b7c23a7418ae344553196a3"
+    },
+    {
+      "path": "resources.json",
+      "bytes": 350214,
+      "sha256": "985d4ea83b9fc619aae94b6aa04678ad1285c5b91530f9754ec10e3ee5d02864"
+    },
+    {
+      "path": "tools/bootstrap.mjs",
+      "bytes": 6015,
+      "sha256": "f4fdeb908ba0bd8c890b6d4d6eac498e0b5d508f154fb27d403bcb74e576d07b"
+    },
+    {
+      "path": "tools/manifest.mjs",
+      "bytes": 3893,
+      "sha256": "02d174a96fd25fc86dc5e29628b6b8f3b7887956568ef3847f3545afc6de7e13"
+    },
+    {
+      "path": "tools/offline-catalog.mjs",
+      "bytes": 7396,
+      "sha256": "fa84970016cc13ef27c83392304c235ac4146318d5471a49b16e857066ebaf59"
+    },
+    {
+      "path": "tools/restore-assets.py",
+      "bytes": 2264,
+      "sha256": "c732b3f7f3d99bc1774fb012ae4503a6aba795e83497083bc4a6c106288452bc"
+    },
+    {
+      "path": "tools/snapshot-assets.py",
+      "bytes": 1812,
+      "sha256": "23f2fd1d8c19e224dae00d9f98ae1418f99a4e173d3e981b6816451d1cd86195"
+    }
+  ]
+}

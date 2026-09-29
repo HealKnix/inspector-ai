@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { buildClassificationContext } from "../identification/classification-context.js";
+import { analysisBlocks } from "../parsing/analysis-blocks.js";
 import type {
   ParseArtifactData,
   ParseBlock,
@@ -12,6 +14,7 @@ import {
   pageTables,
   tableCandidates,
 } from "./block-search.js";
+import { evaluateGroup } from "./comparison-engine.js";
 import {
   PlanValidationError,
   validateExtractionPlan,
@@ -26,6 +29,120 @@ import {
   type ApprovedRule,
 } from "./extraction-engine.js";
 
+describe("strict numeric extraction", () => {
+  const number_policy = {
+    version: "decimal-v1",
+    mode: "single",
+    reject_list_marker: true,
+    require_unit: true,
+  } as const;
+  const plan = validateExtractionPlan({
+    kind: "regex",
+    anchors: ["Коэффициент застройки"],
+    pattern: "Коэффициент застройки\\s*[:=]?\\s*([+−-]?\\d+(?:[.,]\\d+)?)\\s*%",
+    unit: ["%"],
+    number_policy,
+  });
+  const rule = {
+    parameter_code: "P019",
+    rule_version_id: "synthetic",
+    version: 1,
+    plan,
+    comparison: null,
+  };
+  it("takes its own percent value, never a numbered item, and keeps its unit locator", () => {
+    const result = executePlan(
+      artifact([textBlock("own", "1. Коэффициент застройки: 36,25 %")]),
+      plan,
+      rule,
+    );
+    expect(result).toMatchObject({
+      status: "extracted",
+      value: "36.25",
+      unit: "%",
+      numerical: {
+        decimal: "36.25",
+        unit: { source: "value", canonical: "%" },
+      },
+    });
+    expect(result.numerical!.unit.evidence[0]!.block_id).toBe("own");
+    expect(
+      executePlan(
+        artifact([
+          textBlock(
+            "two",
+            "Коэффициент застройки 36 %; Коэффициент застройки 37 %",
+          ),
+        ]),
+        plan,
+        rule,
+      ).status,
+    ).toBe("ambiguous");
+    for (const text of [
+      "Коэффициент застройки 1. Условия",
+      "Коэффициент застройки 36,25",
+    ]) {
+      expect(
+        executePlan(artifact([textBlock("missing", text)]), plan, rule).status,
+      ).toBe("no_evidence");
+    }
+    const expected = {
+      ...result,
+      extraction_id: "PD",
+      file_id: "PD",
+      role: "expected" as const,
+      stage: "PD",
+    };
+    const actual = {
+      ...result,
+      extraction_id: "RD",
+      file_id: "RD",
+      role: "actual" as const,
+      stage: "RD",
+    };
+    expect(
+      evaluateGroup([expected, actual], {
+        kind: "no_increase",
+        numerical_policy: {
+          version: "decimal-units-v1",
+          target_unit: "%",
+          allow_percent_fraction: false,
+          zero_expected: "not_comparable",
+          rounding: null,
+        },
+      }).status,
+    ).toBe("match");
+  });
+  it("rejects a multi-number cell and keeps high precision decimals", () => {
+    const tablePlan = validateExtractionPlan({
+      kind: "table_lookup",
+      signature: { any: ["Коэффициент застройки"] },
+      row: { anchors: ["Коэффициент застройки"] },
+      value: { column: 1, unit: ["%"], number_policy },
+    });
+    for (const value of ["200 / 250 %", "1."]) {
+      expect(
+        executePlan(
+          artifact([
+            cell("label", "t", 0, 0, "Коэффициент застройки"),
+            cell("value", "t", 0, 1, value),
+          ]),
+          tablePlan,
+          { ...rule, plan: tablePlan },
+        ).status,
+      ).toBe("no_evidence");
+    }
+    const result = executePlan(
+      artifact([
+        cell("label", "t", 0, 0, "Коэффициент застройки"),
+        cell("value", "t", 0, 1, "36.123456789012345678 %"),
+      ]),
+      tablePlan,
+      { ...rule, plan: tablePlan },
+    );
+    expect(result.numerical?.decimal).toBe("36.123456789012345678");
+  });
+});
 // Synthetic fixtures only; no real documents are used in unit tests.
 let order = 0;
 function textBlock(id: string, text: string, y = 0.1): ParseBlock {
@@ -194,6 +311,7 @@ describe("block-search", () => {
       ...textBlock(id, text),
       region_id: regionId,
       include_in_main: false,
+      native_valid: true,
     });
     const doc = artifact([
       excluded("skip1", "r-skip", "Общая площадь здания"),
@@ -227,6 +345,221 @@ describe("block-search", () => {
     });
     expect(candidates.length).toBe(2);
     expect(candidates[0]!.score).toBeGreaterThanOrEqual(4);
+  });
+
+  it("makes 46 explicitly valid skipped native locators available to ID and EXT without mutating the artifact", () => {
+    const blocks = Array.from({ length: 46 }, (_, index) => ({
+      ...textBlock(`native-${index}`, `Стадия: Р; локатор ${index}`),
+      native_valid: true,
+      include_in_main: false,
+      region_id: "skip",
+    }));
+    const doc = artifact(blocks);
+    const page = doc.pages[0]!;
+    page.regions = [
+      {
+        id: "skip",
+        kind: "unknown",
+        bbox: [0, 0, 1, 1],
+        raw_class: null,
+        raw_score: null,
+        method: "skipped",
+        reasons: ["LAYOUT_UNCERTAIN"],
+        table_status: "not_applicable",
+      },
+    ];
+    const before = JSON.stringify(doc);
+    expect(findAnchorHits(doc, ["локатор"]).map((hit) => hit.block.id)).toEqual(
+      blocks.map((block) => block.id),
+    );
+    expect(
+      new Set(
+        buildClassificationContext(doc).fragments.map(
+          (fragment) => fragment.block_id,
+        ),
+      ),
+    ).toEqual(new Set(blocks.map((block) => block.id)));
+    expect(analysisBlocks(page)[0]).toBe(blocks[0]);
+    expect(JSON.stringify(doc)).toBe(before);
+    delete page.blocks[0]!.native_valid;
+    page.blocks[1]!.native_valid = false;
+    page.blocks[2]!.provenance = {
+      schema_version: 1,
+      status: "ambiguous",
+      method: "hybrid",
+      fragments: [
+        {
+          source: "native",
+          raw_text: "Стадия: Р",
+          bbox: [0, 0, 1, 1],
+          native_valid: true,
+          role: "alternative",
+        },
+      ],
+      reasons: ["TEXT_CONFLICT"],
+    };
+    page.regions.push({
+      ...page.regions[0]!,
+      id: "merged",
+      kind: "table",
+      method: "native_table",
+      table_status: "structured",
+    });
+    page.blocks[3]!.region_id = "merged";
+    const excluded = new Set(page.blocks.slice(0, 4).map((block) => block.id));
+    expect(findAnchorHits(doc, ["локатор"])).toHaveLength(42);
+    expect(
+      buildClassificationContext(doc).fragments.every(
+        (fragment) => !excluded.has(fragment.block_id),
+      ),
+    ).toBe(true);
+    expect(
+      contextWindows(doc, ["локатор"])
+        .flatMap((window) => window.lines)
+        .every((line) => !excluded.has(line.block_id ?? "")),
+    ).toBe(true);
+  });
+
+  it("does not promote a suppressed duplicate native reading in a skipped region", () => {
+    const primary: ParseBlock = {
+      ...textBlock("primary", "Стадия: Р"),
+      native_valid: true,
+      include_in_main: false,
+      region_id: "skip",
+    };
+    primary.provenance = {
+      schema_version: 1,
+      status: "selected",
+      method: "native",
+      fragments: [
+        {
+          source: "native",
+          raw_text: primary.raw_text,
+          bbox: [...primary.bbox],
+          native_valid: true,
+          role: "selected",
+        },
+      ],
+      reasons: ["NATIVE_DUPLICATE_ALTERNATIVE_RETAINED"],
+    };
+    const duplicate: ParseBlock = {
+      ...structuredClone(primary),
+      id: "duplicate",
+      provenance: {
+        ...structuredClone(primary.provenance),
+        reasons: ["DUPLICATE_NATIVE_READING"],
+      },
+    };
+    const doc = artifact([primary, duplicate]);
+    doc.pages[0]!.regions = [
+      {
+        id: "skip",
+        kind: "unknown",
+        bbox: [0, 0, 1, 1],
+        raw_class: null,
+        raw_score: null,
+        method: "skipped",
+        reasons: ["LAYOUT_UNCERTAIN"],
+        table_status: "not_applicable",
+      },
+    ];
+    expect(findAnchorHits(doc, ["Стадия"]).map((hit) => hit.block.id)).toEqual([
+      "primary",
+    ]);
+    expect(
+      buildClassificationContext(doc).fragments.map(
+        (fragment) => fragment.block_id,
+      ),
+    ).toEqual(["primary"]);
+    expect(doc.pages[0]!.blocks).toHaveLength(2);
+  });
+
+  it("uses an associated whole native row label while keeping 50 m³ in its original value cell", () => {
+    const label = textBlock("native-label", "Бетон В25 Материал перекрытия");
+    label.table_link = {
+      schema_version: 1,
+      status: "associated",
+      table_id: "materials",
+      rows: [1],
+      columns: [0, 1],
+      reasons: [],
+    };
+    const doc = artifact([
+      cell("h0", "materials", 0, 0, "Обозначение"),
+      cell("h1", "materials", 0, 1, "Наименование"),
+      cell("h2", "materials", 0, 2, "Количество"),
+      cell("r0", "materials", 1, 0, ""),
+      cell("r1", "materials", 1, 1, ""),
+      cell("quantity", "materials", 1, 2, "50 м³"),
+      label,
+    ]);
+    const plan: TableLookupPlan = {
+      kind: "table_lookup",
+      signature: { any: ["Бетон В25"] },
+      row: { anchors: ["Материал перекрытия"] },
+      value: { column: 2, type: "number", unit: ["м³"] },
+    };
+    const before = JSON.stringify(doc);
+    const result = executePlan(doc, plan, planRule(plan));
+    expect(result).toMatchObject({
+      status: "extracted",
+      value: 50,
+      unit: "m3",
+    });
+    expect(result.evidence.map((item) => item.block_id)).toEqual([
+      "native-label",
+      "quantity",
+    ]);
+    expect(result.evidence[0]).toMatchObject({
+      table_id: null,
+      table_row: null,
+      table_column: null,
+    });
+    expect(result.evidence[1]).toMatchObject({
+      table_id: "materials",
+      table_row: 1,
+      table_column: 2,
+    });
+    const windows = contextWindows(doc, ["Материал перекрытия"]);
+    expect(windows).toHaveLength(1);
+    expect(windows[0]!.table_id).toBe("materials");
+    expect(windows[0]!.lines).toContainEqual({
+      block_id: "native-label",
+      text: "r1: Бетон В25 Материал перекрытия",
+    });
+    expect(windows[0]!.lines.some((line) => line.text.includes("50 м³"))).toBe(
+      true,
+    );
+    expect(JSON.stringify(doc)).toBe(before);
+    label.table_link.status = "ambiguous";
+    label.table_link.reasons = ["TABLE_LINK_MULTIPLE_PARTS"];
+    expect(contextWindows(doc, ["Материал перекрытия"])[0]!.lines).toEqual([
+      { block_id: "native-label", text: "Бетон В25 Материал перекрытия" },
+    ]);
+    expect(executePlan(doc, plan, planRule(plan)).status).toBe("no_evidence");
+    expect(findAnchorHits(doc, ["Бетон В25"])[0]!.block).toBe(label);
+    expect(
+      contextWindows(doc, ["Материал перекрытия"])[0]!.table_id,
+    ).toBeNull();
+  });
+
+  it("does not let a regex window recover an excluded conflicting value from its neighbours", () => {
+    const doc = artifact([
+      textBlock("anchor", "Количество:"),
+      {
+        ...textBlock("bad", "50 м³"),
+        native_valid: false,
+        include_in_main: false,
+      },
+    ]);
+    const plan: ExtractionPlan = {
+      kind: "regex",
+      anchors: ["Количество"],
+      pattern: "Количество:\\s*(\\d+)",
+      window_blocks: 1,
+      unit: ["м³"],
+    };
+    expect(executePlan(doc, plan, planRule(plan)).status).toBe("no_evidence");
   });
 
   it("builds context windows with serialized tables", () => {

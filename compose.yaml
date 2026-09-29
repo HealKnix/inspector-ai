@@ -7,6 +7,24 @@ x-classification-env: &classification-env
   CLASSIFICATION_LLM_TIMEOUT_MS: ${CLASSIFICATION_LLM_TIMEOUT_MS:-240000}
   CLASSIFICATION_LLM_MAX_RESPONSE_BYTES: ${CLASSIFICATION_LLM_MAX_RESPONSE_BYTES:-131072}
 
+# Section-first comparison provider. Disabled by default; empty endpoint
+# values inherit the CLASSIFICATION_LLM_* settings inside the container.
+# Forwarded only to backend and extraction-worker — never to the frontend.
+x-section-env: &section-env
+  SECTION_LLM_ENABLED: ${SECTION_LLM_ENABLED:-false}
+  SECTION_LLM_BASE_URL: ${SECTION_LLM_BASE_URL:-}
+  SECTION_LLM_MODEL: ${SECTION_LLM_MODEL:-}
+  SECTION_LLM_API_KEY: ${SECTION_LLM_API_KEY:-}
+  SECTION_LLM_TIMEOUT_MS: ${SECTION_LLM_TIMEOUT_MS:-}
+  SECTION_LLM_MAX_REQUEST_BYTES: ${SECTION_LLM_MAX_REQUEST_BYTES:-262144}
+  SECTION_LLM_MAX_RESPONSE_BYTES: ${SECTION_LLM_MAX_RESPONSE_BYTES:-}
+  SECTION_LLM_MAX_CANDIDATE_BYTES: ${SECTION_LLM_MAX_CANDIDATE_BYTES:-49152}
+  SECTION_LLM_MAX_CHUNK_BYTES: ${SECTION_LLM_MAX_CHUNK_BYTES:-98304}
+  SECTION_LLM_MAX_BLOCK_CHARACTERS: ${SECTION_LLM_MAX_BLOCK_CHARACTERS:-4000}
+  SECTION_LLM_MAX_PARAMETERS_PER_REQUEST: ${SECTION_LLM_MAX_PARAMETERS_PER_REQUEST:-8}
+  SECTION_LLM_MAX_CALLS: ${SECTION_LLM_MAX_CALLS:-32}
+  SECTION_LLM_MAX_EXPANSION_CANDIDATES: ${SECTION_LLM_MAX_EXPANSION_CANDIDATES:-8}
+
 services:
   postgres:
     image: postgres:17.6-alpine
@@ -31,7 +49,7 @@ services:
   rabbitmq:
     image: rabbitmq:4.1-management-alpine
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: ["CMD", "su-exec", "rabbitmq", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -79,7 +97,7 @@ services:
       dockerfile: backend/Dockerfile
       target: runtime
     environment:
-      <<: *classification-env
+      <<: [*classification-env, *section-env]
       DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-postgres}"
       FRONTEND_URL: http://localhost:${FRONTEND_PORT:-8080}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in the root .env file}
@@ -189,6 +207,7 @@ services:
       PARSER_MODEL_ROOT: /models
       PARSER_FILE_TIMEOUT_SECONDS: ${PARSER_FILE_TIMEOUT_SECONDS:-600}
       PARSER_CPU_THREADS: ${PARSER_CPU_THREADS:-2}
+      PARSER_MAX_PAGES: ${PARSER_MAX_PAGES:-500}
       STORAGE_ROOT: /data
       HOME: /tmp
     volumes:
@@ -199,7 +218,7 @@ services:
     read_only: true
     tmpfs: ["/tmp:size=512m,nosuid"]
     mem_limit: 4g
-    cpus: 2
+    cpus: ${PARSER_CPUS:-2}
     pids_limit: 256
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
@@ -298,7 +317,7 @@ services:
       target: runtime
     command: ["bun", "backend/dist/extraction-worker.js"]
     environment:
-      <<: *classification-env
+      <<: [*classification-env, *section-env]
       DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-postgres}"
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set}

@@ -5,6 +5,8 @@ context: |
   docs/requirements/SOURCES.md identifies the authoritative final PDF and annexes.
   Seven functional changes replace the historical combined change in superseded/.
   Preserve the mapping in delivery-map.json and unresolved work in SHARED_BACKLOG.md.
+  RELEASE_PLAN.md and release-plan.json cover the current full C01-C24 delivery plan.
+  Follow stage gates, preserve completed checkboxes, and distinguish planning from acceptance.
   Existing auth and Bun workspaces must remain compatible; planning is not implementation.
 
 # Project context (optional)

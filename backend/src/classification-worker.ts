@@ -11,7 +11,11 @@ import { createServer } from "node:http";
 import { setTimeout as delay } from "node:timers/promises";
 import "reflect-metadata";
 import { validateEnvironment } from "./config/environment.js";
+import { observeDelivery } from "./infrastructure/observability/delivery-observation.js";
+import { serveWorkerMetrics } from "./infrastructure/observability/metrics.js";
+import { StructuredLogger } from "./infrastructure/observability/structured-logger.js";
 import { PrismaModule } from "./infrastructure/prisma/prisma.module.js";
+import { PrismaService } from "./infrastructure/prisma/prisma.service.js";
 import { OutboxService } from "./infrastructure/rabbitmq/outbox.service.js";
 import {
   CLASSIFICATION_QUEUE,
@@ -69,6 +73,7 @@ function readTaskId(
 }
 
 async function main() {
+  Logger.overrideLogger(new StructuredLogger("classification-worker"));
   const app = await NestFactory.createApplicationContext(
     ClassificationWorkerModule,
   );
@@ -80,11 +85,16 @@ async function main() {
   const stopping = new AbortController();
   let connected = false;
   let lastTick = Date.now();
-  const server = createServer((_request, response) => {
-    response.writeHead(
-      connected && Date.now() - lastTick < 120_000 ? 200 : 503,
-    );
-    response.end();
+  const server = createServer((request, response) => {
+    void serveWorkerMetrics(request, response, app.get(PrismaService))
+      .then((handled) => {
+        if (handled) return;
+        response.writeHead(
+          connected && Date.now() - lastTick < 120_000 ? 200 : 503,
+        );
+        response.end();
+      })
+      .catch(() => response.writeHead(503).end());
   }).listen(
     Number(process.env.CLASSIFICATION_WORKER_HEALTH_PORT ?? 3003),
     "0.0.0.0",
@@ -180,7 +190,16 @@ async function main() {
             CLASSIFICATION_QUEUE,
             (message) => {
               void currentScope
-                .run((signal) => consume(message, ownerChannel, signal))
+                .run((signal) =>
+                  observeDelivery(
+                    message?.properties.headers,
+                    message?.properties.messageId,
+                    message?.properties.type === "identification.requested"
+                      ? "identification"
+                      : "classification",
+                    () => consume(message, ownerChannel, signal),
+                  ),
+                )
                 .catch(channelClosed);
             },
             { noAck: false },

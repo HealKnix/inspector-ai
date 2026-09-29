@@ -16,3 +16,13 @@ COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/frontend/dist /usr/share/nginx/html
 
 EXPOSE 80
+
+FROM runtime AS offline-runtime
+RUN apk add --no-cache iptables setpriv
+COPY --chmod=0555 frontend/offline-entrypoint.sh /usr/local/bin/offline-entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/offline-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/offline-entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]
+
+# An ordinary build retains the existing runtime and needs no NET_ADMIN.
+FROM runtime AS default-runtime

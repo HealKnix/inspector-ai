@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "inventory_path": "docs/matrix/mat-a-legacy-inventory-2026-09-27.json",
+  "inventory_sha256": "012e5634e7450fb82ac5a395b6822afd4b6f7b3ee7559129827614e7ce591199",
+  "captured_at": "2026-09-26T23:37:20.949731+00:00",
+  "sources": [
+    {
+      "path": "docs/requirements/10. Мосстройнадзор.pdf",
+      "sha256": "ceada88feb36f93278b8693b191b88f63a99649090ed3109551a49864d098513"
+    },
+    {
+      "path": "docs/requirements/matrix-132.xlsx",
+      "sha256": "e5ec636d1a3819c9d19d44b122561013dd79f42a676de7cd56b9e27cdc58fabd"
+    },
+    {
+      "path": "docs/requirements/matrix-legend.docx",
+      "sha256": "3a8074d29b49af13bb4b84b1fb430e2a901ba826ba894fa739405c603ce1c97a"
+    },
+    {
+      "path": "backend/scripts/matrix-132.jsonl",
+      "sha256": "76af4a9c02c52d3ef824fe2b445c474d2689672a19bc4248149c5c83ba990cef",
+      "normalized_lf_sha256": "dae7de7538847f37afcc9cd78e522fc86fb6a32cc205329c1bb67214725d2e8c"
+    }
+  ],
+  "unique_codes": 132,
+  "approved_record_count": 13,
+  "approved_parameter_count": 12,
+  "legacy_review": {
+    "passport": null,
+    "regression_report": null,
+    "basis": "unknown",
+    "corpus_accuracy": null,
+    "statement": "Точный исторический снимок; новые проверки и утверждения не выполнены. Не допускает новый план в обход regression gate."
+  },
+  "approved_versions": [
+    {
+      "id": "1cb3faec-0c21-47e7-9527-fc4489c09448",
+      "parameter_code": "P002",
+      "version": 2,
+      "rule_sha256": "326c1fbe62a8ae52b8d8da6a1da2681a56158baa25e03ef6b41ec24fa7295498",
+      "plan_sha256": "4be8e51ea301ec67a38e651f65a564611baa4f448e0f85a73fa7ed49e5726878",
+      "comparison_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "effective": false
+    },
+    {
+      "id": "155f70d4-50ae-4188-a845-e8300f5b2d92",
+      "parameter_code": "P004",
+      "version": 2,
+      "rule_sha256": "69745e4b10125ce12c1a584dc8c32faa48e754a6efc8a65ff9ad4110fadd8089",
+      "plan_sha256": "4634a61b8d59a00d642f0fa7db574f8a532f78aa3c48ab711237f062394eab4b",
+      "comparison_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "effective": true
+    },
+    {
+      "id": "7b57b7e1-83e1-42a3-8660-d0bf7cf04f81",
+      "parameter_code": "P009",
+      "version": 2,
+      "rule_sha256": "73ea3b9a7407cf32599a0c8fb0dd90c941639fcb921024c7ee93b75e1859c01e",
+      "plan_sha256": "cd084e9dd1b9e6d9f13781419b1cb01bb314e2a95f17d85e4a8a01ecce79cae1",
+      "comparison_sha256": "dc5d4d706c1f5a006daf5e617796c46543d8ad18a81157bf8897be5a5596d7f2",
+      "effective": true
+    },
+    {
+      "id": "d085ea73-555f-49ac-a0ef-b99512b7a48f",
+      "parameter_code": "P015",
+      "version": 3,
+      "rule_sha256": "71793aa5c5b4bb0ab0c3b1ac7da1f3778aa5c77d62714ec826d655c16513e0fe",
+      "plan_sha256": "f4b8ce67b35c419a6fa5f8e5be9c4754b1a3626a54ce138e5073f1007d018418",
+      "comparison_sha256": "af1c7e8d46424f92e4ed3b33355e408e127bfd94d921322dd640b5382d4f1625",
+      "effective": true
+    },
+    {
+      "id": "1fff5aeb-583a-4fd6-b184-dac19ba9a623",
+      "parameter_code": "P022",
+      "version": 3,
+      "rule_sha256": "203818f5ff6af328da4ffb0c4b2e5b7d264deaa4b13bed69ac984dbbe7378283",
+      "plan_sha256": "433b123a42c81ba05fcca24f8123623477edd762953be58ede27baa2dbe494e3",
+      "comparison_sha256": "7969c7dc16a9cff21db5078bc9179a6c9e52b85a05372f4cb8ebc92d84ade6ff",
+      "effective": true
+    },
+    {
+      "id": "4fa3752a-773e-4211-8fb9-9421cae1576c",
+      "parameter_code": "P001",
+      "version": 4,
+      "rule_sha256": "c9275d0245d591698ccb50412aa0cce2d76d080702121f09de20ff80a2a1f847",
+      "plan_sha256": "4c8fd02acd8bceed6428ba7bb72e5bc93f77a3b77445e50db097d9955becc284",
+      "comparison_sha256": "7969c7dc16a9cff21db5078bc9179a6c9e52b85a05372f4cb8ebc92d84ade6ff",
+      "effective": true
+    },
+    {
+      "id": "e66358e8-d82a-4a86-bad0-4162107bd358",
+      "parameter_code": "P007",
+      "version": 4,
+      "rule_sha256": "75322bfdb8e824b73eec335f6f1758ff0b338d73a9096a7c396f042967ac7bea",
+      "plan_sha256": "451403b30204414616410ee5344d43820d1de7f1492f2968604f7d092a44e99a",
+      "comparison_sha256": "7969c7dc16a9cff21db5078bc9179a6c9e52b85a05372f4cb8ebc92d84ade6ff",
+      "effective": true
+    },
+    {
+      "id": "9f99d24c-97c0-43f6-a578-fdad73a2db39",
+      "parameter_code": "P019",
+      "version": 4,
+      "rule_sha256": "222a4b67ef5b0b30a563fbc6587e5ad087bc696577c1316d5e6ebd01c59e7690",
+      "plan_sha256": "d9d247af622ced3c959a2931579cb1d0a20da35cf29cef31211f72a09ca07afb",
+      "comparison_sha256": "a51f9d6392cc12e38041a49d87298b7640e3e732b9a3e0d7c026a2ce02848933",
+      "effective": true
+    },
+    {
+      "id": "17bedb93-e72e-471c-a64b-e12f4afd1326",
+      "parameter_code": "P023",
+      "version": 4,
+      "rule_sha256": "a9a56cfff501cbf48cb27eccd5eec372d7b3a3e29a4d3b281268abc1dbcb76fa",
+      "plan_sha256": "80aa126d449a5d9dbef6f97a44905f5a224fb2484024a9f1c1acc8eaadbd8c13",
+      "comparison_sha256": "af1c7e8d46424f92e4ed3b33355e408e127bfd94d921322dd640b5382d4f1625",
+      "effective": true
+    },
+    {
+      "id": "e1244361-de50-45f0-8b06-c96cd17194fa",
+      "parameter_code": "P002",
+      "version": 5,
+      "rule_sha256": "3cb7a4fa9ed6bf6aa5ce4e382ecc92b7a4737f31d3539025c7b48f2deeeaf966",
+      "plan_sha256": "e5513e978d8764349247f41d11e9103daea1e19665746e10afdcfa2d10039ac9",
+      "comparison_sha256": "0ce8fdc316b6365e155e3b4267147fa69847d6288f006ec2cae6840c3610359f",
+      "effective": true
+    },
+    {
+      "id": "9a163416-29ee-410e-ad4c-2d0be5c2192d",
+      "parameter_code": "P003",
+      "version": 6,
+      "rule_sha256": "7196d1d6e658c1ff05bf6cc5b7d4415d4b31350122562e89eebb6c77b6cb2fc8",
+      "plan_sha256": "6723252813943a74ddc3e3619bef0d2225b8948275b49313b09258d667aad319",
+      "comparison_sha256": "af1c7e8d46424f92e4ed3b33355e408e127bfd94d921322dd640b5382d4f1625",
+      "effective": true
+    },
+    {
+      "id": "94b7f834-ddb7-4ef3-bd36-5724b0cc52d5",
+      "parameter_code": "P056",
+      "version": 6,
+      "rule_sha256": "a10adeafb85cd97a605f77a1a19596cdf5b96033bf6f1fbda7186ed82bb1a7c1",
+      "plan_sha256": "dd963839831e42ee4df3df217072b01148516c9dabae037bff3d6266cd3bcff0",
+      "comparison_sha256": "2af949a51a53c1eac52b547c04664d15afeef20791ef8b233b80633995626b92",
+      "effective": true
+    },
+    {
+      "id": "ba21f664-1a34-447e-bad5-907c11e3a675",
+      "parameter_code": "P058",
+      "version": 6,
+      "rule_sha256": "7a10f314b6a3eebc20efb419fcf0714de5e3cef57a019128671eb5a9dfcd2888",
+      "plan_sha256": "b59e37e71aa15d24d776a4bcc1ae6be92b651ab9d56472773312f2e68e7af14b",
+      "comparison_sha256": "af1c7e8d46424f92e4ed3b33355e408e127bfd94d921322dd640b5382d4f1625",
+      "effective": true
+    }
+  ],
+  "seed_codes": ["P002", "P007", "P015"],
+  "findings": [
+    {
+      "parameter_code": "P002",
+      "finding": "Две approved записи сохранены без изменения; исполняемой считается самая новая утверждённая версия."
+    },
+    {
+      "parameter_code": "P004",
+      "finding": "У текущей версии отсутствует comparison; предметный ремонт в MAT-B."
+    },
+    {
+      "parameter_code": "P019",
+      "finding": "Предыдущий evidence сообщает извлечение номера пункта 1.; inventory не подтверждает исправления, ремонт в MAT-B."
+    }
+  ],
+  "inventory_canonical_sha256": "584d871ec0047ab6f024a8c688834c4960677ee007da71d8bea2f3fefef22799",
+  "inventory_hash_policy": "inventory_sha256 is the captured byte hash; inventory_canonical_sha256 is the portable hash with lexically sorted object keys and preserved array order. Both are checked where byte-preserving transfer is claimed.",
+  "source_line_endings": "Stored import uses LF JSONL; current Windows checkout uses CRLF. All 132 raw rows match. Original XLSX byte hash is unchanged."
+}

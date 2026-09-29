@@ -1,0 +1,14 @@
+{
+  "_fixture": "SYNTHETIC FORMAT CONTROL ONLY; this is not a model result or a new GOLD label",
+  "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+  "checks": [
+    {
+      "parameter_code": "IOS4-079",
+      "location": "synthetic-room",
+      "violation_label": "VIOLATION_PRESENT",
+      "evidence": [
+        { "stage": "PD", "file_id": "F0171", "pdf_page_number": 104 }
+      ]
+    }
+  ]
+}

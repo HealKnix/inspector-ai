@@ -297,8 +297,11 @@ describe("группы статусов", () => {
       filterFindingsByGroup(items, FindingStatusGroup.NO_EVIDENCE),
     ).toHaveLength(1);
     expect(
-      filterFindingsByGroup(items, FindingStatusGroup.NOT_APPLICABLE),
+      filterFindingsByGroup(items, FindingStatusGroup.NOT_COMPARABLE),
     ).toHaveLength(1);
+    expect(
+      filterFindingsByGroup(items, FindingStatusGroup.NOT_APPLICABLE),
+    ).toHaveLength(0);
     expect(filterFindingsByGroup(items, "all")).toHaveLength(3);
   });
 });

@@ -1,0 +1,63 @@
+{
+  "fixture_schema_version": 1,
+  "provenance": {
+    "source_file_id": "F0152",
+    "source_sha256": "99ec972d7dfe5039fca922e3120bd5e486f2a26518f78044d0850992c028e7af",
+    "source_bytes": 6359136,
+    "source_relative_path": "Пример нарушений на чертежах/ПД/10.1 Мероприятия по обеспечению соблюдения требований энергетической эффективности и требований оснащенности зданий, строений и сооружений приборами учета/V2_01-11-01-01-08_Том 11.1.pdf",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "organiser_split": "TRAIN_PUBLIC",
+    "development_role": "train-public-diagnostic-regression",
+    "organiser_manifest_sha256": "853225daec1888fbed19bbeb45e958154135f069799cea883dcd3c754c6c4ee7",
+    "permitted_manifest_sha256": "c9d44e2108d23c0db949f017dd8c84075a9e5e382ec408723c1472afc79bd452",
+    "annotation_source": "None; visual transcription of original print; supplied annotations/gold not read"
+  },
+  "cases": [
+    {
+      "case_id": "public-raster-F0152-p8",
+      "source_file_id": "F0152",
+      "source_page_number": 8,
+      "source_bbox": [0.195, 0.328, 0.857, 0.409],
+      "coordinate_space": "visible-page-normalized",
+      "source_width_points": 595.3200073242188,
+      "source_height_points": 841.9199829101562,
+      "observed_native_character_count": 0,
+      "observed_image_object_count": 1,
+      "image": "images/public-F0152-p8-printed.png",
+      "expected": {
+        "lines": [
+          "СВИДЕТЕЛЬСТВО",
+          "о допуске к определенному виду или видам работ, которые оказывают",
+          "влияние на безопасность объектов капитального строительства"
+        ],
+        "text": "СВИДЕТЕЛЬСТВО\nо допуске к определенному виду или видам работ, которые оказывают\nвлияние на безопасность объектов капитального строительства",
+        "structure": "printed heading and its continuation lines; line wrapping may be evaluated separately"
+      },
+      "deidentification": "Original PDF rendered only within the title clip; addresses, identifiers, organisations, people, signatures and seals outside the clip are not distributed",
+      "raster_origin": "Existing scanned page with one embedded image and no native characters; not a rasterised synthetic test PDF",
+      "original_capture_dpi": null,
+      "acceptance_eligible_300dpi": null
+    },
+    {
+      "case_id": "public-raster-F0152-p9",
+      "source_file_id": "F0152",
+      "source_page_number": 9,
+      "source_bbox": [0.24, 0.288, 0.83, 0.331],
+      "coordinate_space": "visible-page-normalized",
+      "source_width_points": 595.3200073242188,
+      "source_height_points": 841.9199829101562,
+      "observed_native_character_count": 0,
+      "observed_image_object_count": 1,
+      "image": "images/public-F0152-p9-printed.png",
+      "expected": {
+        "lines": ["ВЫПИСКА ИЗ РЕЕСТРА ЧЛЕНОВ САМОРЕГУЛИРУЕМОЙ", "ОРГАНИЗАЦИИ"],
+        "text": "ВЫПИСКА ИЗ РЕЕСТРА ЧЛЕНОВ САМОРЕГУЛИРУЕМОЙ\nОРГАНИЗАЦИИ",
+        "structure": "printed heading and its continuation lines; line wrapping may be evaluated separately"
+      },
+      "deidentification": "Original PDF rendered only within the title clip; addresses, identifiers, organisations, people, signatures and seals outside the clip are not distributed",
+      "raster_origin": "Existing scanned page with one embedded image and no native characters; not a rasterised synthetic test PDF",
+      "original_capture_dpi": null,
+      "acceptance_eligible_300dpi": null
+    }
+  ]
+}

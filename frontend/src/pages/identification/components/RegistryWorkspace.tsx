@@ -30,9 +30,18 @@ export function RegistryWorkspace({
   );
   const [refresh, setRefresh] = useState(0);
   const selectedId = params.get("documentId");
-  const alias = registry.document_aliases?.find(
+  const selectedRevisionId = params.get("revisionId");
+  // A document has one alias per revision. Never let its first alias override
+  // an explicit source or canonical revision from a saved link.
+  const aliases = registry.document_aliases?.filter(
     (item) => item.document_id === selectedId,
   );
+  const alias = selectedRevisionId
+    ? (aliases?.find((item) => item.revision_id === selectedRevisionId) ??
+      aliases?.find(
+        (item) => item.canonical_revision_id === selectedRevisionId,
+      ))
+    : aliases?.[0];
   const document =
     registry.documents.find(
       (item) =>
@@ -51,8 +60,8 @@ export function RegistryWorkspace({
     document?.revisions.find(
       (item) =>
         item.revision_id ===
-        (alias?.canonical_revision_id ?? params.get("revisionId")),
-    ) ?? document?.revisions[0];
+        (alias?.canonical_revision_id ?? selectedRevisionId),
+    ) ?? (!selectedRevisionId ? document?.revisions[0] : undefined);
   const navigate = (documentId: string, revisionId?: string) => {
     if (!documentId) return;
     const next = new URLSearchParams(params);
@@ -198,7 +207,9 @@ export function RegistryWorkspace({
             />
           ) : (
             <p role="alert">
-              Документ отсутствует в этом расчёте. Выберите другой документ.
+              {document
+                ? "Редакция отсутствует в этом расчёте. Выберите другую редакцию."
+                : "Документ отсутствует в этом расчёте. Выберите другой документ."}
             </p>
           )}
         </>

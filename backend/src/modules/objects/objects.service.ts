@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import type { ConstructionObject } from "../../generated/prisma/client.js";
+import { writeAuditEvent } from "../../infrastructure/audit/audit-envelope.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import {
   ObjectAccessService,
@@ -37,7 +38,7 @@ export class ObjectsService {
           },
         },
       });
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           objectId: object.id,

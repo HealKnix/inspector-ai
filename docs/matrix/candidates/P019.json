@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "parameter_code": "P019",
+  "admission": "not_admitted",
+  "purpose": "Кандидат ремонта собственного численного значения. Не утверждённое предметное правило.",
+  "plan": {
+    "kind": "regex",
+    "anchors": ["Коэффициент застройки"],
+    "pattern": "Коэффициент застройки\\s*[:=]?\\s*([+−-]?\\d+(?:[.,]\\d+)?)\\s*%",
+    "type": "number",
+    "unit": ["%"],
+    "number_policy": {
+      "version": "decimal-v1",
+      "mode": "single",
+      "reject_list_marker": true,
+      "require_unit": true
+    }
+  },
+  "comparison": {
+    "kind": "no_increase",
+    "numerical_policy": {
+      "version": "decimal-units-v1",
+      "target_unit": "%",
+      "zero_expected": "not_comparable",
+      "allow_percent_fraction": false,
+      "rounding": null
+    }
+  },
+  "blockers": [
+    "Нужен разрешённый реальный источник с явно утверждённым пределом КЗ из ПД, а не просто проектным значением КЗ.",
+    "Выбор источника должен отличать предельный КЗ ПД от проектного/фактического значения той же таблицы.",
+    "Нужны сопоставимые документы РД/ИД для того же участка и подтверждённой редакции.",
+    "Табличные и графические варианты не приняты по одному regex-примеру; непокрытые обязательные варианты требуют реализации и примеров."
+  ],
+  "mechanics_evidence": [
+    "backend/src/modules/extraction/extraction-engine.test.ts: strict numeric extraction",
+    "backend/src/modules/extraction/exact-comparison.test.ts"
+  ]
+}

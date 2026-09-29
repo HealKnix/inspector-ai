@@ -9,6 +9,20 @@ const baseEnvironment = {
 };
 
 describe("validateEnvironment", () => {
+  it("keeps metrics disabled without a separate technical credential", () => {
+    expect(validateEnvironment(baseEnvironment).METRICS_TOKEN).toBeUndefined();
+  });
+
+  it.each([
+    "short",
+    "x".repeat(257),
+    "token with spaces".repeat(3),
+    "x".repeat(32) + "\n",
+  ])("rejects unsafe metrics credential", (value) => {
+    expect(() =>
+      validateEnvironment({ ...baseEnvironment, METRICS_TOKEN: value }),
+    ).toThrow("METRICS_TOKEN");
+  });
   it("uses a 180-second structural validation budget by default", () => {
     expect(
       validateEnvironment(baseEnvironment).FILE_VALIDATOR_TIMEOUT_SECONDS,

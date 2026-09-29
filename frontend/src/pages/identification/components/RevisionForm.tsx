@@ -24,8 +24,14 @@ import {
   reviewFormSchema,
   type ReviewFormValues,
 } from "../lib/review-form";
+import {
+  buildSheetPatch,
+  initialSheetReview,
+  type OriginalPageTarget,
+} from "../lib/sheet-review";
 import { ApprovalQuestion } from "./ApprovalQuestion";
 import { ReviewFields } from "./ReviewFields";
+import { SheetMapQuestion } from "./SheetMapQuestion";
 
 export function RevisionForm({
   revision,
@@ -36,6 +42,7 @@ export function RevisionForm({
   pending,
   onConfirm,
   onEvidence,
+  onPage,
 }: {
   revision: IdentificationRevision;
   registry: IdentificationRegistry;
@@ -45,6 +52,7 @@ export function RevisionForm({
   pending: boolean;
   onConfirm: (revision: RevisionClarification, basis: string) => void;
   onEvidence: (evidence: IdentificationEvidence | null) => void;
+  onPage: (target: OriginalPageTarget) => void;
 }) {
   const initialFields = reviewFields(revision);
   const editableFields = Object.keys(
@@ -64,6 +72,7 @@ export function RevisionForm({
       effectiveTo: revision.approval.effective_to ?? "",
       approvalBasis: revision.approval.basis ?? "",
       replaces: revision.approval.replaces_revision_id ?? "",
+      sheets: initialSheetReview(revision),
     },
   });
   const {
@@ -175,9 +184,34 @@ export function RevisionForm({
         .map((field) => [field, values.fields[field]?.trim() || null]),
     );
     const approvalChanged = values.approvalChanged;
+    const patchedFields = { ...revision.fields };
+    for (const field of editableFields) {
+      if (!(field in fields)) continue;
+      const value = fields[field];
+      if (value === null) delete patchedFields[field];
+      else if (typeof value === "string") patchedFields[field] = value;
+    }
+    const sheetResult = buildSheetPatch(
+      values.sheets,
+      {
+        ...revision,
+        fields: patchedFields,
+      },
+      registry,
+      values.replaces || null,
+    );
+    if (sheetResult.patch === undefined) {
+      setError("root", { message: sheetResult.error });
+      return;
+    }
     const referenceChanged =
       values.reference !== (revision.reference_revision_id ?? "");
-    if (!Object.keys(fields).length && !approvalChanged && !referenceChanged) {
+    if (
+      !Object.keys(fields).length &&
+      !approvalChanged &&
+      !referenceChanged &&
+      !Object.keys(sheetResult.patch).length
+    ) {
       setError("root", {
         message: "Укажите реквизиты, которые удалось сверить с документом.",
       });
@@ -186,6 +220,7 @@ export function RevisionForm({
     onConfirm(
       {
         revision_id: revision.revision_id,
+        ...sheetResult.patch,
         ...(Object.keys(fields).length ? { fields } : {}),
         ...(approvalChanged
           ? {
@@ -260,6 +295,14 @@ export function RevisionForm({
           {question.kind === "approval" ? approvalControl : null}
         </aside>
       ) : null}
+      <SheetMapQuestion
+        form={form}
+        revision={revision}
+        registry={registry}
+        filenames={filenames}
+        disabled={locked}
+        onPage={onPage}
+      />
       <details className="text-sm">
         <summary className="text-copy-muted cursor-pointer">
           Другие реквизиты и решения

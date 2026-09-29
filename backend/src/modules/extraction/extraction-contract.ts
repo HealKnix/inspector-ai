@@ -1,6 +1,11 @@
 import { record } from "../parsing/parsing-contract.js";
+import {
+  validateNumberPolicy,
+  type NumberPolicy,
+  type NumericalEvidence,
+} from "./numerical-policy.js";
 
-export const EXTRACTION_ENGINE_VERSION = "extraction-engine-v2";
+export const EXTRACTION_ENGINE_VERSION = "extraction-engine-v4";
 
 export type ExtractionStatus =
   "extracted" | "ambiguous" | "no_evidence" | "unreadable" | "unsupported";
@@ -18,6 +23,7 @@ export interface EvidenceLocator {
 }
 
 export interface ExtractionAlternative {
+  numerical?: NumericalEvidence;
   value_raw: string;
   value: number | string;
   unit: string | null;
@@ -25,6 +31,7 @@ export interface ExtractionAlternative {
 }
 
 export interface ExtractionOutcome {
+  numerical?: NumericalEvidence;
   schema_version: 1;
   parameter_code: string;
   rule_version_id: string;
@@ -56,10 +63,12 @@ export interface TableLookupPlan {
     type?: "number" | "text" | "enum";
     enum?: string[];
     unit?: string[];
+    number_policy?: NumberPolicy;
   };
 }
 
 export interface RegexPlan {
+  number_policy?: NumberPolicy;
   kind: "regex";
   anchors: string[];
   pattern: string;
@@ -161,10 +170,19 @@ function signature(value: unknown): TableSignature {
 function valueSpec(value: unknown): TableLookupPlan["value"] {
   if (value === undefined) return {};
   if (!record(value)) throw new PlanValidationError("value: объект");
-  const allowed = new Set(["column", "header", "type", "enum", "unit"]);
+  const allowed = new Set([
+    "column",
+    "header",
+    "type",
+    "enum",
+    "unit",
+    "number_policy",
+  ]);
   if (!Object.keys(value).every((key) => allowed.has(key)))
     throw new PlanValidationError("value: неизвестное поле");
   const result: TableLookupPlan["value"] = {};
+  if (value.number_policy !== undefined)
+    result.number_policy = validateNumberPolicy(value.number_policy);
   if (value.column !== undefined) {
     if (
       value.column !== "last_numeric" &&
@@ -217,6 +235,7 @@ function regexPlan(value: Record<string, unknown>): RegexPlan {
     "type",
     "enum",
     "unit",
+    "number_policy",
   ]);
   if (!Object.keys(value).every((key) => allowed.has(key)))
     throw new PlanValidationError("regex: неизвестное поле");
@@ -236,6 +255,8 @@ function regexPlan(value: Record<string, unknown>): RegexPlan {
     anchors: terms(value.anchors, "anchors"),
     pattern: value.pattern,
   };
+  if (value.number_policy !== undefined)
+    result.number_policy = validateNumberPolicy(value.number_policy);
   if (value.window_blocks !== undefined) {
     if (
       typeof value.window_blocks !== "number" ||

@@ -42,6 +42,17 @@ export function FieldCandidates({
                   Предложение модели требует проверки.
                 </p>
               ) : null}
+              {candidate.evidence.some(
+                (item) =>
+                  item.parse_context?.include_in_main === false ||
+                  item.parse_context?.region_kind === "unknown" ||
+                  (item.parse_context?.reasons.length ?? 0) > 0,
+              ) ? (
+                <p className="text-warning mt-1 text-xs">
+                  Структура фрагмента требует проверки. Найденный текст не
+                  подтверждает применимость редакции.
+                </p>
+              ) : null}
               {candidate.evidence.map((evidence, index) => (
                 <Button
                   key={`${evidence.artifact_id}:${evidence.block_id}:${index}`}

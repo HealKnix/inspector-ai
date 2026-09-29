@@ -14,6 +14,12 @@ import { Roles } from "../../common/decorators/roles.decorator.js";
 import { type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { apiErrorSchema } from "../documents/upload-contract.js";
 import { MatrixAdminService } from "./matrix-admin.service.js";
+import {
+  passportInputSchema,
+  regressionEngines,
+  regressionInputSchema,
+} from "./matrix-review-contract.js";
+import { MatrixReviewService } from "./matrix-review.service.js";
 
 function uuid(value: unknown, field: string): string {
   if (typeof value !== "string" || !/^[0-9a-fA-F-]{36}$/.test(value))
@@ -28,7 +34,94 @@ function uuid(value: unknown, field: string): string {
 @Roles("ADMINISTRATOR")
 @Controller("v1/admin/matrix")
 export class MatrixAdminController {
-  constructor(private readonly matrix: MatrixAdminService) {}
+  constructor(
+    private readonly matrix: MatrixAdminService,
+    private readonly review: MatrixReviewService,
+  ) {}
+
+  @Get("review-contract")
+  reviewContract() {
+    return {
+      schema_version: 1,
+      passport: passportInputSchema,
+      regression: regressionInputSchema,
+      engines: regressionEngines,
+    };
+  }
+
+  @Get("rules/:ruleId/review")
+  reviewHistory(@Param("ruleId") ruleId: string) {
+    return this.review.history(uuid(ruleId, "ruleId"));
+  }
+
+  @Post("rules/:ruleId/passport")
+  @HttpCode(200)
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: passportInputSchema.required,
+      description:
+        "matrix-review-v1. Полная исполняемая JSON Schema: GET /api/v1/admin/matrix/review-contract, поле passport.",
+      properties: {
+        schema_version: { type: "integer", enum: [1] },
+        matrix_row_id: { type: "string", format: "uuid" },
+        quantity: { type: "string", nullable: true },
+        applicability: { type: "string", nullable: true },
+        scope: { type: "string", nullable: true },
+        sources: {
+          type: "array",
+          items: { type: "string", enum: ["PD", "RD", "ID"] },
+        },
+        unit: { type: "string", nullable: true },
+        rounding: { type: "string", nullable: true },
+        branches: { type: "array", items: { type: "object" } },
+      },
+      additionalProperties: false,
+    },
+  })
+  passport(
+    @Req() request: AuthenticatedRequest,
+    @Param("ruleId") ruleId: string,
+    @Body() body: unknown,
+  ) {
+    return this.review.savePassport(
+      { userId: request.user.id, requestId: randomUUID(), ip: request.ip },
+      uuid(ruleId, "ruleId"),
+      body,
+    );
+  }
+
+  @Post("rules/:ruleId/regression")
+  @HttpCode(200)
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["schema_version", "fixtures"],
+      additionalProperties: false,
+      description:
+        "matrix-review-v1. Сервер исполняет fixtures; клиентский report не принимается. Полная JSON Schema: GET /api/v1/admin/matrix/review-contract, поле regression.",
+      properties: {
+        schema_version: { type: "integer", enum: [1] },
+        fixtures: {
+          type: "array",
+          minItems: 1,
+          maxItems: 260,
+          items: { type: "object" },
+        },
+      },
+    },
+  })
+  regression(
+    @Req() request: AuthenticatedRequest,
+    @Param("ruleId") ruleId: string,
+    @Body() body: unknown,
+  ) {
+    return this.review.runRegression(
+      { userId: request.user.id, requestId: randomUUID(), ip: request.ip },
+      uuid(ruleId, "ruleId"),
+      body,
+    );
+  }
 
   @Get("rows")
   @ApiResponse({

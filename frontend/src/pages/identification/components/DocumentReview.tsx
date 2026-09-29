@@ -15,10 +15,13 @@ import type {
 import { Button } from "@heroui/react";
 import { useRef, useState } from "react";
 import { identificationCanApply } from "../lib/identification";
+import type { ResolvedSheetNavigation } from "../lib/resolved-sheet-selection";
 import { reviewDocumentName, reviewFields } from "../lib/review-card";
+import type { OriginalPageTarget } from "../lib/sheet-review";
 import { FieldCandidates } from "./FieldCandidates";
 import { IdentificationHistory } from "./IdentificationHistory";
 import { OriginalDocumentView } from "./OriginalDocumentView";
+import { ResolvedSheetSelection } from "./ResolvedSheetSelection";
 import { RevisionForm } from "./RevisionForm";
 
 export function DocumentReview({
@@ -54,6 +57,14 @@ export function DocumentReview({
           candidate.normalized === revision.fields[candidate.field],
       )?.evidence[0] ?? null,
   );
+  const [pageTarget, setPageTarget] = useState<OriginalPageTarget | null>(null);
+  const [selectedSheet, setSelectedSheet] =
+    useState<ResolvedSheetNavigation | null>(null);
+  const showEvidence = (value: IdentificationEvidence | null) => {
+    setSelectedSheet(null);
+    setPageTarget(null);
+    setEvidence(value);
+  };
   const [error, setError] = useState<unknown>(null);
   const [conflict, setConflict] = useState(false);
   const [retryBody, setRetryBody] = useState<ClarificationBatch | null>(null);
@@ -109,15 +120,38 @@ export function DocumentReview({
   };
   return (
     <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
-      <OriginalDocumentView
-        key={`${reviewed.revision.revision_id}:${evidence?.artifact_id ?? "original"}:${evidence?.block_id ?? ""}:${evidence?.page_number ?? ""}`}
-        objectId={objectId}
-        processId={reviewed.registry.process_id}
-        runId={reviewed.registry.run_id}
-        revision={reviewed.revision}
-        filenames={filenames}
-        evidence={evidence}
-      />
+      <div className="min-w-0 space-y-3 lg:sticky lg:top-3">
+        {selectedSheet && (
+          <div
+            className="border-border bg-card space-y-2 rounded-lg border p-3 text-sm"
+            role="status"
+          >
+            <p>
+              {selectedSheet.roleLabel} · {selectedSheet.contextLabel} · лист{" "}
+              {selectedSheet.label} · редакция{" "}
+              {selectedSheet.revision.fields.revision_label ??
+                selectedSheet.revision.revision_id}
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              onPress={() => setSelectedSheet(null)}
+            >
+              Вернуться к документу карточки
+            </Button>
+          </div>
+        )}
+        <OriginalDocumentView
+          key={`${selectedSheet?.revision.revision_id ?? reviewed.revision.revision_id}:${selectedSheet?.pageTarget.artifact_id ?? pageTarget?.artifact_id ?? evidence?.artifact_id ?? "original"}:${selectedSheet ? "" : (evidence?.block_id ?? "")}:${selectedSheet?.pageTarget.page_number ?? pageTarget?.page_number ?? evidence?.page_number ?? ""}`}
+          objectId={objectId}
+          processId={reviewed.registry.process_id}
+          runId={reviewed.registry.run_id}
+          revision={selectedSheet?.revision ?? reviewed.revision}
+          filenames={filenames}
+          evidence={selectedSheet ? null : evidence}
+          pageTarget={selectedSheet?.pageTarget ?? pageTarget}
+        />
+      </div>
       <section
         className="border-border bg-card min-w-0 space-y-4 rounded-xl border p-4"
         aria-label="Карточка документа"
@@ -125,6 +159,13 @@ export function DocumentReview({
         <h2 className="text-lg font-semibold">
           {reviewDocumentName(reviewed.document, filenames, reviewed.revision)}
         </h2>
+        <ResolvedSheetSelection
+          registry={reviewed.registry}
+          revision={reviewed.revision}
+          filenames={filenames}
+          unavailable={unavailable}
+          onOpen={setSelectedSheet}
+        />
         <RevisionForm
           revision={reviewed.revision}
           registry={reviewed.registry}
@@ -133,7 +174,12 @@ export function DocumentReview({
           disabled={disabled}
           pending={apply.isPending}
           onConfirm={confirm}
-          onEvidence={setEvidence}
+          onEvidence={showEvidence}
+          onPage={(target) => {
+            setSelectedSheet(null);
+            setEvidence(null);
+            setPageTarget(target);
+          }}
         />
         {error ? (
           <p role="alert" className="text-danger text-sm">
@@ -171,7 +217,7 @@ export function DocumentReview({
           <div className="space-y-4 pt-4">
             <FieldCandidates
               revision={reviewed.revision}
-              onEvidence={setEvidence}
+              onEvidence={showEvidence}
             />
             <IdentificationHistory
               objectId={objectId}

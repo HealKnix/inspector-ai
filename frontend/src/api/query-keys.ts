@@ -16,6 +16,8 @@ export const queryKeys = {
       ["objects", id, "completeness", "result", runId ?? "latest"] as const,
     extractions: (id: string) => ["objects", id, "extractions"] as const,
     evidenceGroups: (id: string) => ["objects", id, "evidence-groups"] as const,
+    sectionAnalysis: (id: string, runId?: string) =>
+      ["objects", id, "section-analysis", runId ?? "latest"] as const,
     protocol: (id: string) => ["objects", id, "protocol"] as const,
     findings: (id: string) => ["objects", id, "findings"] as const,
     finding: (id: string, findingId: string) =>
@@ -46,6 +48,8 @@ export const queryKeys = {
   matrix: {
     all: ["admin", "matrix"] as const,
     rows: ["admin", "matrix", "rows"] as const,
+    reviewContract: ["admin", "matrix", "review-contract"] as const,
+    review: (ruleId: string) => ["admin", "matrix", "review", ruleId] as const,
     rules: (parameterCode: string) =>
       ["admin", "matrix", "rules", parameterCode] as const,
   },

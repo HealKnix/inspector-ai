@@ -106,7 +106,7 @@ describe("inspector review questions and source choices", () => {
       "field_conflict:title",
     ];
     expect(nextReviewQuestion(registry, actual)).toMatchObject({
-      kind: "restriction",
+      kind: "sheets",
     });
     expect(nextReviewQuestion(registry, actual)?.text).toContain("лист");
   });

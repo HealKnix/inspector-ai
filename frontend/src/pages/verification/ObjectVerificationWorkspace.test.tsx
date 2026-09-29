@@ -16,6 +16,10 @@ import {
   getRenderedPage,
 } from "@/api/endpoints/parsing";
 import {
+  getSectionAnalysisStatus,
+  startSectionAnalysis,
+} from "@/api/endpoints/section-analysis";
+import {
   getFinding,
   getProtocol,
   listFindings,
@@ -28,6 +32,16 @@ import {
   parseResult,
   parsingObjectId,
 } from "@/api/types/parsing-test-fixtures";
+import {
+  sectionActualEvidence,
+  sectionActualSource,
+  sectionReferenceEvidence,
+  sectionReferenceSource,
+  sectionSnapshot,
+  sectionStatus,
+  sectionStatusDisabled,
+  sectionTask,
+} from "@/api/types/section-analysis-test-fixtures";
 import type { ApiFinding } from "@/api/types/verification";
 import routeNames from "@/routes/routeNames";
 
@@ -56,6 +70,11 @@ vi.mock("@/api/endpoints/verification", () => ({
   getProtocol: vi.fn(),
   listFindings: vi.fn(),
   postDecision: vi.fn(),
+}));
+
+vi.mock("@/api/endpoints/section-analysis", () => ({
+  getSectionAnalysisStatus: vi.fn(),
+  startSectionAnalysis: vi.fn(),
 }));
 
 const object: ConstructionObject = {
@@ -101,6 +120,7 @@ beforeEach(() => {
     versions: [],
     protocol_absent_reason: "protocol_not_generated",
   });
+  vi.mocked(getSectionAnalysisStatus).mockResolvedValue(sectionStatusDisabled);
 });
 
 describe("object verification workspace", () => {
@@ -574,7 +594,12 @@ describe("object verification workspace", () => {
     expect(
       queue.queryByRole("radio", { name: /Нет доказательств/ }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByText(/P040/)).not.toBeInTheDocument();
+    expect(queue.queryByText(/P040/)).not.toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("region", { name: "Покрытие параметров" }),
+      ).getByText(/P040/),
+    ).toBeInTheDocument();
     expect(
       await screen.findByRole("img", {
         name: "Страница 2 документа synthetic.xml",
@@ -1259,5 +1284,405 @@ describe("object verification workspace", () => {
 
     view.unmount();
     view.client.clear();
+  });
+
+  describe("section analysis lifecycle", () => {
+    const refFileId = "77777777-7777-4777-8777-777777777777";
+    const refFileId2 = "55555555-5555-4555-8555-555555555555";
+    const actFileId = "88888888-8888-4888-8888-888888888888";
+    const refArtifactId = "99999999-9999-4999-8999-999999999999";
+    const refArtifactId2 = "66666666-6666-4666-8666-666666666666";
+    const actArtifactId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+
+    function sectionFiles() {
+      return [
+        {
+          ...parsedFile,
+          file_id: refFileId,
+          artifact_id: refArtifactId,
+          original_name: "reference-a.pdf",
+        },
+        {
+          ...parsedFile,
+          file_id: refFileId2,
+          artifact_id: refArtifactId2,
+          original_name: "reference-b.pdf",
+        },
+        {
+          ...parsedFile,
+          file_id: actFileId,
+          artifact_id: actArtifactId,
+          original_name: "actual.pdf",
+        },
+      ];
+    }
+
+    /** Snapshot with two reference sources and one actual — the FR3 case. */
+    function sectionDetailSnapshot() {
+      return {
+        ...sectionSnapshot,
+        sources: [
+          {
+            ...sectionReferenceSource,
+            source_ref: "ref-a",
+            file_id: refFileId,
+            artifact_id: refArtifactId,
+          },
+          {
+            ...sectionReferenceSource,
+            source_ref: "ref-b",
+            file_id: refFileId2,
+            artifact_id: refArtifactId2,
+          },
+          {
+            ...sectionActualSource,
+            source_ref: "act",
+            file_id: actFileId,
+            artifact_id: actArtifactId,
+          },
+        ],
+        sections: [
+          {
+            ...sectionSnapshot.sections[0]!,
+            section_id: "sec-ref-a",
+            source_ref: "ref-a",
+          },
+          {
+            ...sectionSnapshot.sections[0]!,
+            section_id: "sec-ref-b",
+            source_ref: "ref-b",
+            title: "4. Конструктивные решения",
+          },
+          {
+            ...sectionSnapshot.sections[1]!,
+            section_id: "sec-act",
+            source_ref: "act",
+          },
+        ],
+        evidence: [
+          {
+            ...sectionReferenceEvidence,
+            source_ref: "ref-a",
+            section_id: "sec-ref-a",
+            file_id: refFileId,
+            artifact_id: refArtifactId,
+            page_number: 1,
+          },
+          {
+            ...sectionReferenceEvidence,
+            source_ref: "ref-b",
+            section_id: "sec-ref-b",
+            file_id: refFileId2,
+            artifact_id: refArtifactId2,
+            page_number: 2,
+            quote: "Второй эталонный раздел",
+          },
+          {
+            ...sectionActualEvidence,
+            source_ref: "act",
+            section_id: "sec-act",
+            file_id: actFileId,
+            artifact_id: actArtifactId,
+            page_number: 1,
+          },
+        ],
+      };
+    }
+
+    function sectionFindingFixture() {
+      const { item, protocolId } = integrityFixture();
+      const snapshot = sectionDetailSnapshot();
+      vi.mocked(getFinding).mockResolvedValue({
+        schema_version: 1,
+        object_id: parsingObjectId,
+        finding: {
+          ...item,
+          protocol_version: 1,
+          run_id: parsedFile.run_id,
+          members: [],
+          decisions: [],
+          section_analysis: snapshot,
+        },
+      });
+      vi.mocked(getParsingStatus).mockResolvedValue({
+        schema_version: 1,
+        active: false,
+        poll_after_ms: 2000,
+        items: sectionFiles(),
+      });
+      const twoPages = structuredClone(parseResult);
+      twoPages.artifact.pages.push({
+        ...structuredClone(twoPages.artifact.pages[0]!),
+        page_number: 2,
+      });
+      vi.mocked(getParseResult).mockImplementation(
+        (_objectId, fileId, runId, artifactId) =>
+          Promise.resolve({
+            ...twoPages,
+            file_id: fileId,
+            run_id: runId,
+            artifact_id: artifactId,
+          }),
+      );
+      return { item, protocolId, snapshot };
+    }
+
+    it("locks decisions and finalization while a replacement task runs", async () => {
+      const { item } = integrityFixture();
+      vi.mocked(getSectionAnalysisStatus).mockResolvedValue({
+        ...sectionStatus,
+        active: true,
+        task: { ...sectionTask, state: "processing" },
+        results: null,
+      });
+      const view = renderPage(
+        `${routeNames.DOCUMENT_VERIFICATION_DETAILS(parsingObjectId)}&finding=${item.id}`,
+      );
+      expect(await screen.findByText("Выполняется")).toBeInTheDocument();
+      expect(
+        await screen.findByText(/дождутся его результата/),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Подтвердить нарушение" }),
+      ).not.toBeInTheDocument();
+      view.unmount();
+      view.client.clear();
+    });
+
+    it("locks decisions and finalization while the selected result is stale", async () => {
+      const { item, protocolId } = integrityFixture();
+      const decided = { ...item, status: "NEGATIVE_VERIFIED" as const };
+      vi.mocked(listFindings).mockResolvedValue({
+        schema_version: 1,
+        object_id: parsingObjectId,
+        protocol_id: protocolId,
+        items: [decided],
+        findings_absent_reason: null,
+      });
+      vi.mocked(getSectionAnalysisStatus).mockResolvedValue({
+        ...sectionStatus,
+        task: { ...sectionTask, stale: true },
+      });
+      const view = renderPage(
+        `${routeNames.DOCUMENT_VERIFICATION_DETAILS(parsingObjectId)}&finding=${item.id}`,
+      );
+      expect(await screen.findByText("Устарел")).toBeInTheDocument();
+      expect(
+        await screen.findByText(/не может служить основанием/),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Финализировать протокол" }),
+      ).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Запустить заново" }),
+      ).toBeInTheDocument();
+      view.unmount();
+      view.client.clear();
+    });
+
+    it("treats a non-current protocol as stale even when the result is older", async () => {
+      const { item, protocolId } = integrityFixture();
+      // Cached result A reselected after B: A's completed_at precedes the
+      // protocol snapshot — the backend is_current flag, not timestamps,
+      // decides that the shown protocol is out of date.
+      vi.mocked(getProtocol).mockResolvedValue({
+        schema_version: 1,
+        object_id: parsingObjectId,
+        process_status: "READY",
+        is_current: false,
+        protocol: {
+          id: protocolId,
+          version: 1,
+          status: "active",
+          scenario: "FULL",
+          created_at: "2026-10-01T00:00:00Z",
+          finalized_at: null,
+          findings: 1,
+          run_id: parsedFile.run_id,
+          parameters: 1,
+          parameters_compared: 1,
+          is_current: false,
+        },
+        versions: [],
+        protocol_absent_reason: null,
+      });
+      vi.mocked(getSectionAnalysisStatus).mockResolvedValue({
+        ...sectionStatus,
+        task: {
+          ...sectionTask,
+          completed_at: "2026-09-28T10:01:00Z",
+        },
+      });
+      const view = renderPage(
+        `${routeNames.DOCUMENT_VERIFICATION_DETAILS(parsingObjectId)}&finding=${item.id}`,
+      );
+      const rebuild = await screen.findByRole("button", {
+        name: "Пересобрать протокол",
+      });
+      expect(rebuild).toBeEnabled();
+      expect(
+        await screen.findByText(/не отражает результат анализа разделов/),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Подтвердить нарушение" }),
+      ).not.toBeInTheDocument();
+      view.unmount();
+      view.client.clear();
+    });
+
+    it("replays the same request after a lost response and mints a new id on a deliberate restart", async () => {
+      integrityFixture();
+      vi.mocked(getSectionAnalysisStatus).mockResolvedValue({
+        ...sectionStatus,
+        task: { ...sectionTask, stale: true },
+      });
+      vi.mocked(startSectionAnalysis)
+        .mockRejectedValueOnce(new Error("network lost"))
+        .mockRejectedValueOnce(new Error("network lost"))
+        .mockResolvedValue({
+          schema_version: 1,
+          request_id: "55555555-5555-4555-8555-555555555555",
+          task: sectionTask,
+        });
+      const view = renderPage();
+      const retry = await screen.findByRole("button", {
+        name: "Запустить заново",
+      });
+      fireEvent.click(retry);
+      await waitFor(() =>
+        expect(startSectionAnalysis).toHaveBeenCalledTimes(1),
+      );
+      await waitFor(() =>
+        expect(
+          screen.getByRole("button", { name: "Запустить заново" }),
+        ).toBeEnabled(),
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Запустить заново" }));
+      await waitFor(() =>
+        expect(startSectionAnalysis).toHaveBeenCalledTimes(2),
+      );
+      const firstBody = vi.mocked(startSectionAnalysis).mock.calls[0]![1];
+      const retryBody = vi.mocked(startSectionAnalysis).mock.calls[1]![1];
+      expect(retryBody).toEqual(firstBody);
+
+      // Третья попытка повторяет ту же заявку — она подтверждается.
+      await waitFor(() =>
+        expect(
+          screen.getByRole("button", { name: "Запустить заново" }),
+        ).toBeEnabled(),
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Запустить заново" }));
+      await waitFor(() =>
+        expect(startSectionAnalysis).toHaveBeenCalledTimes(3),
+      );
+      expect(vi.mocked(startSectionAnalysis).mock.calls[2]![1]).toEqual(
+        firstBody,
+      );
+
+      // Осознанный запуск после подтверждённой квитанции — новый request_id.
+      await waitFor(() =>
+        expect(
+          screen.getByRole("button", { name: "Запустить заново" }),
+        ).toBeEnabled(),
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Запустить заново" }));
+      await waitFor(() =>
+        expect(startSectionAnalysis).toHaveBeenCalledTimes(4),
+      );
+      const freshBody = vi.mocked(startSectionAnalysis).mock.calls[3]![1];
+      expect(freshBody.request_id).not.toBe(firstBody.request_id);
+      expect(freshBody.expected_run_id).toBe(firstBody.expected_run_id);
+      view.unmount();
+      view.client.clear();
+    });
+
+    it("refreshes protocol and findings once when polling reaches a terminal state", async () => {
+      integrityFixture();
+      vi.mocked(getSectionAnalysisStatus)
+        .mockResolvedValueOnce({
+          ...sectionStatus,
+          active: true,
+          task: { ...sectionTask, state: "processing" },
+          results: null,
+        })
+        .mockResolvedValue(sectionStatus);
+      vi.useFakeTimers();
+      try {
+        const view = renderPage();
+        await act(() => vi.advanceTimersByTimeAsync(100));
+        expect(getSectionAnalysisStatus).toHaveBeenCalledTimes(1);
+        const protocolCalls = vi.mocked(getProtocol).mock.calls.length;
+        const findingCalls = vi.mocked(listFindings).mock.calls.length;
+        await act(() => vi.advanceTimersByTimeAsync(2100));
+        await act(() => vi.advanceTimersByTimeAsync(200));
+        expect(getSectionAnalysisStatus).toHaveBeenCalledTimes(2);
+        expect(vi.mocked(getProtocol).mock.calls.length).toBe(
+          protocolCalls + 1,
+        );
+        expect(vi.mocked(listFindings).mock.calls.length).toBe(
+          findingCalls + 1,
+        );
+        // A terminal, unchanged signature does not invalidate again.
+        await act(() => vi.advanceTimersByTimeAsync(10_000));
+        expect(vi.mocked(getProtocol).mock.calls.length).toBe(
+          protocolCalls + 1,
+        );
+        view.unmount();
+        view.client.clear();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("opens a second reference citation in the reference pane, not the actual one", async () => {
+      const { item } = sectionFindingFixture();
+      const view = renderPage(
+        `${routeNames.DOCUMENT_VERIFICATION_DETAILS(parsingObjectId)}&finding=${item.id}`,
+      );
+      expect(
+        await screen.findByRole(
+          "img",
+          { name: "Страница 1 документа actual.pdf" },
+          { timeout: 5000 },
+        ),
+      ).toBeInTheDocument();
+
+      fireEvent.click(
+        await screen.findByRole("tab", { name: "Анализ разделов" }),
+      );
+      const refBCitation = await screen.findByText("Второй эталонный раздел");
+      fireEvent.click(
+        within(refBCitation.closest("li")!).getByRole("button", {
+          name: "Показать в документе",
+        }),
+      );
+
+      const referencePane = await screen.findByRole("region", {
+        name: "Эталонный документ (ПД): фактический документ",
+      });
+      expect(
+        await within(referencePane).findByRole("img", {
+          name: "Страница 2 документа reference-b.pdf",
+        }),
+      ).toBeInTheDocument();
+      const actualPane = screen.getByRole("region", {
+        name: "Проверяемый документ (РД): фактический документ",
+      });
+      expect(
+        within(actualPane).getByRole("img", {
+          name: "Страница 1 документа actual.pdf",
+        }),
+      ).toBeInTheDocument();
+      // Frozen run/artifact identity, not a substituted current file.
+      expect(getParseResult).toHaveBeenCalledWith(
+        parsingObjectId,
+        refFileId2,
+        parsedFile.run_id,
+        refArtifactId2,
+        expect.any(AbortSignal),
+      );
+      view.unmount();
+      view.client.clear();
+    });
   });
 });

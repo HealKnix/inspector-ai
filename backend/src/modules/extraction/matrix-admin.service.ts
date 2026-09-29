@@ -8,6 +8,7 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "../../generated/prisma/client.js";
+import { writeAuditEvent } from "../../infrastructure/audit/audit-envelope.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import { readClassificationConfig } from "../identification/classification-config.js";
 import { ClassificationError } from "../identification/classification-contract.js";
@@ -35,6 +36,10 @@ import {
   missingAnchorsAcross,
   planAnchorTerms,
 } from "./extraction-llm.js";
+import {
+  lockMatrixParameter,
+  requireRuleRegression,
+} from "./matrix-review.service.js";
 
 interface ArtifactSource {
   file_id: string;
@@ -126,6 +131,7 @@ export class MatrixAdminService {
       }
     }
     return this.prisma.$transaction(async (tx) => {
+      await lockMatrixParameter(tx, parameterCode);
       const row = await tx.matrixRow.findFirst({
         where: { parameterCode },
         orderBy: { importId: "desc" },
@@ -152,7 +158,7 @@ export class MatrixAdminService {
           createdBy: context.userId,
         },
       });
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           action: "matrix.rule.draft_created",
@@ -299,6 +305,7 @@ export class MatrixAdminService {
         `Черновик отклонён: якоря не встречаются в документе (${missing.join(", ")})`,
       );
     return this.prisma.$transaction(async (tx) => {
+      await lockMatrixParameter(tx, parameterCode);
       const last = await tx.ruleVersion.findFirst({
         where: { parameterCode },
         orderBy: { version: "desc" },
@@ -321,7 +328,7 @@ export class MatrixAdminService {
           createdBy: context.userId,
         },
       });
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           action: "matrix.rule.llm_draft_created",
@@ -350,8 +357,14 @@ export class MatrixAdminService {
     ruleId: string,
   ) {
     return this.prisma.$transaction(async (tx) => {
-      const rule = await tx.ruleVersion.findUnique({ where: { id: ruleId } });
-      if (!rule) throw new NotFoundException("Версия правила не найдена");
+      const initial = await tx.ruleVersion.findUnique({
+        where: { id: ruleId },
+      });
+      if (!initial) throw new NotFoundException("Версия правила не найдена");
+      await lockMatrixParameter(tx, initial.parameterCode);
+      const rule = await tx.ruleVersion.findUniqueOrThrow({
+        where: { id: ruleId },
+      });
       if (rule.status !== "draft")
         throw new ConflictException("Утвердить можно только черновик");
       try {
@@ -362,9 +375,10 @@ export class MatrixAdminService {
           "Сохранённый план не проходит валидацию",
         );
       }
+      const review = await requireRuleRegression(tx, rule);
       await tx.ruleVersion.updateMany({
         where: { parameterCode: rule.parameterCode, status: "approved" },
-        data: { status: "deprecated", approvedBy: null, approvedAt: null },
+        data: { status: "deprecated" },
       });
       const approved = await tx.ruleVersion.update({
         where: { id: rule.id },
@@ -374,7 +388,7 @@ export class MatrixAdminService {
           approvedAt: new Date(),
         },
       });
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           action: "matrix.rule.approved",
@@ -384,6 +398,7 @@ export class MatrixAdminService {
             rule_version_id: rule.id,
             version: rule.version,
             has_comparison: rule.comparison !== null,
+            ...review,
           },
         },
       });
@@ -396,15 +411,21 @@ export class MatrixAdminService {
     ruleId: string,
   ) {
     return this.prisma.$transaction(async (tx) => {
-      const rule = await tx.ruleVersion.findUnique({ where: { id: ruleId } });
-      if (!rule) throw new NotFoundException("Версия правила не найдена");
+      const initial = await tx.ruleVersion.findUnique({
+        where: { id: ruleId },
+      });
+      if (!initial) throw new NotFoundException("Версия правила не найдена");
+      await lockMatrixParameter(tx, initial.parameterCode);
+      const rule = await tx.ruleVersion.findUniqueOrThrow({
+        where: { id: ruleId },
+      });
       if (rule.status !== "draft")
         throw new ConflictException("Отклонить можно только черновик");
       const rejected = await tx.ruleVersion.update({
         where: { id: rule.id },
         data: { status: "rejected" },
       });
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           action: "matrix.rule.rejected",

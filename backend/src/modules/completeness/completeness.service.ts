@@ -4,6 +4,8 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import type { Prisma } from "../../generated/prisma/client.js";
+import { writeAuditEvent } from "../../infrastructure/audit/audit-envelope.js";
+import { writeOutboxEvent } from "../../infrastructure/observability/trace-context.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import type { IdentificationSnapshot } from "../identification/identification-contract.js";
 import {
@@ -304,7 +306,7 @@ export class CompletenessService {
           },
         });
       }
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           objectId,
@@ -473,7 +475,7 @@ export class CompletenessService {
           packageVersionId: version.id,
         },
       });
-      await tx.outbox.create({
+      await writeOutboxEvent(tx, {
         data: {
           eventType: "expected-composition.confirmed",
           payload: {
@@ -486,7 +488,7 @@ export class CompletenessService {
           },
         },
       });
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           objectId,
@@ -609,7 +611,7 @@ export class CompletenessService {
         createdBy: author,
       },
     });
-    await tx.auditEvent.create({
+    await writeAuditEvent(tx, {
       data: {
         userId: author,
         requestId: actor?.requestId ?? selection.id,

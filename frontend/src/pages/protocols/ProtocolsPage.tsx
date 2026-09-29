@@ -4,7 +4,6 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { Input } from "@/components/input/Input";
 import { UploadIcon } from "@/components/UploadIcon";
-import { PROTOCOL_FIXTURE_NOTICE } from "@/data/protocols";
 import { ConstrainedLayout, PageHeader } from "@/layouts/ConstrainedLayout";
 import routeNames from "@/routes/routeNames";
 import { useProtocolStore } from "@/store/protocols";
@@ -64,9 +63,7 @@ export function ProtocolsPage() {
     <ConstrainedLayout>
       <PageHeader
         backHref={routeNames.ROOT}
-        description="Сводные документы по завершённым демонстрационным проверкам. Выберите объект или найдите нужный протокол."
-        notice={PROTOCOL_FIXTURE_NOTICE}
-        noticeLabel="ДЕМО"
+        description="Сводные документы по завершённым проверкам. Выберите объект или найдите нужный протокол."
         title="Протоколы"
       />
 

@@ -1,13 +1,15 @@
 import { NestFactory } from "@nestjs/core";
 import { createHash, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import "reflect-metadata";
 import { AppModule } from "./app.module.js";
 import type { Prisma } from "./generated/prisma/client.js";
 import { PrismaService } from "./infrastructure/prisma/prisma.service.js";
 
-const SOURCE = resolve(__dirname, "../scripts/framework-v1.jsonl");
+const SOURCE = fileURLToPath(
+  new URL("../scripts/framework-v1.jsonl", import.meta.url),
+);
 
 interface MetaRow {
   kind: "meta";

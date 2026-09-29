@@ -314,30 +314,7 @@ describe("whole-document identification through extraction and historical protoc
         })),
       })),
     };
-    const applied = await f.apply(source, confirmation).expect(202);
-    const firstRun = body<{ run_id: string }>(applied).run_id;
-    const resolved = await f.registry(source);
-    const ajv = new Ajv({ strict: false, validateFormats: false });
-    const validateRegistry = ajv.compile(identificationRegistrySchema);
-    expect(
-      validateRegistry(resolved),
-      ajv.errorsText(validateRegistry.errors),
-    ).toBe(true);
-    expect(ajv.compile(clarificationResponseSchema)(applied.body)).toBe(true);
-    expect(resolved.documents).toHaveLength(2);
-    expect(documentFactsFromSnapshot(resolved)).toHaveLength(2);
-    const act = resolved.documents.find((doc) =>
-      doc.revisions.some((rev) => rev.fields.stage === "ID"),
-    )!;
-    expect(act.revisions[0]!.representations).toHaveLength(2);
-    const actContext = resolved.contexts.find(
-      (ctx) => ctx.actual.document_id === act.document_id,
-    )!;
-    expect(actContext).toMatchObject({
-      status: "READY",
-      reference: { revision_id: oldRevision.revision_id },
-    });
-
+    // Catalog and versions must exist before Run admission freezes them.
     const matrix = await f.prisma.matrixImport.create({
       data: {
         sourceName: "ID flow fixture",
@@ -378,6 +355,30 @@ describe("whole-document identification through extraction and historical protoc
         approvedAt: new Date(),
       },
     });
+    const applied = await f.apply(source, confirmation).expect(202);
+    const firstRun = body<{ run_id: string }>(applied).run_id;
+    const resolved = await f.registry(source);
+    const ajv = new Ajv({ strict: false, validateFormats: false });
+    const validateRegistry = ajv.compile(identificationRegistrySchema);
+    expect(
+      validateRegistry(resolved),
+      ajv.errorsText(validateRegistry.errors),
+    ).toBe(true);
+    expect(ajv.compile(clarificationResponseSchema)(applied.body)).toBe(true);
+    expect(resolved.documents).toHaveLength(2);
+    expect(documentFactsFromSnapshot(resolved)).toHaveLength(2);
+    const act = resolved.documents.find((doc) =>
+      doc.revisions.some((rev) => rev.fields.stage === "ID"),
+    )!;
+    expect(act.revisions[0]!.representations).toHaveLength(2);
+    const actContext = resolved.contexts.find(
+      (ctx) => ctx.actual.document_id === act.document_id,
+    )!;
+    expect(actContext).toMatchObject({
+      status: "READY",
+      reference: { revision_id: oldRevision.revision_id },
+    });
+
     await generate(source.objectId).expect(409);
     await extract(firstRun);
     const firstExtractionResponse = await request(f.server)

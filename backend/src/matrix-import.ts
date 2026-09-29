@@ -1,19 +1,20 @@
 import { NestFactory } from "@nestjs/core";
 import { createHash, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import "reflect-metadata";
 import { AppModule } from "./app.module.js";
 import type { Prisma } from "./generated/prisma/client.js";
 import { PrismaService } from "./infrastructure/prisma/prisma.service.js";
 import { validateExtractionPlan } from "./modules/extraction/extraction-contract.js";
 
-const CATALOG = resolve(__dirname, "../scripts/matrix-132.jsonl");
+const CATALOG = fileURLToPath(
+  new URL("../scripts/matrix-132.jsonl", import.meta.url),
+);
 // SHA-256 of docs/requirements/matrix-132.xlsx — the authoritative source the
 // JSONL catalog was derived from. Verified at import time, not assumed.
-const ORIGIN_XLSX = resolve(
-  __dirname,
-  "../../docs/requirements/matrix-132.xlsx",
+const ORIGIN_XLSX = fileURLToPath(
+  new URL("../../docs/requirements/matrix-132.xlsx", import.meta.url),
 );
 
 interface CatalogRow {
@@ -35,7 +36,7 @@ function sha256(path: string): string {
   return createHash("sha256").update(readFileSync(path)).digest("hex");
 }
 
-// Initial approved rules for the demonstrator slice (EXT §7): three operators —
+// Initial draft proposals for the demonstrator slice (EXT §7): three operators —
 // table_lookup, cascade with regex fallback, enum. The rest of the 132
 // parameters stay unsupported until their plans are drafted and approved.
 const SEED_RULES: { parameter_code: string; note: string; plan: unknown }[] = [
@@ -206,16 +207,14 @@ async function main() {
               parameterCode: seed.parameter_code,
               parameterId: row.parameterId,
               version: 1,
-              status: "approved",
+              status: "draft",
               plan: JSON.parse(JSON.stringify(plan)) as Prisma.InputJsonValue,
               note: seed.note,
-              createdBy: "matrix-seed",
-              approvedBy: "matrix-seed",
-              approvedAt: new Date(),
+              createdBy: actor.id,
             },
           });
           process.stdout.write(
-            `${seed.parameter_code}: правило v1 утверждено\n`,
+            `${seed.parameter_code}: черновик v1 создан; нужны паспорт и regression-отчёт\n`,
           );
         }
         await tx.auditEvent.create({
@@ -225,6 +224,7 @@ async function main() {
             details: {
               schema_version: 1,
               parameter_codes: SEED_RULES.map((rule) => rule.parameter_code),
+              draft_only: true,
             },
           },
         });

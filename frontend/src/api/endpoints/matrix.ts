@@ -28,11 +28,12 @@ export async function getMatrixRules(
 export async function createMatrixRule(input: {
   parameterCode: string;
   plan: unknown;
+  comparison?: unknown;
   note?: string;
 }) {
   const response = await apiClient.post<unknown>(
     `/v1/admin/matrix/rows/${encodeURIComponent(input.parameterCode)}/rules`,
-    { plan: input.plan, note: input.note },
+    { plan: input.plan, comparison: input.comparison, note: input.note },
   );
   return ruleMutationSchema.parse(response.data);
 }

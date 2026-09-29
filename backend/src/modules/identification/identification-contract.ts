@@ -1,7 +1,7 @@
 import type { ParseArtifactData } from "../parsing/parsing-contract.js";
 import type { ClassificationResult } from "./classification-contract.js";
 
-export const IDENTIFICATION_ENGINE_VERSION = "whole-document-identification-v2";
+export const IDENTIFICATION_ENGINE_VERSION = "sheet-document-identification-v4";
 export const IDENTIFICATION_FIELDS = [
   "stage",
   "kind_code",
@@ -16,6 +16,7 @@ export const IDENTIFICATION_FIELDS = [
   "reference_code",
   "observed_edition",
   "observed_status",
+  "observed_replaced_sheet",
   "external_id",
 ] as const;
 export type IdentificationField = (typeof IDENTIFICATION_FIELDS)[number];
@@ -31,6 +32,17 @@ export interface IdentificationEvidence {
   quote: string;
   bbox: [number, number, number, number];
   structural_path: string | null;
+  /** PAR routing and limitations at the exact immutable artifact locator. */
+  parse_context?: {
+    source: string;
+    native_valid: boolean | null;
+    include_in_main: boolean | null;
+    region_id: string | null;
+    region_kind: string | null;
+    region_method: string | null;
+    text_status: string | null;
+    reasons: string[];
+  };
 }
 
 export interface FieldCandidate {
@@ -70,6 +82,37 @@ export interface IdentificationRevision {
   approval: RevisionApproval;
   blockers: string[];
   reference_revision_id?: string | null;
+  sheet_map?: SheetMap | null;
+  sheet_replacement?: SheetReplacement | null;
+}
+
+/** Explicit inspector mapping, bound to one immutable PDF original. */
+export interface SheetMap {
+  file_id: string;
+  source_sha256: string;
+  sheets: { label: string; page_number: number }[];
+  excluded_pages: number[];
+  basis: string;
+}
+export interface SheetReplacement {
+  predecessor_revision_id: string;
+  replaced_labels: string[];
+  basis: string;
+}
+export interface ResolvedSheet {
+  label: string;
+  page_number: number;
+  document_id: string;
+  revision_id: string;
+  file_id: string;
+  artifact_id: string;
+  artifact_sha256: string;
+  source_sha256: string;
+}
+export interface ResolvedSheetSet {
+  selection_hash: string;
+  sheets: ResolvedSheet[];
+  chain: { revision_id: string; decision_hash: string }[];
 }
 
 export interface IdentificationDocument {
@@ -92,6 +135,10 @@ export interface ComparisonContext {
   /** A technical evidence gate; it is not a ProcessStatus or a finding. */
   status: "READY" | "CLARIFICATION_REQUIRED";
   blockers: string[];
+  sheet_selection?: {
+    reference: ResolvedSheetSet | null;
+    actual: ResolvedSheetSet | null;
+  };
 }
 
 /** The service adds run_id, source fingerprint and the canonical snapshot hash. */
@@ -114,6 +161,8 @@ export interface RevisionClarification {
   fields?: Partial<Record<IdentificationField, string | null>>;
   approval?: RevisionApproval;
   reference_revision_id?: string | null;
+  sheet_map?: SheetMap | null;
+  sheet_replacement?: SheetReplacement | null;
 }
 export interface DocumentClarification {
   document_id: string;
@@ -163,6 +212,90 @@ function uuid(value: unknown): asserts value is string {
 function text(value: unknown, max: number): asserts value is string {
   if (typeof value !== "string" || !value.trim() || value.length > max)
     throw new IdentificationContractError("identification_invalid_text");
+}
+
+function sheetLabel(value: unknown): asserts value is string {
+  text(value, 80);
+  if (
+    value !== value.trim().normalize("NFC") ||
+    [...value].some((char) => char.charCodeAt(0) < 32)
+  )
+    throw new IdentificationContractError("identification_invalid_sheet_label");
+}
+export function validateSheetMap(value: unknown): SheetMap {
+  const input = object(value, [
+    "file_id",
+    "source_sha256",
+    "sheets",
+    "excluded_pages",
+    "basis",
+  ]);
+  uuid(input.file_id);
+  if (
+    typeof input.source_sha256 !== "string" ||
+    !/^[0-9a-f]{64}$/.test(input.source_sha256)
+  )
+    throw new IdentificationContractError(
+      "identification_invalid_sheet_source",
+    );
+  text(input.basis, 4000);
+  if (
+    !Array.isArray(input.sheets) ||
+    !input.sheets.length ||
+    input.sheets.length > 500 ||
+    !Array.isArray(input.excluded_pages) ||
+    input.excluded_pages.length > 500
+  )
+    throw new IdentificationContractError("identification_invalid_sheet_map");
+  const pages = new Set<number>();
+  const labels = new Set<string>();
+  const pageNumbers: unknown[] = [...(input.excluded_pages as unknown[])];
+  for (const item of input.sheets) {
+    const sheet = object(item, ["label", "page_number"]);
+    sheetLabel(sheet.label);
+    if (labels.has(sheet.label))
+      throw new IdentificationContractError(
+        "identification_duplicate_sheet_label",
+      );
+    labels.add(sheet.label);
+    pageNumbers.push(sheet.page_number);
+  }
+  for (const page of pageNumbers) {
+    if (
+      !Number.isSafeInteger(page) ||
+      Number(page) < 1 ||
+      Number(page) > 500 ||
+      pages.has(Number(page))
+    )
+      throw new IdentificationContractError(
+        "identification_invalid_sheet_page",
+      );
+    pages.add(Number(page));
+  }
+  return input as unknown as SheetMap;
+}
+export function validateSheetReplacement(value: unknown): SheetReplacement {
+  const input = object(value, [
+    "predecessor_revision_id",
+    "replaced_labels",
+    "basis",
+  ]);
+  uuid(input.predecessor_revision_id);
+  text(input.basis, 4000);
+  if (
+    !Array.isArray(input.replaced_labels) ||
+    !input.replaced_labels.length ||
+    input.replaced_labels.length > 500
+  )
+    throw new IdentificationContractError(
+      "identification_invalid_sheet_replacement",
+    );
+  for (const label of input.replaced_labels) sheetLabel(label);
+  if (new Set(input.replaced_labels).size !== input.replaced_labels.length)
+    throw new IdentificationContractError(
+      "identification_duplicate_sheet_label",
+    );
+  return input as unknown as SheetReplacement;
 }
 
 export function validateRevisionApproval(value: unknown): RevisionApproval {
@@ -237,6 +370,8 @@ export function validateClarificationBatch(value: unknown): ClarificationBatch {
         "fields",
         "approval",
         "reference_revision_id",
+        "sheet_map",
+        "sheet_replacement",
       ]);
       uuid(revision.revision_id);
       if (revisionIds.has(revision.revision_id))
@@ -264,6 +399,13 @@ export function validateClarificationBatch(value: unknown): ClarificationBatch {
       }
       if (revision.approval !== undefined)
         validateRevisionApproval(revision.approval);
+      if (revision.sheet_map !== undefined && revision.sheet_map !== null)
+        validateSheetMap(revision.sheet_map);
+      if (
+        revision.sheet_replacement !== undefined &&
+        revision.sheet_replacement !== null
+      )
+        validateSheetReplacement(revision.sheet_replacement);
       if (
         revision.reference_revision_id !== undefined &&
         revision.reference_revision_id !== null
@@ -272,7 +414,9 @@ export function validateClarificationBatch(value: unknown): ClarificationBatch {
       if (
         revision.fields === undefined &&
         revision.approval === undefined &&
-        revision.reference_revision_id === undefined
+        revision.reference_revision_id === undefined &&
+        revision.sheet_map === undefined &&
+        revision.sheet_replacement === undefined
       )
         throw new IdentificationContractError(
           "identification_empty_clarification",

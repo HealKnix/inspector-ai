@@ -36,6 +36,7 @@ export interface SyntheticIdDocument {
   format?: "PDF" | "DOCX" | "XML";
   text?: string;
   blocks?: { text: string; path?: string }[];
+  pages?: { text: string; path?: string }[][];
   classification?: ClassificationResult;
 }
 export interface IdFixtureSource {
@@ -162,6 +163,7 @@ export async function createIdentificationFixture() {
   ) {
     const file = await prisma.file.findUniqueOrThrow({ where: { id: fileId } });
     const text = spec.text ?? "Синтетический акт № 52";
+    const pageBlocks = spec.pages ?? [spec.blocks ?? [{ text }]];
     const task = await prisma.parsingTask.create({
       data: {
         objectId: source.objectId,
@@ -172,13 +174,15 @@ export async function createIdentificationFixture() {
         state: "succeeded",
         attempts: 1,
         pipelineFingerprint: fixtureParserFingerprint,
-        pagesCompleted: 1,
-        pagesTotal: 1,
+        pagesCompleted: pageBlocks.length,
+        pagesTotal: pageBlocks.length,
         completedAt: new Date(),
       },
     });
-    const imageKey = randomUUID();
-    await writeFile(resolve(root, "derived", imageKey), png);
+    const imageKeys = pageBlocks.map(() => randomUUID());
+    await Promise.all(
+      imageKeys.map((key) => writeFile(resolve(root, "derived", key), png)),
+    );
     const artifact: ParseArtifactData = {
       schema_version: 1,
       source_sha256: file.sha256,
@@ -188,44 +192,46 @@ export async function createIdentificationFixture() {
       normalized_text: text,
       quality: "OK",
       reasons: [],
-      coverage: { total_pages: 1, readable_pages: 1, unreadable_pages: 0 },
-      pages: [
-        {
-          page_number: 1,
-          sheet_label: null,
-          width: 1,
-          height: 1,
-          image_key: imageKey,
-          image_sha256: digest(png),
-          quality: "OK",
-          reasons: [],
-          transform: {
-            renderer: "synthetic",
-            coordinate_space: "visible-page-normalized",
-            structural_mapping: true,
-            font_sha256: fixtureParserFingerprint,
-            layout: "synthetic",
-            render_width: 1,
-            render_height: 1,
-          },
-          blocks: (spec.blocks ?? [{ text }]).map((block, i) => ({
-            id: `p1:b${i}`,
-            order: i,
-            kind: "text",
-            raw_text: block.text,
-            normalized_text: block.text,
-            bbox: [0, 0, 1, 1],
-            confidence: null,
-            source: "structured",
-            structural_path: block.path ?? `/synthetic/block/${i}`,
-            table_id: null,
-            row: null,
-            column: null,
-            row_span: null,
-            column_span: null,
-          })),
+      coverage: {
+        total_pages: pageBlocks.length,
+        readable_pages: pageBlocks.length,
+        unreadable_pages: 0,
+      },
+      pages: pageBlocks.map((blocks, pageIndex) => ({
+        page_number: pageIndex + 1,
+        sheet_label: null,
+        width: 1,
+        height: 1,
+        image_key: imageKeys[pageIndex]!,
+        image_sha256: digest(png),
+        quality: "OK",
+        reasons: [],
+        transform: {
+          renderer: "synthetic",
+          coordinate_space: "visible-page-normalized",
+          structural_mapping: true,
+          font_sha256: fixtureParserFingerprint,
+          layout: "synthetic",
+          render_width: 1,
+          render_height: 1,
         },
-      ],
+        blocks: blocks.map((block, i) => ({
+          id: `p${pageIndex + 1}:b${i}`,
+          order: i,
+          kind: "text",
+          raw_text: block.text,
+          normalized_text: block.text,
+          bbox: [0, 0, 1, 1],
+          confidence: null,
+          source: "structured",
+          structural_path: block.path ?? `/synthetic/block/${i}`,
+          table_id: null,
+          row: null,
+          column: null,
+          row_span: null,
+          column_span: null,
+        })),
+      })),
     };
     const stored = await prisma.parseArtifact.create({
       data: {
@@ -235,7 +241,7 @@ export async function createIdentificationFixture() {
         ...(await artifacts.write(artifact)),
         quality: "OK",
         reasons: [],
-        pagesTotal: 1,
+        pagesTotal: pageBlocks.length,
       },
     });
     const classification: ClassificationResult = spec.classification ?? {

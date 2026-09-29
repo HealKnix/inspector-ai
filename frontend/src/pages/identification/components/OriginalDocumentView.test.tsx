@@ -8,6 +8,7 @@ import type { RenderedDocumentPageProps } from "@/components/rendered-document-p
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { idRegistry } from "../lib/identification-test-fixtures";
+import type { OriginalPageTarget } from "../lib/sheet-review";
 import { OriginalDocumentView } from "./OriginalDocumentView";
 
 const { get } = vi.hoisted(() => ({
@@ -69,6 +70,7 @@ function source() {
 function mount(
   revision: IdentificationRevision,
   evidence: IdentificationEvidence | null = null,
+  pageTarget: OriginalPageTarget | null = null,
 ) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -82,6 +84,7 @@ function mount(
         revision={revision}
         filenames={new Map([[parseResult.file_id, "synthetic.xml"]])}
         evidence={evidence}
+        pageTarget={pageTarget}
       />
     </QueryClientProvider>,
   );
@@ -160,3 +163,29 @@ it("shows a quote and highlight only on their exact page while paging the origin
   expect(screen.queryByText(evidence.quote)).not.toBeInTheDocument();
   expect(get).toHaveBeenCalledOnce();
 });
+
+it("opens a map's physical page without a fabricated quote or highlight", async () => {
+  const { result, revision } = source();
+  get.mockResolvedValue({ data: result });
+  mount(revision, null, { ...revision.representations[0]!, page_number: 3 });
+  const page = await screen.findByTestId("rendered-page");
+  expect(page).toHaveAttribute("data-page-number", "3");
+  expect(page).toHaveAttribute("data-selected-id", "");
+  expect(page).toHaveAttribute("data-match-ids", "");
+});
+
+it.each(["missing", "source-hash"])(
+  "does not substitute a different page for a %s map target",
+  async (mode) => {
+    const { result, revision } = source();
+    get.mockResolvedValue({ data: result });
+    const target = { ...revision.representations[0]!, page_number: 3 };
+    if (mode === "missing") target.page_number = 4;
+    else target.source_sha256 = "f".repeat(64);
+    mount(revision, null, target);
+    expect(
+      await screen.findByText(/Не удалось открыть сохранённую страницу/),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("rendered-page")).not.toBeInTheDocument();
+  },
+);

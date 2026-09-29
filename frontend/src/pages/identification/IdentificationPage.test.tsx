@@ -225,7 +225,7 @@ it("retains input after a lost response and retries the same idempotency key", a
     vi.mocked(applyIdentification).mock.calls[1]![1],
   );
 });
-it("switches saved text, dates and original artifact together between revisions", async () => {
+it("opens and switches the explicit revision with multiple aliases of the same document", async () => {
   const registry = structuredClone(idRegistry);
   const first = registry.documents[0]!.revisions[0]!;
   first.fields = {
@@ -252,9 +252,19 @@ it("switches saved text, dates and original artifact together between revisions"
   second.representations[0]!.artifact_id =
     "88888888-8888-4888-8888-888888888888";
   registry.documents[0]!.revisions.push(second);
+  registry.document_aliases = [first, second].map((revision) => ({
+    document_id: registry.documents[0]!.document_id,
+    revision_id: revision.revision_id,
+    card_version: 1,
+    canonical_document_id: registry.documents[0]!.document_id,
+    canonical_revision_id: revision.revision_id,
+  }));
   vi.mocked(getIdentification).mockResolvedValue(registry);
-  mount();
-  expect(await screen.findByLabelText("Номер")).toHaveValue("52");
+  mount(`&revisionId=${second.revision_id}`);
+  expect(await screen.findByLabelText("Номер")).toHaveValue("53");
+  expect(screen.getByLabelText("Дата документа")).toHaveValue("2026-09-01");
+  fireEvent.click(screen.getByRole("button", { name: "Редакция 1" }));
+  await waitFor(() => expect(screen.getByLabelText("Номер")).toHaveValue("52"));
   expect(screen.getByLabelText("Дата документа")).toHaveValue("2026-08-01");
   fireEvent.click(screen.getByRole("button", { name: "Редакция 2" }));
   await waitFor(() => expect(screen.getByLabelText("Номер")).toHaveValue("53"));
@@ -270,6 +280,75 @@ it("switches saved text, dates and original artifact together between revisions"
     ),
   );
 });
+it.each(["source", "canonical", "document-only"])(
+  "preserves a legacy %s alias and canonical navigation between revisions",
+  async (link) => {
+    const registry = structuredClone(idRegistry);
+    const document = registry.documents[0]!;
+    const legacyDocumentId = document.document_id;
+    document.document_id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const first = document.revisions[0]!;
+    first.fields.revision_label = "1";
+    const second = structuredClone(first);
+    second.revision_id = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    second.fields = { ...second.fields, number: "53", revision_label: "2" };
+    second.candidates = [];
+    document.revisions.push(second);
+    registry.document_aliases = [first, second].map((revision, index) => ({
+      document_id: legacyDocumentId,
+      revision_id: index === 0 ? first.revision_id : newRun,
+      card_version: 1,
+      canonical_document_id: document.document_id,
+      canonical_revision_id: revision.revision_id,
+    }));
+    vi.mocked(getIdentification).mockResolvedValue(registry);
+    mount(
+      link === "document-only"
+        ? ""
+        : `&revisionId=${link === "source" ? newRun : second.revision_id}`,
+    );
+    expect(await screen.findByLabelText("Номер")).toHaveValue(
+      link === "document-only" ? "52" : "53",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Редакция 1" }));
+    await waitFor(() =>
+      expect(screen.getByTestId("location")).toHaveTextContent(
+        `documentId=${document.document_id}`,
+      ),
+    );
+    expect(screen.getByLabelText("Номер")).toHaveValue("52");
+    fireEvent.click(screen.getByRole("button", { name: "Редакция 2" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Номер")).toHaveValue("53"),
+    );
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      `revisionId=${second.revision_id}`,
+    );
+    expect(applyIdentification).not.toHaveBeenCalled();
+  },
+);
+it("does not substitute the first aliased revision for an unknown explicit revision", async () => {
+  const registry = structuredClone(idRegistry);
+  const document = registry.documents[0]!;
+  registry.document_aliases = document.revisions.map((revision) => ({
+    document_id: document.document_id,
+    revision_id: revision.revision_id,
+    card_version: 1,
+    canonical_document_id: document.document_id,
+    canonical_revision_id: revision.revision_id,
+  }));
+  vi.mocked(getIdentification).mockResolvedValue(registry);
+  mount(`&revisionId=${newRun}`);
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Редакция отсутствует в этом расчёте",
+  );
+  expect(screen.queryByLabelText("Номер")).not.toBeInTheDocument();
+  expect(getParseResult).not.toHaveBeenCalled();
+  expect(applyIdentification).not.toHaveBeenCalled();
+  expect(screen.getByTestId("location")).toHaveTextContent(
+    `revisionId=${newRun}`,
+  );
+});
 it("does not imply source evidence for an edited value", async () => {
   mount();
   const number = await screen.findByLabelText("Номер");
@@ -280,7 +359,7 @@ it("does not imply source evidence for an edited value", async () => {
     expect(screen.queryByText("Синтетический акт №52")).not.toBeInTheDocument(),
   );
 });
-it("keeps partial sheet replacement restricted after confirmation and never offers approval", async () => {
+it("keeps partial sheet replacement separate from ordinary field confirmation", async () => {
   const registry = structuredClone(idRegistry);
   registry.documents[0]!.revisions[0]!.blockers = [
     "unsupported_partial_replacement",
@@ -291,15 +370,80 @@ it("keeps partial sheet replacement restricted after confirmation and never offe
     await screen.findByText(/В файле заменены отдельные листы/),
   ).toBeInTheDocument();
   expect(
-    screen.queryByText("Уточнить утверждение редакции"),
-  ).not.toBeInTheDocument();
+    screen.getByText("Уточните карту страниц", { exact: false }),
+  ).toBeInTheDocument();
   await confirm();
   await waitFor(() => expect(applyIdentification).toHaveBeenCalled());
   expect(
     vi.mocked(applyIdentification).mock.calls[0]![1].documents[0]?.revisions[0]
       ?.approval,
   ).toBeUndefined();
+  expect(
+    vi.mocked(applyIdentification).mock.calls[0]![1].documents[0]?.revisions[0]
+      ?.sheet_map,
+  ).toBeUndefined();
 });
+
+it.each(["lost-response", "stale-version"])(
+  "retains the explicit sheet map across %s without changing its source or approval",
+  async (failure) => {
+    const registry = structuredClone(idRegistry);
+    const revision = registry.documents[0]!.revisions[0]!;
+    revision.representations[0]!.format = "PDF";
+    revision.representations[0]!.page_count = 2;
+    vi.mocked(getIdentification).mockResolvedValue(registry);
+    vi.mocked(applyIdentification)
+      .mockRejectedValueOnce(
+        new ApiError("synthetic failure", {
+          status: failure === "stale-version" ? 409 : null,
+        }),
+      )
+      .mockImplementation(success);
+    mount();
+    await screen.findByLabelText("Номер");
+    fireEvent.click(screen.getByText("Карта листов и частичная замена"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Уточнить карту листов" }),
+    );
+    fireEvent.change(screen.getByLabelText("Лист на странице PDF 1"), {
+      target: { value: "Л-01" },
+    });
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Исключить страницу PDF 2" }),
+    );
+    fireEvent.change(
+      screen.getByLabelText("Основание карты листов и исключений"),
+      { target: { value: "Синтетическая сверка исходника" } },
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Сохранить и проверить" }),
+    );
+    await screen.findByRole("alert");
+    expect(screen.getByLabelText("Лист на странице PDF 1")).toHaveValue("Л-01");
+    const sent = vi.mocked(applyIdentification).mock.calls[0]![1];
+    expect(sent.expected_run_id).toBe(registry.run_id);
+    expect(sent.documents[0]?.expected_version).toBe(1);
+    expect(sent.documents[0]?.revisions[0]?.sheet_map).toMatchObject({
+      source_sha256: revision.representations[0]!.source_sha256,
+      sheets: [{ label: "Л-01", page_number: 1 }],
+      excluded_pages: [2],
+    });
+    expect(sent.documents[0]?.revisions[0]).not.toHaveProperty("approval");
+    if (failure === "stale-version") {
+      expect(screen.getByLabelText("Лист на странице PDF 1")).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Обновить карточку" }),
+      ).toBeInTheDocument();
+      expect(applyIdentification).toHaveBeenCalledOnce();
+    } else {
+      fireEvent.click(
+        screen.getByRole("button", { name: "Повторить отправку" }),
+      );
+      await waitFor(() => expect(applyIdentification).toHaveBeenCalledTimes(2));
+      expect(vi.mocked(applyIdentification).mock.calls[1]![1]).toEqual(sent);
+    }
+  },
+);
 it("exposes a conflicting own title for correction without confirming hidden metadata", async () => {
   const registry = structuredClone(idRegistry);
   registry.documents[0]!.revisions[0]!.blockers = ["field_conflict:title"];

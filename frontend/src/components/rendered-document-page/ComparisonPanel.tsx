@@ -1,3 +1,4 @@
+import type { ComparisonSourceTarget } from "@/api/types/composite-comparison";
 import { Button } from "@heroui/react";
 
 import {
@@ -11,6 +12,8 @@ import type {
   GroupVerdict,
   VerdictMember,
 } from "@/api/types/extraction";
+import { ComparisonBasis } from "./ComparisonBasis";
+import { ComparisonTrace } from "./ComparisonTrace";
 import { verdictStatusLabels, verdictWarningLabels } from "./extraction-labels";
 
 function formatMember(member: VerdictMember) {
@@ -120,8 +123,43 @@ export function ComparisonPanel({
     for (const pair of verdict.pairs)
       if (pair.actual_extraction_id)
         pairResult.set(pair.actual_extraction_id, pair);
+    const compositeSources: ComparisonSourceTarget[] = group.members.flatMap(
+      (member) => {
+        const item = byExtraction.get(member.extraction_id);
+        if (
+          !item ||
+          item.file_id !== member.file_id ||
+          item.artifact_id !== member.artifact_id ||
+          item.rule_version_id !== member.rule_version_id
+        )
+          return [];
+        return item.evidence
+          .filter(
+            (evidence) =>
+              evidence.extraction_id === member.extraction_id &&
+              evidence.file_id === member.file_id &&
+              evidence.artifact_id === member.artifact_id,
+          )
+          .map((evidence) => ({
+            extractionId: member.extraction_id,
+            fileId: member.file_id,
+            artifactId: member.artifact_id,
+            page: evidence.page_number,
+            blockId: evidence.block_id,
+            label: item.original_name,
+          }));
+      },
+    );
     return (
       <div className="mt-2 space-y-1.5 text-sm">
+        <ComparisonBasis basis={verdict.rule_basis} />
+        <ComparisonTrace
+          composite={verdict.composite}
+          sources={compositeSources}
+          onOpenSource={(source) =>
+            onOpenEvidence(source.fileId, source.page, source.blockId)
+          }
+        />
         {verdict.status === "expected_ambiguous" ||
         verdict.status === "actual_ambiguous" ? (
           <ul className="space-y-1">
@@ -165,6 +203,7 @@ export function ComparisonPanel({
                         {pair.detail ? ` · ${pair.detail}` : ""}
                       </span>
                     )}
+                    <ComparisonTrace trace={pair?.trace} />
                   </div>
                 );
               })
@@ -178,13 +217,14 @@ export function ComparisonPanel({
                 pair.expected_extraction_id && !pair.actual_extraction_id,
             )
             .map((pair) => (
-              <span
+              <div
                 key={pair.expected_extraction_id}
                 className={`text-xs ${pair.result === "mismatch" ? "text-danger" : "text-success"}`}
               >
                 норматив: {pairLabel(pair.result)}
                 {pair.detail ? ` · ${pair.detail}` : ""}
-              </span>
+                <ComparisonTrace trace={pair.trace} />
+              </div>
             ))}
         {verdict.warnings.length > 0 && (
           <p className="text-warning text-xs">

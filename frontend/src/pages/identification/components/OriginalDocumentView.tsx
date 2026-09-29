@@ -11,6 +11,7 @@ import { RenderedDocumentPage } from "@/components/rendered-document-page/Render
 import { Button } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import type { OriginalPageTarget } from "../lib/sheet-review";
 
 export function OriginalDocumentView({
   objectId,
@@ -19,6 +20,7 @@ export function OriginalDocumentView({
   revision,
   filenames,
   evidence,
+  pageTarget,
 }: {
   objectId: string;
   processId: string;
@@ -26,19 +28,32 @@ export function OriginalDocumentView({
   revision: IdentificationRevision;
   filenames: Map<string, string>;
   evidence: IdentificationEvidence | null;
+  pageTarget?: OriginalPageTarget | null;
 }) {
   const [selectedFile, setSelectedFile] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
   const representation =
     revision.representations.find(
-      (item) => item.artifact_id === (selectedFile || evidence?.artifact_id),
+      (item) =>
+        item.artifact_id ===
+        (selectedFile || pageTarget?.artifact_id || evidence?.artifact_id),
     ) ??
     revision.representations.find(
       (item) => item.format.toUpperCase() === "PDF",
     ) ??
     revision.representations[0];
-  const selectedPage =
-    evidence && !selectedFile ? evidence.page_number : pageNumber;
+  const targetMatches =
+    pageTarget &&
+    representation &&
+    pageTarget.file_id === representation.file_id &&
+    pageTarget.artifact_id === representation.artifact_id &&
+    pageTarget.source_sha256 === representation.source_sha256 &&
+    pageTarget.artifact_sha256 === representation.artifact_sha256;
+  const selectedPage = !selectedFile
+    ? targetMatches
+      ? pageTarget.page_number
+      : (evidence?.page_number ?? pageNumber)
+    : pageNumber;
   const query = useQuery({
     queryKey: queryKeys.objects.parse(
       objectId,
@@ -64,9 +79,12 @@ export function OriginalDocumentView({
     },
   });
   const result = query.isError ? undefined : query.data;
-  const page =
-    result?.artifact.pages.find((item) => item.page_number === selectedPage) ??
-    result?.artifact.pages[0];
+  // A sheet map points to a physical source page, never a fabricated text block.
+  // A missing historical page must not silently open another page as its proof.
+  const targetInvalid = Boolean(pageTarget && !selectedFile && !targetMatches);
+  const page = targetInvalid
+    ? undefined
+    : result?.artifact.pages.find((item) => item.page_number === selectedPage);
   const shownEvidence =
     evidence?.artifact_id === representation?.artifact_id &&
     evidence?.page_number === page?.page_number
@@ -157,7 +175,7 @@ export function OriginalDocumentView({
           Открываем документ…
         </p>
       ) : null}
-      {query.error || !representation ? (
+      {query.error || !representation || targetInvalid || (result && !page) ? (
         <div className="space-y-3 p-6 text-sm">
           <p>
             Не удалось открыть сохранённую страницу. Реквизиты и сохранённые

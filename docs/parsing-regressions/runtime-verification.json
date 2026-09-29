@@ -1,0 +1,982 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-27T09:17:38.039121+00:00",
+  "scope": "Nine declared development regressions from actual local model execution; historical fixtures supply reference geometry and visual expectations only",
+  "input_kind": "actual_local_model_run_artifacts",
+  "historical_replay_is_runtime_evidence": false,
+  "verifier_sha256": "0fb206c80486ee7f95b911fca23378b6b18628db8898678ad2e774deaf59c560",
+  "fixture_manifest_sha256": "f72aec13d51b188493c2409593798fa2a54f426892266cd27d0ee1693cc58a7f",
+  "results_directory": ".test-output/par-native-ocr-20260927-final/results",
+  "method": {
+    "native_bbox_absolute_tolerance": 1e-6,
+    "table_cell_minimum_iou": 0.8,
+    "text_normalization": "NFC and whitespace only; no case folding or OCR repair",
+    "match_uses_stable_block_ids": false,
+    "revision_text": "Exact private historical native bytes compared locally, including eight redacted fixture blocks; no private text exported",
+    "consumer_scope": "Artifact eligibility against documented analysisBlocks contract; separate TypeScript tests exercise actual consumers"
+  },
+  "limitations": [
+    "Known development examples and two crops of one public-train document; not independent validation or hidden test",
+    "No full-page gold; no CER/WER, corpus accuracy, H100 or SLA claim",
+    "Model execution is evidenced by the hashed probe summary and artifacts; this verifier does not invoke models",
+    "Actual scan capture DPI is unknown; these crops do not prove the >=300 dpi acceptance condition"
+  ],
+  "hidden_files_read": 0,
+  "validation_files_read": 0,
+  "private_text_exported": false,
+  "status": "passed",
+  "passed": true,
+  "summary_sha256": "a623e9973ffb4a675d944fbce60741965df9958de0453b558870001744f18c71",
+  "run_inputs_sha256": "dd3d4be86ed221e9192c9b0e8fa6ed5868d4e7c1fb12a3c42df18480e8ecf341",
+  "device": "cpu",
+  "cpu_threads": 2,
+  "model_manifest_sha256": "14111ff2d643666ea81b21e5940a176d7fd7c2e5690aeb0e8b559a8a77a07ef9",
+  "parser_source_sha256": "fcb8be6925e1525480688d3dcbe6a570af4e9f7014a49a89acfccf471cc9eddc",
+  "source_and_artifact_bindings": [
+    {
+      "id": "gi-base-p1",
+      "suite": "authorized-diagnostic",
+      "source_sha256": "04dcef6bbc217d7e0dad28097dc11e885022a169c7c2f037efa8968474f3aacb",
+      "original_page_numbers": [1],
+      "selected_pdf_sha256": "892e71fdec8205539b0ffa27e7ddf37ffe97b7248df9fb3e19863d276ce7d420",
+      "artifact_sha256": "ac255ff1e7df0c6bd8bad212b6eeef22918295d3a506b0ed7995988353db636a",
+      "pipeline_fingerprint": "7b8b1aa6cecb4c3b1605cdcbb02e6305d497de86dce5130a173226b20b0760d3",
+      "seconds": 115.2,
+      "calls": {
+        "layout": 1,
+        "line_detection": 31,
+        "line_recognition": 2,
+        "recognized_line_crops": 6,
+        "table_structure": 2
+      },
+      "quality": "LOW_QUALITY",
+      "reasons": [
+        "LAYOUT_REGIONS_UNCERTAIN",
+        "OCR_LINE_CROSSES_EXCLUDED_REGION",
+        "OCR_LOW_CONFIDENCE",
+        "OCR_UNVERIFIED",
+        "TABLE_STRUCTURE_UNVERIFIED",
+        "TEXT_READING_AMBIGUOUS"
+      ]
+    },
+    {
+      "id": "gi-rev3-p1",
+      "suite": "authorized-diagnostic",
+      "source_sha256": "b8b03fee48855b066fd27eb0c46c832cf2755870857208213eaebb5c33fc709f",
+      "original_page_numbers": [1],
+      "selected_pdf_sha256": "777ff0d07b12cacc100e5bc661890c9909855c991314d014c8b0f876739ef602",
+      "artifact_sha256": "1e39624b7a321d5e9943c9cbfd996fb17ec2222b65d3f9cbb262540ea9c4e2a4",
+      "pipeline_fingerprint": "7b8b1aa6cecb4c3b1605cdcbb02e6305d497de86dce5130a173226b20b0760d3",
+      "seconds": 15.17,
+      "calls": {
+        "layout": 1,
+        "line_detection": 0,
+        "line_recognition": 0,
+        "recognized_line_crops": 0,
+        "table_structure": 0
+      },
+      "quality": "LOW_QUALITY",
+      "reasons": ["LAYOUT_REGIONS_UNCERTAIN"]
+    },
+    {
+      "id": "public-f0152-p8-p9",
+      "suite": "TRAIN_PUBLIC_PROBE",
+      "source_sha256": "99ec972d7dfe5039fca922e3120bd5e486f2a26518f78044d0850992c028e7af",
+      "original_page_numbers": [8, 9],
+      "selected_pdf_sha256": "a42b487b3905578792c91a09a66984932c809ca96213199fbc336b509f41ac71",
+      "artifact_sha256": "353b28f924f1d315a8fb59d400ce405d48ca3213c4850fed4235649bfdc7ff9a",
+      "pipeline_fingerprint": "7b8b1aa6cecb4c3b1605cdcbb02e6305d497de86dce5130a173226b20b0760d3",
+      "seconds": 67.575,
+      "calls": {
+        "layout": 2,
+        "line_detection": 19,
+        "line_recognition": 19,
+        "recognized_line_crops": 43,
+        "table_structure": 0
+      },
+      "quality": "LOW_QUALITY",
+      "reasons": [
+        "LAYOUT_REGIONS_UNCERTAIN",
+        "OCR_LOW_CONFIDENCE",
+        "OCR_UNVERIFIED"
+      ]
+    }
+  ],
+  "case_count": 9,
+  "passed_cases": 9,
+  "cases": [
+    {
+      "case_id": "unit-p1-b467",
+      "historical_cell_id": "p1-b467",
+      "expected_bbox": [
+        0.2997402883182898, 0.313080941138539, 0.31993838136342045,
+        0.3297120866297229
+      ],
+      "checks": {
+        "unique_cell_at_reference_geometry": true,
+        "original_native_text_and_bbox_retained": true,
+        "exact_or_explicitly_ambiguous": true,
+        "row_and_column_preserved": true,
+        "quantity_in_same_row": true,
+        "no_selected_wrong_reading_at_native_locator": true
+      },
+      "actual_cell_id": "p1-b467",
+      "actual_table_id": "p1-t4-part1",
+      "outcome": "selected_correct",
+      "fragment_sources": ["native", "ocr"],
+      "alternative_fragment_count": 2,
+      "passed": true
+    },
+    {
+      "case_id": "unit-p1-b479",
+      "historical_cell_id": "p1-b479",
+      "expected_bbox": [
+        0.29973128057957243, 0.34630398190428213, 0.3199159399382423,
+        0.3629900653299748
+      ],
+      "checks": {
+        "unique_cell_at_reference_geometry": true,
+        "original_native_text_and_bbox_retained": true,
+        "exact_or_explicitly_ambiguous": true,
+        "row_and_column_preserved": true,
+        "quantity_in_same_row": true,
+        "no_selected_wrong_reading_at_native_locator": true
+      },
+      "actual_cell_id": "p1-b479",
+      "actual_table_id": "p1-t4-part1",
+      "outcome": "selected_correct",
+      "fragment_sources": ["native", "ocr"],
+      "alternative_fragment_count": 2,
+      "passed": true
+    },
+    {
+      "case_id": "unit-p1-b485",
+      "historical_cell_id": "p1-b485",
+      "expected_bbox": [
+        0.29976266740617574, 0.3629556389319899, 0.3199267866270784,
+        0.37962793118387905
+      ],
+      "checks": {
+        "unique_cell_at_reference_geometry": true,
+        "original_native_text_and_bbox_retained": true,
+        "exact_or_explicitly_ambiguous": true,
+        "row_and_column_preserved": true,
+        "quantity_in_same_row": true,
+        "no_selected_wrong_reading_at_native_locator": true
+      },
+      "actual_cell_id": "p1-b485",
+      "actual_table_id": "p1-t4-part1",
+      "outcome": "selected_correct",
+      "fragment_sources": ["native", "ocr"],
+      "alternative_fragment_count": 2,
+      "passed": true
+    },
+    {
+      "case_id": "unit-p1-b497",
+      "historical_cell_id": "p1-b497",
+      "expected_bbox": [
+        0.2997595505415677, 0.3962490373602015, 0.3199342359334917,
+        0.41276430813098236
+      ],
+      "checks": {
+        "unique_cell_at_reference_geometry": true,
+        "original_native_text_and_bbox_retained": true,
+        "exact_or_explicitly_ambiguous": true,
+        "row_and_column_preserved": true,
+        "quantity_in_same_row": true,
+        "no_selected_wrong_reading_at_native_locator": true
+      },
+      "actual_cell_id": "p1-b497",
+      "actual_table_id": "p1-t4-part1",
+      "outcome": "selected_correct",
+      "fragment_sources": ["native", "ocr"],
+      "alternative_fragment_count": 2,
+      "passed": true
+    },
+    {
+      "case_id": "unit-p1-b521",
+      "historical_cell_id": "p1-b521",
+      "expected_bbox": [
+        0.2997255143800475, 0.4625501569571788, 0.3199043763705463,
+        0.481544973581864
+      ],
+      "checks": {
+        "unique_cell_at_reference_geometry": true,
+        "original_native_text_and_bbox_retained": true,
+        "exact_or_explicitly_ambiguous": true,
+        "row_and_column_preserved": true,
+        "quantity_in_same_row": true,
+        "no_selected_wrong_reading_at_native_locator": true
+      },
+      "actual_cell_id": "p1-b521",
+      "actual_table_id": "p1-t4-part1",
+      "outcome": "selected_correct",
+      "fragment_sources": ["native", "ocr"],
+      "alternative_fragment_count": 2,
+      "passed": true
+    },
+    {
+      "case_id": "cross-column-material",
+      "historical_native_id": "p1-b260",
+      "bbox": [0.060867, 0.6065068, 0.2415724, 0.6171299],
+      "checks": {
+        "one_original_whole_line_retained": true,
+        "native_selected_and_located": true,
+        "exact_resolved_link": true,
+        "same_row_quantity": true,
+        "same_row_unit": true
+      },
+      "actual_native_id": "p1-b260",
+      "table_link": {
+        "schema_version": 1,
+        "status": "associated",
+        "table_id": "p1-t1-part1",
+        "rows": [1],
+        "columns": [1, 2],
+        "reasons": ["CROSS_COLUMN_NATIVE_TEXT"]
+      },
+      "empty_designation_name_cells": 2,
+      "passed": true
+    },
+    {
+      "case_id": "revision-native-46",
+      "baseline_artifact_sha256": "80b96e439b1b842e43439adc23ee51cce4b86413eba52308cdc99bfd3bb624e3",
+      "private_baseline_text_read_only": true,
+      "private_text_exported": false,
+      "blocks": [
+        {
+          "historical_id": "p1-b1",
+          "actual_id": "p1-b1",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b2",
+          "actual_id": "p1-b2",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b3",
+          "actual_id": "p1-b3",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b4",
+          "actual_id": "p1-b4",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b5",
+          "actual_id": "p1-b5",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b6",
+          "actual_id": "p1-b6",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b7",
+          "actual_id": "p1-b7",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b8",
+          "actual_id": "p1-b8",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b9",
+          "actual_id": "p1-b9",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b10",
+          "actual_id": "p1-b10",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b11",
+          "actual_id": "p1-b11",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b12",
+          "actual_id": "p1-b12",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b13",
+          "actual_id": "p1-b13",
+          "text_redacted_in_fixture": true,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b14",
+          "actual_id": "p1-b14",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b15",
+          "actual_id": "p1-b15",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b16",
+          "actual_id": "p1-b16",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b17",
+          "actual_id": "p1-b17",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b18",
+          "actual_id": "p1-b18",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b19",
+          "actual_id": "p1-b19",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b20",
+          "actual_id": "p1-b20",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b21",
+          "actual_id": "p1-b21",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b22",
+          "actual_id": "p1-b22",
+          "text_redacted_in_fixture": true,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b23",
+          "actual_id": "p1-b23",
+          "text_redacted_in_fixture": true,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b24",
+          "actual_id": "p1-b24",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b25",
+          "actual_id": "p1-b25",
+          "text_redacted_in_fixture": true,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b26",
+          "actual_id": "p1-b26",
+          "text_redacted_in_fixture": true,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b27",
+          "actual_id": "p1-b27",
+          "text_redacted_in_fixture": true,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b28",
+          "actual_id": "p1-b28",
+          "text_redacted_in_fixture": true,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b29",
+          "actual_id": "p1-b29",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b30",
+          "actual_id": "p1-b30",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b31",
+          "actual_id": "p1-b31",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b32",
+          "actual_id": "p1-b32",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b33",
+          "actual_id": "p1-b33",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b34",
+          "actual_id": "p1-b34",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b35",
+          "actual_id": "p1-b35",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b36",
+          "actual_id": "p1-b36",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b37",
+          "actual_id": "p1-b37",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b38",
+          "actual_id": "p1-b38",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b39",
+          "actual_id": "p1-b39",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b40",
+          "actual_id": "p1-b40",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b41",
+          "actual_id": "p1-b41",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b42",
+          "actual_id": "p1-b42",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b43",
+          "actual_id": "p1-b43",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b44",
+          "actual_id": "p1-b44",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b45",
+          "actual_id": "p1-b45",
+          "text_redacted_in_fixture": false,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        },
+        {
+          "historical_id": "p1-b46",
+          "actual_id": "p1-b46",
+          "text_redacted_in_fixture": true,
+          "checks": {
+            "unique_original_text_and_bbox": true,
+            "original_normalized_text_retained": true,
+            "valid_native_with_selected_fragment": true,
+            "analysis_eligible_by_contract": true,
+            "region_locator_present": true,
+            "original_structural_path_retained": true,
+            "boundary_conflict_reason_retained": true
+          },
+          "passed": true
+        }
+      ],
+      "checks": {
+        "all_46_blocks_preserved_and_eligible": true,
+        "one_to_one_actual_locators": true,
+        "revision_and_three_replaced_sheet_locators": true,
+        "unknown_and_graphic_regions_not_recognized": true,
+        "zero_actual_recognition_calls": true
+      },
+      "passed": true
+    },
+    {
+      "case_id": "public-raster-F0152-p8",
+      "original_page_number": 8,
+      "artifact_page_number": 1,
+      "source_bbox": [0.195, 0.328, 0.857, 0.409],
+      "selected_block_ids": ["p1-b23", "p1-b20", "p1-b19"],
+      "expected_line_count": 3,
+      "selected_line_count": 3,
+      "ambiguous_line_count": 0,
+      "checks": {
+        "expected_printed_text_exact_after_NFC_whitespace": true,
+        "every_fixture_line_has_one_located_exact_match": true,
+        "actual_source_has_no_native_text": true,
+        "actual_recognition_executed": true
+      },
+      "passed": true
+    },
+    {
+      "case_id": "public-raster-F0152-p9",
+      "original_page_number": 9,
+      "artifact_page_number": 2,
+      "source_bbox": [0.24, 0.288, 0.83, 0.331],
+      "selected_block_ids": ["p2-b7", "p2-b6"],
+      "expected_line_count": 2,
+      "selected_line_count": 2,
+      "ambiguous_line_count": 0,
+      "checks": {
+        "expected_printed_text_exact_after_NFC_whitespace": true,
+        "every_fixture_line_has_one_located_exact_match": true,
+        "actual_source_has_no_native_text": true,
+        "actual_recognition_executed": true
+      },
+      "passed": true
+    }
+  ]
+}

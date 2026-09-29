@@ -26,6 +26,23 @@ export const verdictStatusLabels: Record<
 };
 
 export const verdictWarningLabels: Record<string, string> = {
+  composite_context_missing:
+    "Не зафиксирован общий контекст документов и редакций.",
+  composite_context_invalid: "Контекст источников не прошёл проверку.",
+  composite_applicability_basis_missing:
+    "Нет подтверждённого основания применимости.",
+  composite_applicability_unknown: "Применимость условия ещё не подтверждена.",
+  composite_applicability_not_applicable:
+    "Условие неприменимо в выбранной области.",
+  composite_member_role_unknown: "Не определена роль источника в сравнении.",
+  composite_member_context_missing:
+    "Для источника не подтверждены область и период.",
+  composite_member_context_mismatch:
+    "Источники относятся к разным областям или периодам.",
+  composite_revision_mismatch:
+    "Редакция источника не соответствует выбранному снимку.",
+  composite_branch_unknown:
+    "Для общего вывода недостаточно данных одной или нескольких ветвей.",
   unclassified_members: "есть документы без определённой стадии",
   unit_missing: "единицы измерения не указаны у одной из сторон",
 };

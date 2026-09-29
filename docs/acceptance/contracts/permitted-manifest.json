@@ -1,0 +1,4162 @@
+[
+  {
+    "file_id": "F0001",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "ab8be6dc7a185f6d58231a1763537ac9fb6974aa9e3c6726a54862ce4741a577",
+    "pdf_pages": 18,
+    "excluded": false
+  },
+  {
+    "file_id": "F0002",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "1ff8cccb7e104f0ef22223af31350f9c8d7956c4df33a537f6c5e5a96c881b2e",
+    "pdf_pages": 4,
+    "excluded": false
+  },
+  {
+    "file_id": "F0003",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "4a04410712042727c8129eaf464fc463f7b491836d86c3701e2fd0da0b20496a",
+    "pdf_pages": 10,
+    "excluded": false
+  },
+  {
+    "file_id": "F0004",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "4e26b26409e2c59cd116b9f8dc789e6b4614000938ba83a519578e1214ae22d6",
+    "pdf_pages": 34,
+    "excluded": false
+  },
+  {
+    "file_id": "F0005",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "7e750a3777fdd66f309e85ad3cb95a3a483ae37925cc121e998b452ac7bb111a",
+    "pdf_pages": 51,
+    "excluded": false
+  },
+  {
+    "file_id": "F0006",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "4859c2d238dd7ef14acef49b6224e20bf78605d91aab98c57d344c95eda76606",
+    "pdf_pages": 128,
+    "excluded": false
+  },
+  {
+    "file_id": "F0007",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "15db7400fb62b5397c6d4abb48ad1c171c40c5a9fc11ff8214cd7b23b55dd34a",
+    "pdf_pages": 106,
+    "excluded": false
+  },
+  {
+    "file_id": "F0008",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "5e2e08681006a5c9a04ce10239087260e715a31a0727316b37bf3a32fb4a966a",
+    "pdf_pages": 106,
+    "excluded": false
+  },
+  {
+    "file_id": "F0009",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "d6b100d7f97ba96453e18d9fef744ba8e484de674dd4b739fa1522f04c40053e",
+    "pdf_pages": 73,
+    "excluded": false
+  },
+  {
+    "file_id": "F0010",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "3cf863d5358f604154b607e305d4dd024259ad895bba209c4283bad47cdbd49b",
+    "pdf_pages": 22,
+    "excluded": false
+  },
+  {
+    "file_id": "F0011",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "21226b07a76f943e9ecb2b4a9c3f9f828616a95bd4d05a8657ed925371d34b75",
+    "pdf_pages": 8,
+    "excluded": false
+  },
+  {
+    "file_id": "F0012",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "e93e16ce69a0acea2e48aa1b17e862818cd4ca7aaa91b6d640e5abdcffeaf767",
+    "pdf_pages": 32,
+    "excluded": false
+  },
+  {
+    "file_id": "F0013",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "70c79ac587e69d7b89afd7889b7da83e8e94212948fa5d06fbd5ca3861494b26",
+    "pdf_pages": 28,
+    "excluded": false
+  },
+  {
+    "file_id": "F0014",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "9985006b40ebf07d649a22546c70b35750e6f249d47d0e8b674390e0f6c35569",
+    "pdf_pages": 24,
+    "excluded": false
+  },
+  {
+    "file_id": "F0015",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "cbdda17d603b0bfb5f1d4a5ea3d2c09c217f2f932da61cc9349be5c83a1a7da7",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0016",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "6bfcea36e72eec0a62f59407daa35c91ef8f1602daf448285ab6e6705a109d32",
+    "pdf_pages": 28,
+    "excluded": false
+  },
+  {
+    "file_id": "F0017",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "09d15ee288d03dda39017e035d7ef5fcdba714736cc4c67304e493c9f00d437d",
+    "pdf_pages": 24,
+    "excluded": false
+  },
+  {
+    "file_id": "F0018",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "61953d1cdf3a1653d56dfebf31eda6174965144d1b5e57d7c735851708bb1556",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0019",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "90dfbf6f46825c9e0fbb996ce142afbe12318808ed7b9fcb8efce2439bdc1ca9",
+    "pdf_pages": 28,
+    "excluded": false
+  },
+  {
+    "file_id": "F0020",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "61c9955363b595d68fd2926fa9b5a6aeaef6d1b7ab977d05a8b515700ef602a6",
+    "pdf_pages": 22,
+    "excluded": false
+  },
+  {
+    "file_id": "F0021",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "084cbc7186b55b04b85cd486e14dbe1c434dce66e68c0745e8a2f350ea57004c",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0022",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "323da6088be060db8346058699e798ecde1143c10710a4497052cfad1fc7cd28",
+    "pdf_pages": 28,
+    "excluded": false
+  },
+  {
+    "file_id": "F0023",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "eb3fdfc2f8c6a4758b510561081f322a46a738d71f86cd22695bffccdc4677b8",
+    "pdf_pages": 26,
+    "excluded": false
+  },
+  {
+    "file_id": "F0024",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "2436ea0fb32f7590caaf3dbed482b49e9c413fe70a79b5e4f89887f5444d46fc",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0025",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "f9537f3acb2fc5ae96492cd44b967c928d743a91ed2b7bdb0f5076bc54048d18",
+    "pdf_pages": 28,
+    "excluded": false
+  },
+  {
+    "file_id": "F0026",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "6743a10c900a1ce91ec84429df85d51adc540e07e68f7c57f57a721cadefce7a",
+    "pdf_pages": 22,
+    "excluded": false
+  },
+  {
+    "file_id": "F0027",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "9b9024caa4b0e2e3b3ed1a49ed0bbb28809414be9600dbee61ade1b641d1ba5d",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0028",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "eaae1f547c191bc8e63e411fe5be416659c1648e126d61492fe0495e0524a4fd",
+    "pdf_pages": 22,
+    "excluded": false
+  },
+  {
+    "file_id": "F0029",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "c5d614ac5253a94af7530cba67b519fc15b8b48dd5caaafd02397179b99d6df6",
+    "pdf_pages": 22,
+    "excluded": false
+  },
+  {
+    "file_id": "F0030",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "771b21d50a9ec5034e2f9705d1705fc7c6dec97505a765cc92a9e551e3535ae4",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0031",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "f4c85f864b340470852a2c402da817d6c3b652d7cc0cf8ed25b44126cb791243",
+    "pdf_pages": 22,
+    "excluded": false
+  },
+  {
+    "file_id": "F0032",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "d32700dbb215fff9540c1d859bd2e1f7b7556ad43b045958d85ab4d9f4f7aea3",
+    "pdf_pages": 24,
+    "excluded": false
+  },
+  {
+    "file_id": "F0033",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "e406a9ffc13e8e2180b710c5db2d752b13feaf8e82621de9d59d8ec763d952ff",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0034",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "d61a015bc98351366dc19b66a72842598844b0aa2d97351dfbe6c34d50c10335",
+    "pdf_pages": 22,
+    "excluded": false
+  },
+  {
+    "file_id": "F0035",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "9163b5b4bbca87d16b750e22874ac1eb81eb67174d38bc98b6675b367828f792",
+    "pdf_pages": 22,
+    "excluded": false
+  },
+  {
+    "file_id": "F0036",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "127a6bb340e695be15bda617dac3a40aba37ff0f7be789c2f8658694b7b97975",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0037",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "82d127cead140be55ee04163461cfb42a41a1d72bad5aebaac1acc7a4e527e67",
+    "pdf_pages": 22,
+    "excluded": false
+  },
+  {
+    "file_id": "F0038",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "d3e3fb2e4478c88c7458c184ce517149d2f04f416c70adcdbebd47f5688ab5c8",
+    "pdf_pages": 24,
+    "excluded": false
+  },
+  {
+    "file_id": "F0039",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "46d23e4dd6ce0346ece716aeee338ab26ad594d858bf5c493f6e90fcfdd96910",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0040",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "e46a6918915f8e2d5463fbf136b2f6a21ba2f6002b7ffc66b732940702400dc5",
+    "pdf_pages": 28,
+    "excluded": false
+  },
+  {
+    "file_id": "F0041",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "b574ff517c2566fdb87f049aebc0d93f8ebb1bba53776bf20492cb4d1b8a0518",
+    "pdf_pages": 17,
+    "excluded": false
+  },
+  {
+    "file_id": "F0042",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "7baa29b319fddc3bc40c6a03b3e8f2caeb6372e0d63ad8bdeb76bd0647135d51",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0043",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "17abaf1fb5a433830c327a60d858b9611589cf473ee0da5634f6c65bb2829f1e",
+    "pdf_pages": 28,
+    "excluded": false
+  },
+  {
+    "file_id": "F0044",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "ae008f9c2188892ad132bd230287c2a74db3d6fc974014ff20c05546124e0a15",
+    "pdf_pages": 26,
+    "excluded": false
+  },
+  {
+    "file_id": "F0045",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "3e5d9041b0f36603cdb74c8a7c1a5377518323b778b4da897089d7103ad1aaaa",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0046",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "4013c60fa0050c00b37df8837614dfc91dd7fb23058888ab4f71e6b0a9c1ddc0",
+    "pdf_pages": 32,
+    "excluded": false
+  },
+  {
+    "file_id": "F0047",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "3385fab511baf64f381279bd62b714e6f80eb7c38ceae49903944bb736caa8b2",
+    "pdf_pages": 28,
+    "excluded": false
+  },
+  {
+    "file_id": "F0048",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "5310af4d1b41c946cf53047c8f40826ebea347085b00e5b3c90e6a25ab7d3429",
+    "pdf_pages": 26,
+    "excluded": false
+  },
+  {
+    "file_id": "F0049",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "fc6ba80fd9d33ccb8a2d538ab7fc07a6af69c024fecba203bab8c5b114460d24",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0050",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "a485cda1e99d045c414c058f0ca416bfc268d70db0c870ad45e510d087f783a5",
+    "pdf_pages": 28,
+    "excluded": false
+  },
+  {
+    "file_id": "F0051",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "69f3ecd62ff7abbb62621f2a0c96ac81a11df625629371a36d0aad25134a450f",
+    "pdf_pages": 22,
+    "excluded": false
+  },
+  {
+    "file_id": "F0052",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "05fcef462aa4b231c41ab9c063dcb5addc9062f07663bd3656547b61072f7241",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0053",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "943e22179dc08eb291179104d912f428faa19d0d71b187244105a5330680e3a6",
+    "pdf_pages": 28,
+    "excluded": false
+  },
+  {
+    "file_id": "F0054",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "12dc796e07c614ef639b3c497cbeb0c14d7f1e8530cd9e528ed1b91298447a05",
+    "pdf_pages": 14,
+    "excluded": false
+  },
+  {
+    "file_id": "F0055",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "75b2db260b2b140fac205003b92b4dca1b9398b4fe23a486bcb7d665b4f68489",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0056",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "509ccc8b936a95e9166f50b14b0fcebfa365a41713766b1a098f9769741c9f55",
+    "pdf_pages": 28,
+    "excluded": false
+  },
+  {
+    "file_id": "F0057",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "969f321d4947ce72243ac931c6322ebf2a528bbbcd093c1fe952e6c6c0076339",
+    "pdf_pages": 24,
+    "excluded": false
+  },
+  {
+    "file_id": "F0058",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "5c3c42ab536b7811bd983b493d172e32c8b3e347e15427d675badb30367a8dfb",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0059",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "09869753139a64898f7a198d96e30bc646eb1985c8868e9bea849021d812575a",
+    "pdf_pages": 28,
+    "excluded": false
+  },
+  {
+    "file_id": "F0060",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "e96dbd46a7793f8dcaeaf09cac84167f8befff3fdf564865856a136b0753c7ee",
+    "pdf_pages": 20,
+    "excluded": false
+  },
+  {
+    "file_id": "F0061",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "018e09470146bdd1b08cf6986ff0c48d02db981f2b266f3c0816dd6775d905bd",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0062",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "3fcff45246b46c5fbad03e5fb38a54dde22644575c8a4c92106c5667317d40f7",
+    "pdf_pages": 28,
+    "excluded": false
+  },
+  {
+    "file_id": "F0063",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "a53e86016dbc025146bdd499611b759c139d0e123ebcc697fd371f61e1e75535",
+    "pdf_pages": 20,
+    "excluded": false
+  },
+  {
+    "file_id": "F0064",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "0244c2283eff31164de22e238153052637e7ae3f1a8a824bdc3093cfdf98f8fe",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0065",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "d3482741752f1b2b881b8c8a36f6d8016fcffe5513cdddce717997573c077c69",
+    "pdf_pages": 28,
+    "excluded": false
+  },
+  {
+    "file_id": "F0066",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "41ef7e30cfe357503b9baa1dd8a9fe2eed740bc099f70f9b0740df109ab24098",
+    "pdf_pages": 26,
+    "excluded": false
+  },
+  {
+    "file_id": "F0067",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "3aa172aa42f68a974b8b506218e0f945a71a3d41114445cf95a7d2627af062c2",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0068",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "2f5aeb8600119ebeb2b00f1e6f8833c65db5fa56c47038660dc9a6dc64725ef6",
+    "pdf_pages": 10,
+    "excluded": false
+  },
+  {
+    "file_id": "F0069",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "9f5fbe84d9b16fe732665f7157e5546b7465e3f1e6d1762fab5131555efcaa53",
+    "pdf_pages": 30,
+    "excluded": false
+  },
+  {
+    "file_id": "F0070",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "444669b06ba23155deb7465ef7a3ee39c50b49cbc0c45b78bfb851feb9eee250",
+    "pdf_pages": 4,
+    "excluded": false
+  },
+  {
+    "file_id": "F0071",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "a314d845fcb58fc6ac1502fc1fb1672562f419ed36cc8ead88327d374817d327",
+    "pdf_pages": 32,
+    "excluded": false
+  },
+  {
+    "file_id": "F0072",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "57f497c536a60c7c8da38b9122d856b3cc15b159f791c0b6c512475efc592c7f",
+    "pdf_pages": 4,
+    "excluded": false
+  },
+  {
+    "file_id": "F0073",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "794a11fe307a6a29aa9da13599ecd2f5003c3a450493be94ebb5847fd6c6db87",
+    "pdf_pages": 10,
+    "excluded": false
+  },
+  {
+    "file_id": "F0074",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "cb21736a346b56d77fb30f18c40e83f20a69d47be4f58356d227a4f4f9308aa7",
+    "pdf_pages": 16,
+    "excluded": false
+  },
+  {
+    "file_id": "F0075",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "f21a341df15f540a52f67840d31750a50c8525ab71efb1a14615a7b5c3e130e4",
+    "pdf_pages": 10,
+    "excluded": false
+  },
+  {
+    "file_id": "F0076",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "1bc0719736db4752aab2021e8f4ca36e4a5752b4504c49dbec0b144b50c229bd",
+    "pdf_pages": 8,
+    "excluded": false
+  },
+  {
+    "file_id": "F0077",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "95df493909d3ed010f08314726f7104feeeaca3a5013b6708dd4f689db8ac030",
+    "pdf_pages": 32,
+    "excluded": false
+  },
+  {
+    "file_id": "F0078",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "22a534968ba5001699b574df9ea30e1e29e41c350244d30cfef0e067ff3bcd8e",
+    "pdf_pages": 8,
+    "excluded": false
+  },
+  {
+    "file_id": "F0079",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "903ee9ba3a15a26fee10d81698a1323862eae9696b93978349864515c4fcb0fd",
+    "pdf_pages": 14,
+    "excluded": false
+  },
+  {
+    "file_id": "F0080",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "a9a0357f73f225cda08614804911a4fb9ab309873f06a34b156df2f3b2776625",
+    "pdf_pages": 32,
+    "excluded": false
+  },
+  {
+    "file_id": "F0081",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "6f7dc656b5fb2a63f92c28d52c5f27348a0126dbf7e01d83fcd7b89a44456cf1",
+    "pdf_pages": 33,
+    "excluded": false
+  },
+  {
+    "file_id": "F0082",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "5d1e12c47818b2ac0d22c276b879aa19c72ab605e3e2286e1ae3652efd7c9f27",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0083",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "090f9e765bac846eb55e6425cc0f8e1fb4a120c92aae45369144579db3f24c44",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0084",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "719883bff6184de582adafc5df10c5473021694b58597dad7b37f82538bd7660",
+    "pdf_pages": 4,
+    "excluded": false
+  },
+  {
+    "file_id": "F0085",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "eb42c27f82533df9206be3a515b371d52e58a25e23aa46b5277bd8d285d4dd35",
+    "pdf_pages": 4,
+    "excluded": false
+  },
+  {
+    "file_id": "F0086",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "d4d5fba34be11e065baabfbd612d8e98c3b0d7cb71c0c17ab052418f8d0afe2d",
+    "pdf_pages": 15,
+    "excluded": false
+  },
+  {
+    "file_id": "F0087",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "50ad3cd6d465402fa320fc397f0d39f90af62dae6c0eed671e888bd8b20bf45b",
+    "pdf_pages": 15,
+    "excluded": false
+  },
+  {
+    "file_id": "F0088",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "8242f05adc173a110bca7d5beaf8438e1dd8b43f9c3e90f9eb38fa9eb732d4fe",
+    "pdf_pages": 4,
+    "excluded": false
+  },
+  {
+    "file_id": "F0089",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "4c1c0e8eb990c94e400a1da5e658b5329ddb36832a9e330a19f64d3d1dd8c94d",
+    "pdf_pages": 4,
+    "excluded": false
+  },
+  {
+    "file_id": "F0090",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "2382afe36afd0bf621a96e0b7425df47455b37c01ea60537355db467a2638e25",
+    "pdf_pages": 18,
+    "excluded": false
+  },
+  {
+    "file_id": "F0091",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "c287133a5c33e03c78e3be781f8a14a2ae9fd94bb62ab2f36ab2e38390f5c8e9",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0092",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "29be3e8f42c39b0727d3a6ede42d30ec2b6f95d907c6be954682fb57f61b5f3b",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0093",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "49030cc39c2826d87c92a70451bcbc857299073cdc11c83be610c8f6e1d96e7e",
+    "pdf_pages": 4,
+    "excluded": false
+  },
+  {
+    "file_id": "F0094",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "dbb2ea7541c8140edde32431fff6b545e6953b244e4abb74145c97a25d0247e5",
+    "pdf_pages": 4,
+    "excluded": false
+  },
+  {
+    "file_id": "F0095",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "2f3b2cb592de708bd75bf6c98c2aa54a9f68eb2b57896b066aca2cb15d6220db",
+    "pdf_pages": 15,
+    "excluded": false
+  },
+  {
+    "file_id": "F0096",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "f73ebab4a6519ed03954a3405e2936480765e1c98426a97498065b280bc5dabc",
+    "pdf_pages": 15,
+    "excluded": false
+  },
+  {
+    "file_id": "F0097",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "2b1648a6d333d3534069734a07643c95ced67e592af5e6ae796c6c472217ac05",
+    "pdf_pages": 4,
+    "excluded": false
+  },
+  {
+    "file_id": "F0098",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "e74085c1d76db9321ddd747e5ddde7f65498edf70c53798e397fedf8b98c483a",
+    "pdf_pages": 4,
+    "excluded": false
+  },
+  {
+    "file_id": "F0099",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "2bc2a51a9787406a6a461185fd2b7f1b2385fe49818d9d973db7a8155a8fd925",
+    "pdf_pages": 24,
+    "excluded": false
+  },
+  {
+    "file_id": "F0100",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "5af43703827669bb4efc5c15de7e80797b50fc9169ac7a69ac71820a169c16d4",
+    "pdf_pages": 12,
+    "excluded": false
+  },
+  {
+    "file_id": "F0101",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "01db90e015c39a9502b99969ce04f27825265203bc8728da6141d7b6d2b1ef54",
+    "pdf_pages": 13,
+    "excluded": false
+  },
+  {
+    "file_id": "F0102",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "efd65f210857dba26b2189ade16a82f7f5f1771ad503b8539fb6cd043d78629e",
+    "pdf_pages": 215,
+    "excluded": false
+  },
+  {
+    "file_id": "F0103",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "f1dc3bbdc788ae2893dc165a42afac2a789256bd3756a0241aa6710d4c16e25a",
+    "pdf_pages": 22,
+    "excluded": false
+  },
+  {
+    "file_id": "F0104",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "AR",
+    "sha256": "bbfef68dad703d33c63d73549b0c4a1007f74213a236580346262491839d80f8",
+    "pdf_pages": 48,
+    "excluded": false
+  },
+  {
+    "file_id": "F0105",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "KR",
+    "sha256": "8156fe22033fa94ba65ccc063e934b90168de8d0614a4bbecfde5def1e8b4a89",
+    "pdf_pages": 29,
+    "excluded": false
+  },
+  {
+    "file_id": "F0106",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "KR",
+    "sha256": "ae8b16439650526a5ef6e1975c852fa38c2ab4466cd73ab725a47bcb32a6b655",
+    "pdf_pages": 139,
+    "excluded": false
+  },
+  {
+    "file_id": "F0107",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "KR",
+    "sha256": "f4762efb6baafdd9475b0dfe61e5dc89da840e2120245723abf0228a94c74744",
+    "pdf_pages": 209,
+    "excluded": false
+  },
+  {
+    "file_id": "F0108",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "9e535aa8a30ba033e595e558c4bffae660f5ed91f0fa9df615636562eb761189",
+    "pdf_pages": 20,
+    "excluded": false
+  },
+  {
+    "file_id": "F0109",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "2b4c3c98ae52f912800999e512a5c2c2087ef423f9afb03cb591e6c2d76ae9c6",
+    "pdf_pages": 14,
+    "excluded": false
+  },
+  {
+    "file_id": "F0110",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "a61d13e3c121c1be892bc454a6a0e3ab019080830411d45192a2592ce2c8bc5d",
+    "pdf_pages": 64,
+    "excluded": false
+  },
+  {
+    "file_id": "F0111",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "b27d9fbb0c2b4e328f28b09ec285848204eced669be80ee74a0619e577ac2733",
+    "pdf_pages": 23,
+    "excluded": false
+  },
+  {
+    "file_id": "F0112",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "POS",
+    "sha256": "a0bbb37fd25eed4a44c33cc22707c50a6a226d00106a1e6909c00b7881ec2768",
+    "pdf_pages": 82,
+    "excluded": false
+  },
+  {
+    "file_id": "F0113",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "POS",
+    "sha256": "af0d59c87b27384576c59e167d4bb1b8c5d6ccdf94d8ab1755914afa6444bc71",
+    "pdf_pages": 47,
+    "excluded": false
+  },
+  {
+    "file_id": "F0114",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "d88b60ddbaee821ed61567c0670900825c2546a5840a3a6293fc59ee292e9fad",
+    "pdf_pages": 231,
+    "excluded": false
+  },
+  {
+    "file_id": "F0115",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "9a512881feece97d85896bc6a2acb7970cdfaeecd214c8970037dc58a79f117b",
+    "pdf_pages": 24,
+    "excluded": false
+  },
+  {
+    "file_id": "F0116",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "51ee39b0189ba7360888d745db6e669a240067284d685c523e00683f817730b0",
+    "pdf_pages": 103,
+    "excluded": false
+  },
+  {
+    "file_id": "F0117",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "58f667596d5d64d844b6ba870cdb3015e729fe367310a1a7b39d92b374e22fb0",
+    "pdf_pages": 58,
+    "excluded": false
+  },
+  {
+    "file_id": "F0118",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "63c2bbc93d14a15232eca0d771820f6994c07f41cba73a3f4172cda925bd9357",
+    "pdf_pages": 34,
+    "excluded": false
+  },
+  {
+    "file_id": "F0119",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "5c859e60b8ec10f3ddf7846a5551e90b6de3a8e57cce2aefbb1e28fb86412858",
+    "pdf_pages": 111,
+    "excluded": false
+  },
+  {
+    "file_id": "F0120",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "6351d217b51c5004b93ce7fab4b7721178adfd63c2159ba2feb3dcd285e9265d",
+    "pdf_pages": 25,
+    "excluded": false
+  },
+  {
+    "file_id": "F0121",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "f441e0b1e91e51a76808f0a7466de7e94959fc1d2e5029066f354595070ec268",
+    "pdf_pages": 41,
+    "excluded": false
+  },
+  {
+    "file_id": "F0122",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "81f9a272d96d91e97067bd548e58b20261e0c5c37c31a25b9c6fa491c27ee806",
+    "pdf_pages": 70,
+    "excluded": false
+  },
+  {
+    "file_id": "F0123",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "c702d725bb4baac868ea4feb7205da6fe0fcdb5c52fe4c559dc23086aa4df549",
+    "pdf_pages": 17,
+    "excluded": false
+  },
+  {
+    "file_id": "F0124",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "fabfbbfdb7e971c79d11b5802f1fe2d65d7c67393ee2c1f82568e0a5a305c212",
+    "pdf_pages": 38,
+    "excluded": false
+  },
+  {
+    "file_id": "F0125",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "570a18c01ec7325a6608546f71d6d4da23ddb07422937bef2be4ec6a3b6e42e3",
+    "pdf_pages": 21,
+    "excluded": false
+  },
+  {
+    "file_id": "F0126",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "GP",
+    "sha256": "b4846376535dd97aa24a8e384e0cb71f40792084fc61981dad587b15bbf63088",
+    "pdf_pages": 23,
+    "excluded": false
+  },
+  {
+    "file_id": "F0127",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "7603b0d5b85177bac46316ddd25a42b2609483915c54fbaf5cc7cdd1d6c07a57",
+    "pdf_pages": 11,
+    "excluded": false
+  },
+  {
+    "file_id": "F0128",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "7f3737225014e681de43ce118ae29633492dd84d6ba36cb28c1d115141ac8fca",
+    "pdf_pages": 38,
+    "excluded": false
+  },
+  {
+    "file_id": "F0129",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "04b4313704c6a36a24e4c82d40ff886830f905f38a8c5879cf5bb66805e2951c",
+    "pdf_pages": 37,
+    "excluded": false
+  },
+  {
+    "file_id": "F0130",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "b8f52b410fb676716e0cd1a3d8635e905881dedc28c090a1a8d0e7200271acf0",
+    "pdf_pages": 29,
+    "excluded": false
+  },
+  {
+    "file_id": "F0131",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "df5b4b7af2db85a605b95e86c5a8a1b8890e2689aff21b2636b03b0378f132f8",
+    "pdf_pages": 21,
+    "excluded": false
+  },
+  {
+    "file_id": "F0132",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "205b56cf757cd0c615f0baddea4287aca918a9373c1b6a80457972bd0083d280",
+    "pdf_pages": 77,
+    "excluded": false
+  },
+  {
+    "file_id": "F0133",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "a6f6ce4b6de2fc106fe8d535e58d43e2b5bcda4a1084da5af02acb61193f10e7",
+    "pdf_pages": 34,
+    "excluded": false
+  },
+  {
+    "file_id": "F0134",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "d25207a5aaf4660bcffa1db482c93f5f88f1e2e756a3c131e42ddc1fc43a759f",
+    "pdf_pages": 72,
+    "excluded": false
+  },
+  {
+    "file_id": "F0135",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "9beb1502f8179913420a7d95d4546835c5da8445fa91919da7ef27b299098df1",
+    "pdf_pages": 15,
+    "excluded": false
+  },
+  {
+    "file_id": "F0136",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "cb4929c8a0f069a325ba16991767f26ba3c43a521e8052bad55c803b9e89fa5b",
+    "pdf_pages": 5,
+    "excluded": false
+  },
+  {
+    "file_id": "F0137",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD",
+    "section": "OTHER",
+    "sha256": "b6523e0f34f6b712136d05088fd0a35987693695798eaec53a0e406db1b1bd03",
+    "pdf_pages": 14,
+    "excluded": false
+  },
+  {
+    "file_id": "F0138",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD",
+    "section": "OTHER",
+    "sha256": "94a8c8436906ec7e66047e9c43d5fafe7e514bb1356e2065d1826867fddc700d",
+    "pdf_pages": 22,
+    "excluded": false
+  },
+  {
+    "file_id": "F0139",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "d59c225e75d1e0227f08869b31165bd93bf85ed4b1da005c3e86ebc27023b73f",
+    "pdf_pages": 22,
+    "excluded": false
+  },
+  {
+    "file_id": "F0140",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "2c46f909396f33e4286637319fe4829d8d4cf6742c0e7337577dfdc4127ab085",
+    "pdf_pages": 27,
+    "excluded": false
+  },
+  {
+    "file_id": "F0141",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "421a34429325f424d3e29086810b1283e805d9bb3c75646508e5434b248e5d5f",
+    "pdf_pages": 32,
+    "excluded": false
+  },
+  {
+    "file_id": "F0142",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "43b1595f8cf21e5d5e5af5d31aa42314c3c889e873a67a549d343597d74ab6cb",
+    "pdf_pages": 14,
+    "excluded": false
+  },
+  {
+    "file_id": "F0143",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "c3236288c713f044637feba3b5331087e5b549ee5886e15381ec904fc1579663",
+    "pdf_pages": 30,
+    "excluded": false
+  },
+  {
+    "file_id": "F0144",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "9e4fc4e231af437be17c7c3a5380f2da567b258b8c9ab09baaf93bf038212537",
+    "pdf_pages": 14,
+    "excluded": false
+  },
+  {
+    "file_id": "F0145",
+    "object_id": "OBJ-NOVOSLOBODSKAYA",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD",
+    "section": "OTHER",
+    "sha256": "0be3a646cc793b86257e3ce4aeb9d0f15326369aa8a37a9205670e82635eaa05",
+    "pdf_pages": 14,
+    "excluded": false
+  },
+  {
+    "file_id": "F0146",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "ccb8aac770ff3dbfd28e70467ad598927b5d95e885878c2572f437caaa3e134c",
+    "pdf_pages": 613,
+    "excluded": false
+  },
+  {
+    "file_id": "F0147",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "e4d7bfcfd321a723abf5bb6e89baa99c1d7407382af8a2e9bd07522633a1cc9c",
+    "pdf_pages": 8,
+    "excluded": false
+  },
+  {
+    "file_id": "F0148",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "e4b188ce7f815a95dc7be708135943b6f6bdbfeb61422305ff2a2d6f59ca36bd",
+    "pdf_pages": 466,
+    "excluded": false
+  },
+  {
+    "file_id": "F0150",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "30c456b308c9f9e7e5c7fb009217777b8ce754490ccc39d662f21ac30eab031b",
+    "pdf_pages": 614,
+    "excluded": false
+  },
+  {
+    "file_id": "F0151",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "afcd36eb35b235849627a7a4a8fb6065e463c13d5bf1a8e66baae05842bb418a",
+    "pdf_pages": 40,
+    "excluded": false
+  },
+  {
+    "file_id": "F0152",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "99ec972d7dfe5039fca922e3120bd5e486f2a26518f78044d0850992c028e7af",
+    "pdf_pages": 77,
+    "excluded": false
+  },
+  {
+    "file_id": "F0153",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "27701f17cb448799c19018162f878727ec577fc6cc144a8a04f016ab35784bca",
+    "pdf_pages": 42,
+    "excluded": false
+  },
+  {
+    "file_id": "F0154",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "GP",
+    "sha256": "336e9742450dd403c6e2dfd0ee4660d316725e95201f4cb41308d2b9296c085b",
+    "pdf_pages": 27,
+    "excluded": false
+  },
+  {
+    "file_id": "F0155",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "GP",
+    "sha256": "a11b062b7d92c413a38194231174e3e25dab88ecbc5e215f98314023595d575a",
+    "pdf_pages": 27,
+    "excluded": false
+  },
+  {
+    "file_id": "F0156",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "AR",
+    "sha256": "16cd7f0b61a31b52b6e5d94f9249c0382407ec91b5531d6e0ed843e8827e30cf",
+    "pdf_pages": 38,
+    "excluded": false
+  },
+  {
+    "file_id": "F0157",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "AR",
+    "sha256": "8c64160f5dda8cb8b39b7cdc0ced2ffb4846d2785dc42270ffb14723c782aa69",
+    "pdf_pages": 39,
+    "excluded": false
+  },
+  {
+    "file_id": "F0158",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "KR",
+    "sha256": "cce0fae501b8fb49a514f28ad22e981f866b7b36b430c2099cea9f647895641e",
+    "pdf_pages": 63,
+    "excluded": false
+  },
+  {
+    "file_id": "F0159",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "KR",
+    "sha256": "ac53fe8b2cbd82fa82ef09a357be4a40e92ddde09719b0b1aa79d160dbf4ffb9",
+    "pdf_pages": 30,
+    "excluded": false
+  },
+  {
+    "file_id": "F0160",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "EOM",
+    "sha256": "72fc8a91a7e09c20ac9769f513f2f0a763d7ffd6d9c0e9c198432834286537cd",
+    "pdf_pages": 126,
+    "excluded": false
+  },
+  {
+    "file_id": "F0161",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "EOM",
+    "sha256": "ba76f0685eca5dadc591554af14cf82345397fbe2fd2b48d1e1cc26917d46bf1",
+    "pdf_pages": 38,
+    "excluded": false
+  },
+  {
+    "file_id": "F0162",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "EOM",
+    "sha256": "79a3cc7d7ca5a1df4093b26b0bd739c8f299f1d5739b18e04a9cdcf44e0c4946",
+    "pdf_pages": 23,
+    "excluded": false
+  },
+  {
+    "file_id": "F0163",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "VK",
+    "sha256": "18282c9104974a462338ff2d246bf081545bdfcafde1a85ee5e6d4ca54584861",
+    "pdf_pages": 21,
+    "excluded": false
+  },
+  {
+    "file_id": "F0164",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "VK",
+    "sha256": "3fb1d0956c6a13228e59605eb2429b496e74fc82e2733c3a3c7937900cf1ca08",
+    "pdf_pages": 23,
+    "excluded": false
+  },
+  {
+    "file_id": "F0165",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "VK",
+    "sha256": "f4a34324aaf6779f05fc89379ddb2b15499a22dc0e9181389d87047ab1a39f64",
+    "pdf_pages": 38,
+    "excluded": false
+  },
+  {
+    "file_id": "F0166",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "VK",
+    "sha256": "a9d64f98c52034d7222c50486099728fe6f5b706bed5804d281553bc1ea1b127",
+    "pdf_pages": 89,
+    "excluded": false
+  },
+  {
+    "file_id": "F0167",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "VK",
+    "sha256": "987e6d010d5337d4e91ee27bc73f87bc92c823baf906ca94c3abf4c3be5c8b2c",
+    "pdf_pages": 16,
+    "excluded": false
+  },
+  {
+    "file_id": "F0168",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "VK",
+    "sha256": "9741e72f6ac5a9d2afffbb753ad56f08eec4d59f60d8e2f7653f502825adb925",
+    "pdf_pages": 18,
+    "excluded": false
+  },
+  {
+    "file_id": "F0169",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "VK",
+    "sha256": "228c6705cc66af26d7aeb14b65a4101f1c41e0792dae2d6f1bdff8a9f256f9d0",
+    "pdf_pages": 17,
+    "excluded": false
+  },
+  {
+    "file_id": "F0170",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OV",
+    "sha256": "026075ced08f4ed340b6f20139fabd65b8fb73ca5ac16d3928005c3047752ae1",
+    "pdf_pages": 31,
+    "excluded": false
+  },
+  {
+    "file_id": "F0171",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OV",
+    "sha256": "a9070055b75adeea0d47651cf9dca3ca818ca5f54ac7ce9ddcd86efc817db7dc",
+    "pdf_pages": 177,
+    "excluded": false
+  },
+  {
+    "file_id": "F0172",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OV",
+    "sha256": "b17b54cf6a940dd21b26ed4449a8157de5b0b8f48174b557fd3272170337713f",
+    "pdf_pages": 37,
+    "excluded": false
+  },
+  {
+    "file_id": "F0173",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "723319aaa1dafcb5320423cd0afa8c380cb02a7c938dfce4504196ad09a859db",
+    "pdf_pages": 56,
+    "excluded": false
+  },
+  {
+    "file_id": "F0174",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "61a43b9dd57a24a9c2aa764a91825cb5f8d966e1f281a36d311d4828eb7e07c7",
+    "pdf_pages": 44,
+    "excluded": false
+  },
+  {
+    "file_id": "F0175",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "c496a17ee656e21bb14451869353e1667c6e4c717950b504f132446e762e2c60",
+    "pdf_pages": 44,
+    "excluded": false
+  },
+  {
+    "file_id": "F0176",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "8b87450cb202eb012cf6318a9c6d450d153be6a31cf538a2e53b1402fc8827a4",
+    "pdf_pages": 58,
+    "excluded": false
+  },
+  {
+    "file_id": "F0177",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "7fad0024b34c967802d8c9cf323d3db19ad74f6abab1ae29a3cf8e420a97b264",
+    "pdf_pages": 33,
+    "excluded": false
+  },
+  {
+    "file_id": "F0178",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "386c30fe858f19934e81e3f5662e28614a421a3e7b794f3582429863e2c01faf",
+    "pdf_pages": 21,
+    "excluded": false
+  },
+  {
+    "file_id": "F0179",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "d9b58cb583cd95305ea8addf4cafb7698372d948d84e9d6de1028c2f1720d9a9",
+    "pdf_pages": 14,
+    "excluded": false
+  },
+  {
+    "file_id": "F0180",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "6b64cbdb7b099971350d5c578d741622ba77ef24d8d53859bc6ed694fbf2ec03",
+    "pdf_pages": 132,
+    "excluded": false
+  },
+  {
+    "file_id": "F0181",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "fd949f1179f3d8e0b2a42c68172c70523e7cb7a57cd61320e18c7cc19d0ab3d9",
+    "pdf_pages": 29,
+    "excluded": false
+  },
+  {
+    "file_id": "F0182",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "c4a1c98306dad6c26490ec96cf3001d85ea7fa37bd57370ab93f58e21ebc0f93",
+    "pdf_pages": 101,
+    "excluded": false
+  },
+  {
+    "file_id": "F0183",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "8f38d2b7ac531d4bd0045db65d19771a4b5658baf8e2cad5e5d4e0723c233e62",
+    "pdf_pages": 44,
+    "excluded": false
+  },
+  {
+    "file_id": "F0184",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "45feda4d7afcd313b812da001580281f7cce8ee27638a7c4581d31d94eb0b7c6",
+    "pdf_pages": 26,
+    "excluded": false
+  },
+  {
+    "file_id": "F0185",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "59183dc7731548eb1bc4bff2998716f54405e764065161dc36cbec2e120331d2",
+    "pdf_pages": 90,
+    "excluded": false
+  },
+  {
+    "file_id": "F0186",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "bca10297c6f0a25fd5b376a5be776e09f7fffcda92c888de8f4675fb34d25e4e",
+    "pdf_pages": 168,
+    "excluded": false
+  },
+  {
+    "file_id": "F0187",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "POS",
+    "sha256": "9ae6ead05985fa1f9c29d9735e0202b998e0981d2ec26464b6ba78bf2f1ab66d",
+    "pdf_pages": 83,
+    "excluded": false
+  },
+  {
+    "file_id": "F0188",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "POS",
+    "sha256": "a6c2b887c3aeb5638376cbd5aa5597139c73b4ef271c5c711250de44269d7974",
+    "pdf_pages": 33,
+    "excluded": false
+  },
+  {
+    "file_id": "F0189",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "eae7d1997b49d2302d20d66483f9490ca3fb5e2bb7b465329d9518563e95c7cd",
+    "pdf_pages": 969,
+    "excluded": false
+  },
+  {
+    "file_id": "F0190",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "f76729679305951903bd282fe67abce3be3107e7bfb33238dd0f825fc8044360",
+    "pdf_pages": 20,
+    "excluded": false
+  },
+  {
+    "file_id": "F0191",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "af2909138ccc31637f39e3cb1ec1bbf7bdc509b93e1827a8b22b7a53aae6c31e",
+    "pdf_pages": 41,
+    "excluded": false
+  },
+  {
+    "file_id": "F0192",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "b00599dbb7768e64c703f9cdd7bed83d11201505286bbaeaac87b58058161047",
+    "pdf_pages": 40,
+    "excluded": false
+  },
+  {
+    "file_id": "F0193",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "PD",
+    "section": "PB",
+    "sha256": "edf34d969b0f37e9165c344432f7f229159db2b990e87b67482969286e71aa4f",
+    "pdf_pages": 242,
+    "excluded": false
+  },
+  {
+    "file_id": "F0194",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "UNKNOWN",
+    "section": "OTHER",
+    "sha256": "999f0dc978b0d84aa3684dbe43b37b173756507fd5ba08386f84e205e235b830",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0195",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD_ID_MIXED",
+    "section": "OV",
+    "sha256": "a3e3c5fa505c78e37e6abc54dd263cc54223185ea77e2b4be1276aa3645b8a2e",
+    "pdf_pages": 2,
+    "excluded": false
+  },
+  {
+    "file_id": "F0196",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD_ID_MIXED",
+    "section": "OV",
+    "sha256": "6c937a7ca44b1fa15a1294b98894363c9c92278c29ebc2cce2334ecf2ad7a2a3",
+    "pdf_pages": 3,
+    "excluded": false
+  },
+  {
+    "file_id": "F0197",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD_ID_MIXED",
+    "section": "OTHER",
+    "sha256": "fbd9a8f704da59a832b36b0cefbcc89be0acbea8cff193a46ed72baff0d08080",
+    "pdf_pages": 1,
+    "excluded": false
+  },
+  {
+    "file_id": "F0198",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD_ID_MIXED",
+    "section": "OV",
+    "sha256": "094753524e656f6a4d1cc95f5a26e194309e91f81bb5495dc88aed145892bc3e",
+    "pdf_pages": 1,
+    "excluded": false
+  },
+  {
+    "file_id": "F0199",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD_ID_MIXED",
+    "section": "OTHER",
+    "sha256": "d368c92f8db18e019a51cdb70164a08975149dcded4461b7c7a7aef66068c279",
+    "pdf_pages": 1,
+    "excluded": false
+  },
+  {
+    "file_id": "F0200",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD_ID_MIXED",
+    "section": "OTHER",
+    "sha256": "369b37c4ea0cb8b9c106454f4f2adfa376be4909207d5559f318203456310a21",
+    "pdf_pages": 1,
+    "excluded": false
+  },
+  {
+    "file_id": "F0201",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD_ID_MIXED",
+    "section": "OV",
+    "sha256": "0c398d7bca356455568413a6fc3b14044b7e538a902251b80e2a5574d80184fd",
+    "pdf_pages": 676,
+    "excluded": false
+  },
+  {
+    "file_id": "F0202",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD_ID_MIXED",
+    "section": "OV",
+    "sha256": "632379a0e541f0c81e6b03e5528946730b4433939c796db4fdc1e5c3fc8b71ee",
+    "pdf_pages": 36,
+    "excluded": false
+  },
+  {
+    "file_id": "F0203",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD_ID_MIXED",
+    "section": "OTHER",
+    "sha256": "425680d836e5512ea3222a3331bc80b2b5e2433c52a6f8bd625024bdf9f103d7",
+    "pdf_pages": 45,
+    "excluded": false
+  },
+  {
+    "file_id": "F0204",
+    "object_id": "OBJ-TYUMENSKAYA-5-GOLD-SEED",
+    "split": "TRAIN_PUBLIC",
+    "stage": "RD_ID_MIXED",
+    "section": "VK",
+    "sha256": "6b15a5deecb14bd62c3622990614a76a95a1b9bace90d07bcda9cbd6b0079767",
+    "pdf_pages": 71,
+    "excluded": false
+  },
+  {
+    "file_id": "F0205",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "854f7bc6edbf6cd0aee8a4d17407192cdbc8b44fc2d68932c2c7e4f98e1f4bb4",
+    "pdf_pages": 325,
+    "excluded": false
+  },
+  {
+    "file_id": "F0206",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "2f97c2ddafaa9dc7c7f76972ef1fe9be6725e95ac262dc199f8e4094747a9ad7",
+    "pdf_pages": 325,
+    "excluded": false
+  },
+  {
+    "file_id": "F0207",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "48cb430bdca83fdb0c33a2a2dc23cd14ba680d39af1137756fe76194f8c297b5",
+    "pdf_pages": 303,
+    "excluded": false
+  },
+  {
+    "file_id": "F0208",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "4280540194f5d9e9ac28fe59aa330b5932f6f6bcb43efbf48feb8dfd5cf00e82",
+    "pdf_pages": 253,
+    "excluded": false
+  },
+  {
+    "file_id": "F0209",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "VK",
+    "sha256": "293195f8259c02f01100a475db7e8b5cf405fa7cb26476e687c9fa5ead1c936d",
+    "pdf_pages": 266,
+    "excluded": false
+  },
+  {
+    "file_id": "F0210",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "VK",
+    "sha256": "09ee9aeac4d27c914e51ab524a7d7c92752b15e1c11927115709802f0c18ee25",
+    "pdf_pages": 310,
+    "excluded": false
+  },
+  {
+    "file_id": "F0211",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "4909e12673cd789c2ce2dc2a93bf1bd9ec34426f690ff2d6869f019dbbeca1df",
+    "pdf_pages": 201,
+    "excluded": false
+  },
+  {
+    "file_id": "F0212",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "099efaa2dba69ffe25eeb690969a33ccfa4ac0975b84460d046ca4039b7d48b0",
+    "pdf_pages": 236,
+    "excluded": false
+  },
+  {
+    "file_id": "F0213",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "7572803f81a71152b0ca92161ce6aa0c8e39b37a72a041b21825fdf4c6f927d3",
+    "pdf_pages": 420,
+    "excluded": false
+  },
+  {
+    "file_id": "F0214",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "8d6a243b663e9ba82ed07d18481f256d9c9bb4bc81645311688fcb6ef26fa37d",
+    "pdf_pages": 432,
+    "excluded": false
+  },
+  {
+    "file_id": "F0215",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "619cf7cd21bba1f5b716f92b943e32406a7e619492d3ed8ae73a5abe46422a37",
+    "pdf_pages": 327,
+    "excluded": false
+  },
+  {
+    "file_id": "F0216",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "17f4b5ec617f4c41c531056ec947fb6a83b4af1aa4d94314ef1f261548cd6aa0",
+    "pdf_pages": 300,
+    "excluded": false
+  },
+  {
+    "file_id": "F0217",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "1146c359d88a6a2d304dc17d29c37113f535c11ef1ab79082423825602c1ff35",
+    "pdf_pages": 320,
+    "excluded": false
+  },
+  {
+    "file_id": "F0218",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "49de698e8f273ae2fa281c309e5a8c71a57040420462d6d5ba2f9a1639df65c2",
+    "pdf_pages": 318,
+    "excluded": false
+  },
+  {
+    "file_id": "F0219",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "48babd42133f392e1a322076c4b7f10791552d9926f8862e1bff013bd5b340a2",
+    "pdf_pages": 300,
+    "excluded": false
+  },
+  {
+    "file_id": "F0220",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "7737b51abc6916d600ab6e2c184e9b7141787741ce27970221764ecebd2a71a3",
+    "pdf_pages": 320,
+    "excluded": false
+  },
+  {
+    "file_id": "F0221",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "20f10bd83c9cea679a22368af8f040f4861037f44515fc6464990b310c3e95b2",
+    "pdf_pages": 302,
+    "excluded": false
+  },
+  {
+    "file_id": "F0222",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "87c9c2369d1204d19fae3c557c39602088a4b60747128d28b588f72c71e30cda",
+    "pdf_pages": 302,
+    "excluded": false
+  },
+  {
+    "file_id": "F0223",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "6da81911ca31d6ecc4a35812280c42431a3add5dd4e1a093f26d09ecc6be2a4d",
+    "pdf_pages": 299,
+    "excluded": false
+  },
+  {
+    "file_id": "F0224",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "fe0662bfcf493aa4016897c121b07590d7e804f89a6dabe8537eacfc8edfcf21",
+    "pdf_pages": 24,
+    "excluded": false
+  },
+  {
+    "file_id": "F0225",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "EOM",
+    "sha256": "cff8b0f63e90e9f931116bd886f46f3ac9460d24029e99c7e0f9db8e17458f47",
+    "pdf_pages": 119,
+    "excluded": false
+  },
+  {
+    "file_id": "F0226",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "EOM",
+    "sha256": "4cd5861cb6abc6f7ac6c13ecf598bfa2ba549afa732417b019fb9a4b27b7c71f",
+    "pdf_pages": 71,
+    "excluded": false
+  },
+  {
+    "file_id": "F0227",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "EOM",
+    "sha256": "f2cd24134d5fc9bd5cd85e7f0309b1d94353baafa9f781b9544034b88b595ad2",
+    "pdf_pages": 387,
+    "excluded": false
+  },
+  {
+    "file_id": "F0228",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "EOM",
+    "sha256": "7fe6799050a45c822388424c1ca99f37d0adc8b468d8777cc1443c65f8376c87",
+    "pdf_pages": 464,
+    "excluded": false
+  },
+  {
+    "file_id": "F0229",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "8d345c6b308d45846e6bd50a761a0184686c5e81c704c1cbd5efbb8829f23a19",
+    "pdf_pages": 5,
+    "excluded": false
+  },
+  {
+    "file_id": "F0230",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "b2897de9a19dc58fad6e47dc7fec87fd43fa8b499fac4efa756b4433cee13da0",
+    "pdf_pages": 318,
+    "excluded": false
+  },
+  {
+    "file_id": "F0231",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "428b06cfffeac59033925d74fcf807e1d87bcb1893b3298a16deba4f413be539",
+    "pdf_pages": 175,
+    "excluded": false
+  },
+  {
+    "file_id": "F0232",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "8b7c68824143739f077883a9de1225c0123db26f6c59f09553cab241c70896f1",
+    "pdf_pages": 507,
+    "excluded": false
+  },
+  {
+    "file_id": "F0233",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "6961046e9a580a33c8d3f10c31ba60e35a2e488f2d0eb8f24f3caa23cb66fec9",
+    "pdf_pages": 175,
+    "excluded": false
+  },
+  {
+    "file_id": "F0234",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "72a3be0f93175e719d68cc955e85557e03ad6c2b5027892902030603ddaa1d86",
+    "pdf_pages": 218,
+    "excluded": false
+  },
+  {
+    "file_id": "F0235",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "ID",
+    "section": "OTHER",
+    "sha256": "ba69de9d8658a74db4cf797d1312a79e5cf948d5ed029c2398d4e94dfa6773d2",
+    "pdf_pages": 2,
+    "excluded": false
+  },
+  {
+    "file_id": "F0236",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "4e46fe003f7c09aa86796553a37f4a98a17eebdc581a5ad83b42fe6a3c420555",
+    "pdf_pages": 29,
+    "excluded": false
+  },
+  {
+    "file_id": "F0237",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "3ff1721e20c140c566efeefaf20439874f09f8c68dd750baeaf3be588ccc8988",
+    "pdf_pages": 71,
+    "excluded": false
+  },
+  {
+    "file_id": "F0238",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "f27b73358012f6590eccda741325942dd79124c78368b23c07f46daaece057f1",
+    "pdf_pages": 26,
+    "excluded": false
+  },
+  {
+    "file_id": "F0239",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "369240d313b1d6e76572f799a9942a4e8d495edf1a09f1fcac302b5302acffa9",
+    "pdf_pages": 6,
+    "excluded": false
+  },
+  {
+    "file_id": "F0240",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "0cbf729de07d979f825c8c4d4c54da7a20d73a994aa7a3447c48d73270feaf89",
+    "pdf_pages": 424,
+    "excluded": false
+  },
+  {
+    "file_id": "F0241",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "ef4f1bcfdd4959ce8109871297944db768d4cbf8f09c21d190fa11706eefe72d",
+    "pdf_pages": 463,
+    "excluded": false
+  },
+  {
+    "file_id": "F0242",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "1ec7db013f2c8c702674be57f0267575ed3f14d6110a25aff79af81c66f03b3c",
+    "pdf_pages": 409,
+    "excluded": false
+  },
+  {
+    "file_id": "F0243",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "9c33143f7a19ef8baf63115491d351b19c795bb7a7814ea0457598a0cc85f04b",
+    "pdf_pages": 10,
+    "excluded": false
+  },
+  {
+    "file_id": "F0244",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "e97640ef91050e72f0d5592a67e82e7b0d7f0ce17115a3b656b1c75a7fe86ed2",
+    "pdf_pages": 10,
+    "excluded": false
+  },
+  {
+    "file_id": "F0245",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "cf123f417ebab9d4ad3cc9b562290a6f70337c41529ada53bb3d176cc876f089",
+    "pdf_pages": 46,
+    "excluded": false
+  },
+  {
+    "file_id": "F0246",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "79e63f76490e10ff8c6345313e85d76c2ae2a8ad6cfb4fb8a619d3025b72ad55",
+    "pdf_pages": 44,
+    "excluded": false
+  },
+  {
+    "file_id": "F0247",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "a57fdb1d870214cb6ea810b40e7616d09814a1b5225652744a83ac6503ae09df",
+    "pdf_pages": 105,
+    "excluded": false
+  },
+  {
+    "file_id": "F0248",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "6f4675df4d13ee41b573788f1bbe746ce630a6e2d3f2a88899a7d172bdbba31b",
+    "pdf_pages": 99,
+    "excluded": false
+  },
+  {
+    "file_id": "F0249",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "e63c959a36a1810afb568603c043180aaf8806054a6de14e08a8bcdd898f4263",
+    "pdf_pages": 103,
+    "excluded": false
+  },
+  {
+    "file_id": "F0250",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "GP",
+    "sha256": "77f359bc87c2c154bdca7706e7dd46b9e9477208012bee3699c99038a2bcb893",
+    "pdf_pages": 25,
+    "excluded": false
+  },
+  {
+    "file_id": "F0251",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "GP",
+    "sha256": "eb238ec44fe548a882de31ad937439ed41d4ac2e81f10329e32e1db230639ace",
+    "pdf_pages": 20,
+    "excluded": false
+  },
+  {
+    "file_id": "F0252",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "GP",
+    "sha256": "5452071179d8eb769e89075474902f489a9d4b76270d21797072e47cbd2df283",
+    "pdf_pages": 21,
+    "excluded": false
+  },
+  {
+    "file_id": "F0253",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "AR",
+    "sha256": "96d9893856e7dd93429c64d00c33526d068a9d9d747db178597957664be7bce6",
+    "pdf_pages": 72,
+    "excluded": false
+  },
+  {
+    "file_id": "F0254",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "AR",
+    "sha256": "0d1925b2c04a970bb9de4218ab1f3d824cd96446e2305d807e577936841af116",
+    "pdf_pages": 62,
+    "excluded": false
+  },
+  {
+    "file_id": "F0255",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "AR",
+    "sha256": "f33fe6f8eca61f62c9a3737419a105a438ad2d0e9ac178aa640d09fec2be2658",
+    "pdf_pages": 186,
+    "excluded": false
+  },
+  {
+    "file_id": "F0256",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "AR",
+    "sha256": "d0145612d90420b06bdda4a1e9a225cbf798c42da771a0cc636405bbdd3ba355",
+    "pdf_pages": 69,
+    "excluded": false
+  },
+  {
+    "file_id": "F0257",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "KR",
+    "sha256": "0063908bbc42f900b1558411d7fe2a55d3da21ad98d863b8c1b98617e5aed7a0",
+    "pdf_pages": 26,
+    "excluded": false
+  },
+  {
+    "file_id": "F0258",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "KR",
+    "sha256": "d2a009bd819109fa50b7fcaad0a991387d446a2d604230a7e5a75013cd27f950",
+    "pdf_pages": 24,
+    "excluded": false
+  },
+  {
+    "file_id": "F0259",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "KR",
+    "sha256": "dbdbd9ae136bbb9fec1929e5737fdbc91a09fc9947d95748f8f9015ae38bf786",
+    "pdf_pages": 39,
+    "excluded": false
+  },
+  {
+    "file_id": "F0260",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "KR",
+    "sha256": "70cdc8c81da29868ee1f88b3ad81436eab0f4620dcc93d5ceb9cd37512235810",
+    "pdf_pages": 65,
+    "excluded": false
+  },
+  {
+    "file_id": "F0261",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "KR",
+    "sha256": "f373063103f0e5626fdfe980adf2cff8601450d1a7630d0cd7774fabb9a7dc61",
+    "pdf_pages": 36,
+    "excluded": false
+  },
+  {
+    "file_id": "F0262",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "KR",
+    "sha256": "2ae2f5edbd0ab2aa11736bbf7b820cfd7900eca19e1094bad9b55365d214b79a",
+    "pdf_pages": 130,
+    "excluded": false
+  },
+  {
+    "file_id": "F0263",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "KR",
+    "sha256": "402785fe8440f7c18a3a2dc76b36d66c4b083749a2576512e90f1bbd8b4af85e",
+    "pdf_pages": 25,
+    "excluded": false
+  },
+  {
+    "file_id": "F0264",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "KR",
+    "sha256": "81922887660ed5558d9c7885e23a481d90cbb73afb1cd50cb8045ed6e571c405",
+    "pdf_pages": 20,
+    "excluded": false
+  },
+  {
+    "file_id": "F0265",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "KR",
+    "sha256": "8ed585f7af2b5d3aef93e444a5ef682dd3ddde3230fb42b35f7e3fbc2751ad03",
+    "pdf_pages": 31,
+    "excluded": false
+  },
+  {
+    "file_id": "F0266",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "KR",
+    "sha256": "6abd2b0d5c36e894222f5632d850bde698af3402f25d7ccd0462468c7d37cd8c",
+    "pdf_pages": 29,
+    "excluded": false
+  },
+  {
+    "file_id": "F0267",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "KR",
+    "sha256": "f1b0f7207f00d845865150ce45f38f73f8be028f5550539dd541a4085f5749d1",
+    "pdf_pages": 40,
+    "excluded": false
+  },
+  {
+    "file_id": "F0268",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "59f97eb31786910f53880aaa9aed3c86567bb444a83c22bb32efd7f1e8499608",
+    "pdf_pages": 64,
+    "excluded": false
+  },
+  {
+    "file_id": "F0269",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "e88864e2561af109574f73c7352d70b8ffbab2eccd6157605a81a86460017625",
+    "pdf_pages": 61,
+    "excluded": false
+  },
+  {
+    "file_id": "F0270",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "90ff50cc259934d933a186c8cba30150a63d2c4cea66719f10a265a75b7e1504",
+    "pdf_pages": 34,
+    "excluded": false
+  },
+  {
+    "file_id": "F0271",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "b1fa627b0a0d45df6b08ec491a80f1d3360391feaede58e86d033351737e913a",
+    "pdf_pages": 51,
+    "excluded": false
+  },
+  {
+    "file_id": "F0272",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "dda0dc10ed7945c6e96bc2142127d79606340c9b119e5579bb83b30613eefa75",
+    "pdf_pages": 22,
+    "excluded": false
+  },
+  {
+    "file_id": "F0273",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "2e76fe5eef49f56864f87d09284a6e1a626e6b9f859aaa6e2bc539b09d58e894",
+    "pdf_pages": 24,
+    "excluded": false
+  },
+  {
+    "file_id": "F0274",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "da04c684a72cb2737641b4e115b6c9d4d5149518ac5f11fb8ee6e059d715a682",
+    "pdf_pages": 27,
+    "excluded": false
+  },
+  {
+    "file_id": "F0275",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "3164d32d59506fa0c96794d819df961fda35c1c7fc6ab24b58959b28bf89764d",
+    "pdf_pages": 29,
+    "excluded": false
+  },
+  {
+    "file_id": "F0276",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "VK",
+    "sha256": "7eec12ae4ec88c7890b6f2750d3a30e6f63e40691ce5bfa0c6562165cab56628",
+    "pdf_pages": 48,
+    "excluded": false
+  },
+  {
+    "file_id": "F0277",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "VK",
+    "sha256": "61680624ad3b09a0947f70b962e19ff0ccbd1ee1cfa0860ca251e79be3e20919",
+    "pdf_pages": 40,
+    "excluded": false
+  },
+  {
+    "file_id": "F0278",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "VK",
+    "sha256": "20879bd7a06280b372078a7e9e2cd3c2f84bf546da8a91d14c3de4036328eaff",
+    "pdf_pages": 49,
+    "excluded": false
+  },
+  {
+    "file_id": "F0279",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "VK",
+    "sha256": "bd9ab46de314644cb58f3f091b59ec1e9c492cac229a4cad5453b9dbaabb083f",
+    "pdf_pages": 39,
+    "excluded": false
+  },
+  {
+    "file_id": "F0280",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "VK",
+    "sha256": "77f11ec6b4266e3de294c94793cc151b4b99b5e0f5caee105647837e8c264f94",
+    "pdf_pages": 50,
+    "excluded": false
+  },
+  {
+    "file_id": "F0281",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "VK",
+    "sha256": "187eeeb4db10cbd8f4129598359e599c2a4cc27c523be868a8dfc6586d7e54f2",
+    "pdf_pages": 16,
+    "excluded": false
+  },
+  {
+    "file_id": "F0282",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "e6b92735f4bec0dbdb542cfcafb66f8dfdbe1f5b39d0bf294c0c0cce2c41d331",
+    "pdf_pages": 74,
+    "excluded": false
+  },
+  {
+    "file_id": "F0283",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "aa9dea1f5e1783f669af056b9d279170b8e79f377a8360119a39369286f72eed",
+    "pdf_pages": 16,
+    "excluded": false
+  },
+  {
+    "file_id": "F0284",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "b035155146e68b98ff4f43358c03fcdb18c639c32bd3fdcc9f4c295c835cf72e",
+    "pdf_pages": 51,
+    "excluded": false
+  },
+  {
+    "file_id": "F0285",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "8ddf30643dacb7156e50582224144e382d903634d2d828f16394c21e861770b3",
+    "pdf_pages": 18,
+    "excluded": false
+  },
+  {
+    "file_id": "F0286",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "55f789ed6eb57082a576b356e2d5bc8dab3ea4918be0cd4507a8d4d898176fa5",
+    "pdf_pages": 21,
+    "excluded": false
+  },
+  {
+    "file_id": "F0287",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "f7ffbb5e36c9f528017331d8077ed5215414f06973f60de36c7cbec81159a867",
+    "pdf_pages": 18,
+    "excluded": false
+  },
+  {
+    "file_id": "F0288",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OV",
+    "sha256": "870127d5c9f075d326bcb7b5e2491edb46f82851c8d26a7a0310661224dba965",
+    "pdf_pages": 48,
+    "excluded": false
+  },
+  {
+    "file_id": "F0289",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OV",
+    "sha256": "a821988b59ab42bce2d4b6fd68e9bff44e56c91473279a81d504aa3e43f75206",
+    "pdf_pages": 96,
+    "excluded": false
+  },
+  {
+    "file_id": "F0290",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OV",
+    "sha256": "68547ff2f8eb1556a179be85ce9a650235cfc9b783466601cd58d6f06eb6a66f",
+    "pdf_pages": 77,
+    "excluded": false
+  },
+  {
+    "file_id": "F0291",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OV",
+    "sha256": "fbddd6996b003fca191ce0900ae4c933e695e720d1bb0b851ed0d810cc4ac44a",
+    "pdf_pages": 42,
+    "excluded": false
+  },
+  {
+    "file_id": "F0292",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OV",
+    "sha256": "8ac91ec0e2e79b7780c7f3a745e672cb8e3633a8e6371196d52b5a2cd960b717",
+    "pdf_pages": 58,
+    "excluded": false
+  },
+  {
+    "file_id": "F0293",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OV",
+    "sha256": "a2f82f21536caee00a66cbbf63831c40d508af32a589cfd74e8148ebf2a246c5",
+    "pdf_pages": 95,
+    "excluded": false
+  },
+  {
+    "file_id": "F0294",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OV",
+    "sha256": "551a2143218c0a7a04205609ab0cbb9cdae85bcba1467f04a13442c14ebfaa90",
+    "pdf_pages": 73,
+    "excluded": false
+  },
+  {
+    "file_id": "F0295",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OV",
+    "sha256": "a38c2932fc7a3d11783ab08caa194f8be2284fac92b7eff600bbf330e3f960f3",
+    "pdf_pages": 63,
+    "excluded": false
+  },
+  {
+    "file_id": "F0296",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "08e3d8f669bcef4e37b2fb744ba8e27d061209bbcf8d48f4e7ead83402adda9a",
+    "pdf_pages": 52,
+    "excluded": false
+  },
+  {
+    "file_id": "F0297",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "b80463ce87e681f7ed0efe5e1a8e72cdc0421f4be15375ae12d9eedb39e340d0",
+    "pdf_pages": 45,
+    "excluded": false
+  },
+  {
+    "file_id": "F0298",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "47291737d69a00193c44a66af6c70dda05cf1039983c4940b2e17195fe6e9204",
+    "pdf_pages": 32,
+    "excluded": false
+  },
+  {
+    "file_id": "F0299",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "e30ac7f453f371975f4ca81b2d5a84024c935952d78ed70fd26bf91c1af210f5",
+    "pdf_pages": 27,
+    "excluded": false
+  },
+  {
+    "file_id": "F0300",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "4d7153d4726326e7bc64955b5c4df1eb7d9a8a50d1bfdcd9293cba8534440346",
+    "pdf_pages": 71,
+    "excluded": false
+  },
+  {
+    "file_id": "F0301",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "6097a74f79e9101081d72b27a07865a782e35cc727eef52c917bd69c3641c758",
+    "pdf_pages": 67,
+    "excluded": false
+  },
+  {
+    "file_id": "F0302",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "aa7c9105768a8059bda39741c63f770059e72ed20ef2519b0ded5a19db63c879",
+    "pdf_pages": 22,
+    "excluded": false
+  },
+  {
+    "file_id": "F0303",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "1bad2849e6451f4c1d69a0ba40cb86cc97e07fb89600a28382204d704b73a58c",
+    "pdf_pages": 24,
+    "excluded": false
+  },
+  {
+    "file_id": "F0304",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "3d75393d97312352947f661799e2a39f6eebf4d398f0c7517678be90dcc3471d",
+    "pdf_pages": 54,
+    "excluded": false
+  },
+  {
+    "file_id": "F0305",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "SS",
+    "sha256": "172b55437bcff0bb104f0f9e6df8dbde498e9127c1fcc8a1f6193ec0facc37c3",
+    "pdf_pages": 47,
+    "excluded": false
+  },
+  {
+    "file_id": "F0306",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "0d870aeb3de44437a7e13f0e74ef76341d817dbbaebd9b6c02ffbdb07a8dc2a7",
+    "pdf_pages": 50,
+    "excluded": false
+  },
+  {
+    "file_id": "F0307",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "f949cc0e5357a11e76b7b72daa87c78de6232854737ac87fdfa935e905d8fcd9",
+    "pdf_pages": 20,
+    "excluded": false
+  },
+  {
+    "file_id": "F0308",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "7ca8ad753078bf15fde66e8989930580f4e863835b9cae9ab74b48dcc38f8acd",
+    "pdf_pages": 21,
+    "excluded": false
+  },
+  {
+    "file_id": "F0309",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "62da6cb88e29df935d1b55e6fb9ab12b6c5ba2784184adc2b81d3f11811927e0",
+    "pdf_pages": 28,
+    "excluded": false
+  },
+  {
+    "file_id": "F0310",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "POS",
+    "sha256": "2b2e47ee63fe628141b27759813e574c71bb69392f3843d167b3c4a6483da71a",
+    "pdf_pages": 67,
+    "excluded": false
+  },
+  {
+    "file_id": "F0311",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "POS",
+    "sha256": "3701d038ebe4c029fa36823e4489a7b95717a68dfcf2264b3294b6a60250b0ff",
+    "pdf_pages": 67,
+    "excluded": false
+  },
+  {
+    "file_id": "F0312",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "POS",
+    "sha256": "22c1fc47aa6c4f590c87ce6c2ca21dd558c8c745430159b07096060e324a69bd",
+    "pdf_pages": 67,
+    "excluded": false
+  },
+  {
+    "file_id": "F0313",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "POS",
+    "sha256": "a06864181a23341376dbb8223d8682236b12a947ce59e4c2f00d39a63a7b87e6",
+    "pdf_pages": 46,
+    "excluded": false
+  },
+  {
+    "file_id": "F0314",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "POS",
+    "sha256": "923056754a13b0668f1b49f5e2c3dddea1d84c05ef75d9d2beecf04328426ed6",
+    "pdf_pages": 49,
+    "excluded": false
+  },
+  {
+    "file_id": "F0315",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "POS",
+    "sha256": "0dd50784825c3d42cd712f7fad7f64db638b6e8cd36ca41bab5d93987098f174",
+    "pdf_pages": 64,
+    "excluded": false
+  },
+  {
+    "file_id": "F0316",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "06859320cfa0797d1e1e59094bcd0e5f30443293be15f2e14375ad4fc47c4d48",
+    "pdf_pages": 360,
+    "excluded": false
+  },
+  {
+    "file_id": "F0317",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "bc5d56d4eb990005439d0df6f91cf5a1401eb2751f015fe439f58be2935e31b7",
+    "pdf_pages": 358,
+    "excluded": false
+  },
+  {
+    "file_id": "F0318",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "OTHER",
+    "sha256": "e83088c16f67ccbc7651888a0b87022fcd92b39fb2ce833ab30e2868600810b5",
+    "pdf_pages": 26,
+    "excluded": false
+  },
+  {
+    "file_id": "F0319",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "PB",
+    "sha256": "4ad2d386e92ca1e69fdbd046cb585bfe967f131b2274bb717b0cf8844cdfc0a7",
+    "pdf_pages": 38,
+    "excluded": false
+  },
+  {
+    "file_id": "F0320",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "PB",
+    "sha256": "9f5c4edd2937e2ba9efad5f67263db1a26cabe179ec04dfd1a13f5d826fc7f64",
+    "pdf_pages": 90,
+    "excluded": false
+  },
+  {
+    "file_id": "F0321",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "PB",
+    "sha256": "3797ae4713eb15b17951e683e1a53ea970d2cda214ec30795c1a2b49292e6ba1",
+    "pdf_pages": 88,
+    "excluded": false
+  },
+  {
+    "file_id": "F0322",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "PB",
+    "sha256": "6937f20bcd3e2cf42d6e5b6958081ddc3bd2539e059925de35e071bf76e54dc7",
+    "pdf_pages": 329,
+    "excluded": false
+  },
+  {
+    "file_id": "F0323",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "PB",
+    "sha256": "9fc412fdc4e3d0edc89111016d0b2c034e6ed71ec12a7bee1276b70ab3a6a04f",
+    "pdf_pages": 468,
+    "excluded": false
+  },
+  {
+    "file_id": "F0324",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "PD",
+    "section": "PB",
+    "sha256": "bcc30abb097de7c4d4c20ae62e42d3141aee0e1b2bce576b59ff18a4a7f9b0ae",
+    "pdf_pages": 53,
+    "excluded": false
+  },
+  {
+    "file_id": "F0325",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "GP",
+    "sha256": "21a93dafae454a267aa468e707d9019ceb8c03005295f7714e726667a4907673",
+    "pdf_pages": 15,
+    "excluded": false
+  },
+  {
+    "file_id": "F0326",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "GP",
+    "sha256": "b4077b73ef4ebda8448296380350924c8cddbdba091670ce84f4eb3422b061e0",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0327",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "GP",
+    "sha256": "cff4051010731f5c6a60e136792001989172260741829e6f4e7f30cc708d70bd",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0328",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "AR",
+    "sha256": "3618e640c45d1ddf9a1dcd1815a0a8e0744d669c3f38190d950ddd1cef3679a5",
+    "pdf_pages": 23,
+    "excluded": false
+  },
+  {
+    "file_id": "F0329",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "AR",
+    "sha256": "cab987dd177554189ddab711d3bfb7c74f112ffb7cf5375d944829fb12116d16",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0330",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "AR",
+    "sha256": "3b72d3701b0584a79465d0b0f1fb340d3027327a4d457264d068c223071dfde7",
+    "pdf_pages": 16,
+    "excluded": false
+  },
+  {
+    "file_id": "F0331",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "AR",
+    "sha256": "3a7585d8e33f3c45280978c7455a36adb93409985f3d0077e8759fcf31d25df0",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0332",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "AR",
+    "sha256": "2161a13d3f604ad5bff43361b1c0aa8b64b08e44abebc6d1311ef9926fb0b69b",
+    "pdf_pages": 40,
+    "excluded": false
+  },
+  {
+    "file_id": "F0333",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "AR",
+    "sha256": "5abe9fad6ebf02c5520f32e973c27be4fc9145c4ff986bf3274b2d22f356c700",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0334",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "AR",
+    "sha256": "47119f4af15ad1dea09a568914069f6861e40bec6cf3a5917618bd042290db37",
+    "pdf_pages": 24,
+    "excluded": false
+  },
+  {
+    "file_id": "F0335",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "AR",
+    "sha256": "ecdf34f8e9965688c2fa89d41568b065f88be417550814f785442f4be1b003ea",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0336",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "AR",
+    "sha256": "db238987229f2208307d4ed4bec3a8ad7410dd343c9b5d929c942b8fd1bb62c0",
+    "pdf_pages": 14,
+    "excluded": false
+  },
+  {
+    "file_id": "F0337",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "AR",
+    "sha256": "d7e8d7376112413e01e15e94f9089c855c5b7de073e452c63232ea2d505b6b68",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0338",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "03ac1d0fe79771fd7e7a878087373e763ce2352c68b51ce7a08550afc45030f7",
+    "pdf_pages": 5,
+    "excluded": false
+  },
+  {
+    "file_id": "F0339",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "4afd2c5d64ca4e192328a3f761621aaa6f5530a91476624ad21bdf21cd3a3f33",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0340",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "f37a1f273d688f52a3149279cf84e064115e348d248d8cada0e9f6a1deaa639f",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0341",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "784145fe2c704b0e0a324deb6b58a2e0c714e190b101c89014b7bae9db79c137",
+    "pdf_pages": 8,
+    "excluded": false
+  },
+  {
+    "file_id": "F0342",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "e7185ec4d45a20552fa1662ec29e5fc914d9e79b334a3e83ab8421e8f02a3f04",
+    "pdf_pages": 14,
+    "excluded": false
+  },
+  {
+    "file_id": "F0343",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "2c669f0cf9debcea53a7d344454a95c06c60f064cb772974bf2790d2fb0487e3",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0344",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "d9e80286c1e23ffff9cf81c14b71cf84314a655414905d507c4fe8f84403649f",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0345",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "fca8aad28b4127c198d956a5c2198009f8487a73a53d7b07af2a26a1a5e790dc",
+    "pdf_pages": 25,
+    "excluded": false
+  },
+  {
+    "file_id": "F0346",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "6c020a815c19ba4aceaa3bc8685dffe20455d1659e78d7ad7da2f20246e9b593",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0347",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "0bb4463355afdfd6e73305dc7f855fce4dc4af83b4cd6749b6cbd211468f32d3",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0348",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "89ed3533493ad205ed4a6d21712704a8ddce15564e9f710b34bbd2b872ecd614",
+    "pdf_pages": 16,
+    "excluded": false
+  },
+  {
+    "file_id": "F0349",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "65e8fe81d91cd6b0e61560165358ebf892416635cdc9d0961a4898de0f863c37",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0350",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "13fca1d7630812d7e061670eb9ed98c7abf5e2e4838eb69257b99cd1110ed0a5",
+    "pdf_pages": 9,
+    "excluded": false
+  },
+  {
+    "file_id": "F0351",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "aef857c4475d28991be804d78a000d673fd4ac55e259a73215576b5c77aeb716",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0352",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "c4502e5609b08be4f155bd44ec69075b97c2f9237fec4025a18e1d38f01063d0",
+    "pdf_pages": 23,
+    "excluded": false
+  },
+  {
+    "file_id": "F0353",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "8e9c3613ff047c624dc89eb8f7f665c665b6834cf4d7405da1449400361a64aa",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0354",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "c1602943b7c8916a64d37d6dbc91af663daea31b4785fc544eaf2c5913bacdb1",
+    "pdf_pages": 16,
+    "excluded": false
+  },
+  {
+    "file_id": "F0355",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "3442aeca6507866e81c774527c312adff1111cce6a513a97a86af69de818f6b2",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0356",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "5fe4d162e3d24948d969ade9b433859f4e5dbc0c9ff12ec72c5ac98bdfda2a6c",
+    "pdf_pages": 15,
+    "excluded": false
+  },
+  {
+    "file_id": "F0357",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "15049c116ca1f6d445dd5f0c32b62a864cff93e8195192ad2de1a01f5bd1d590",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0358",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "15c4ef53c0ce626576008bdd731e1e4180128668e80ec3d6ed99f38e4c13471b",
+    "pdf_pages": 18,
+    "excluded": false
+  },
+  {
+    "file_id": "F0359",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "f4b643b37ae0b67c2d2c965322fe5f9ba9cb9649d602f224b8c3f8b57dd28835",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0360",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "9147e347183dd088edb95baac9dbe2d74b1c3f4ca35a2d15a2e4d0fd3f038264",
+    "pdf_pages": 8,
+    "excluded": false
+  },
+  {
+    "file_id": "F0361",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "de4e71643cacd2b7c292a0715d35d92795b631fbaadd84a7afe4c33f1073d48c",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0362",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "f26d0a0a49177f04c1222cccbcec895ddcac943abcf3881ec0f40bb259c190e5",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0363",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "5e87aa997f995218dee8734641730cc9c5c27da3c9ca8193eb8ee6678d2f9575",
+    "pdf_pages": 33,
+    "excluded": false
+  },
+  {
+    "file_id": "F0364",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "74a1adbcf5a20ecb4871d9ddb880231830ac0faff1d52684fa8315539d423ab4",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0365",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "ab580ed60d6aee94a6c9be8d091e5bd9b0e685dfa67cd0e3e683eba4d9910f2b",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0366",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "200c9cd2725f80955fcf39208da3afe6df5a3aaa8b43978dbfb94cc89e688828",
+    "pdf_pages": 30,
+    "excluded": false
+  },
+  {
+    "file_id": "F0367",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "c67cfdd6e918f82a7a1c6356d274d03863a1f03db2b7b69ca4b7246528f912c9",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0368",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "9b0783490d3e84f0aaf041bcb54ffd8ca783f95480d5e29b01777c5ca25f29f7",
+    "pdf_pages": 12,
+    "excluded": false
+  },
+  {
+    "file_id": "F0369",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "3749f3fac1717406501d2bd786c32666bc8994c724a6e6672555c82c589c800d",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0370",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "0efa74de76aab66d4a9be6c11e0b3411d2031451f3d63f000f3901d0dd3be5d7",
+    "pdf_pages": 21,
+    "excluded": false
+  },
+  {
+    "file_id": "F0371",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "1da551ef54663e2c7a1a27c8af2594c8ec5e276123d88111b7f944bd3708e05d",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0372",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "f4dfb4b3dd9b09531fa495b9d27ec838ae70619aa57673c407964c025b2a0bd4",
+    "pdf_pages": 20,
+    "excluded": false
+  },
+  {
+    "file_id": "F0373",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "7baf353ec81987b55c3631e724e1c51da35fc821ab042c74fbf88efc5b5d7ea4",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0374",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "88f2c4139584152881da037386839d8cecc3eab98478ed2d5d72424d6127f0c5",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0375",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "e1709002c36748b3e72ed290f246c6f0fd01c6e4a184e907ccc8a7c8bce77d82",
+    "pdf_pages": 1,
+    "excluded": false
+  },
+  {
+    "file_id": "F0376",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "903306f1a375366c79b12c3b4a793619306193f325411d3329af2f13c4fd76a2",
+    "pdf_pages": 25,
+    "excluded": false
+  },
+  {
+    "file_id": "F0377",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "f4a9f31ad2617cf7e2693699b15f62ec0eaa139f77db43f1c9e5fb49291aee9f",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0378",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "653f3bb7af2b1048c86c9cd190151d5b0b8f54688441b46fbc1254f2ef9884d4",
+    "pdf_pages": 12,
+    "excluded": false
+  },
+  {
+    "file_id": "F0379",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "ea23f5d66085b1dc28747ccd7aa92fdeda50438e3fbce722a3e6f973fcd793a3",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0380",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "4e8287ca4bf022428508afdf361b83911752081d4d511b3c00e0610e8c349b50",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0381",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "3ca748ea24c73e4c6cf438dc9ab68acf7fa515a9253e48d8771e17718cf590e5",
+    "pdf_pages": 1,
+    "excluded": false
+  },
+  {
+    "file_id": "F0382",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "328bce5b66b3bab417c026c2aae9ad6dc5100ac43d6337a006e28f2db8aee845",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0383",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "05a33a613b1c22fe0519ecf6c3fca088c986764f8a6a0de8bdeea4ab5ee311ec",
+    "pdf_pages": 1,
+    "excluded": false
+  },
+  {
+    "file_id": "F0384",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "0ec41390176309dd038b7edd785e09669996b740f66cbde5bd6678c7695479ff",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0385",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "2574d5a3fc6e782b0797da4c49bedc78fc609de41492d6839d8b2ad0029aaad2",
+    "pdf_pages": 1,
+    "excluded": false
+  },
+  {
+    "file_id": "F0386",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "b28a6f315ec8bf5930887827794462ab5fc60c6d0ba4af6d57aef366034d15d7",
+    "pdf_pages": 15,
+    "excluded": false
+  },
+  {
+    "file_id": "F0387",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "67ff100163b9f80ffbf57729b075506b1e7377c1efe0a25c37d203f0760a787e",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0388",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "5039ffe6417c4d6469edfa546c1d5f43ee1e9234775e3f415c89c7b54f99bbfb",
+    "pdf_pages": 20,
+    "excluded": false
+  },
+  {
+    "file_id": "F0389",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "8076d5d5ba330e03d36bcc517912020c080da504dc4f8435088cd78297ee854c",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0390",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "2c84645afd04e2234a29aab8922dc99e13e72cbbf64e1a3e5455f5815b8b468b",
+    "pdf_pages": 25,
+    "excluded": false
+  },
+  {
+    "file_id": "F0391",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "53342e62647e6d04b1cd9524b07415e9cd85da5a4da191a73dbed9bd8f388b84",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0392",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "56709ea2d647e5f6939fd9663d8432db94d771e0da1b07dff8f40047afbb8dc2",
+    "pdf_pages": 18,
+    "excluded": false
+  },
+  {
+    "file_id": "F0393",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "e92d0f89083d5b23200d82a4fbe393a75061c49dbba5c4c2240e4c0fcdc49129",
+    "pdf_pages": 25,
+    "excluded": false
+  },
+  {
+    "file_id": "F0394",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "05af4dee0e62b26c9c383e20aebe43a1871337e931cd2bbc9a500cbc38155759",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0395",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "79f250bc249a0a8a1c6e5cd04953171cd858ba8be83cb482adc608ce3510c7c0",
+    "pdf_pages": 13,
+    "excluded": false
+  },
+  {
+    "file_id": "F0396",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "e1d8b58af333b7acab526aedaa1d399c6139ac194b5788328e401400100e082a",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0397",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "22aa7878b417bba25e297a4086385b0a958d80e9ed8f6479fa031658b46d206c",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0398",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "bdef7dc46648e721e56fca4e3301da4e818e3cfe27e714c9eb67477ebba2c752",
+    "pdf_pages": 17,
+    "excluded": false
+  },
+  {
+    "file_id": "F0399",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "217b8d3087edf6e237db0c0a89da86d5f9d0a0b58019fd0c7010b7e8b56068c7",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0400",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "ef6dba903c340c29c51242b03047e52b259bd5c433544f5ae7a06806902bbe32",
+    "pdf_pages": 20,
+    "excluded": false
+  },
+  {
+    "file_id": "F0401",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "10cb6ff456beb895d7f47defefaea383db8e7b48e6cacd455bb9b037d45f28f2",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0402",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "7c0b31a8c0125a913fbd006a197e25e99e6c5dd15c1396552f5e2667ea086df4",
+    "pdf_pages": 8,
+    "excluded": false
+  },
+  {
+    "file_id": "F0403",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "KR",
+    "sha256": "bf701c8c5e5843c855b2c42088b3ce41395edddb42d8d9f1040b1140c895b763",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0404",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "EOM",
+    "sha256": "a676fbae14b1bd32565b9054114db7ecdd1cb01292052c5e33700b2ebbc08f67",
+    "pdf_pages": 65,
+    "excluded": false
+  },
+  {
+    "file_id": "F0405",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "EOM",
+    "sha256": "c6c33b8d0571615e1a261890d58504b42b308988c745383206030e804f400d96",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0406",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "EOM",
+    "sha256": "c85f9402dfb3fc0110294420217795f8a9d8df812f71e2993a650af9ade3af3e",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0407",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "EOM",
+    "sha256": "300db225675022828332e37cdf9c8496294a1a39ffb7da027d6f20d908473d04",
+    "pdf_pages": 20,
+    "excluded": false
+  },
+  {
+    "file_id": "F0408",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "EOM",
+    "sha256": "aa8b288f5c32d3df382b471654a3111b6765fb68f73f81410d9cbb36a63bbd09",
+    "pdf_pages": 40,
+    "excluded": false
+  },
+  {
+    "file_id": "F0409",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "EOM",
+    "sha256": "c3e18741800cfafd2800ef47da642ef59bfce28cd04b17ff8352ff9463594600",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0410",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "EOM",
+    "sha256": "23c38de927dd5ef8f4693200c1378d2bc2cf3e0982aff3a10b2b64c853c00881",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0411",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "EOM",
+    "sha256": "cc50b623933f5befd2c4246ccceff7f8222d75a2b877b9049b687628bbc31e6a",
+    "pdf_pages": 12,
+    "excluded": false
+  },
+  {
+    "file_id": "F0412",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "EOM",
+    "sha256": "f243722e177b1daf4b4e6b8aca3dde66dcd9a0b62a818736a51b0020d8007607",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0413",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "EOM",
+    "sha256": "c79fdea1f5f568e8281a7287c1a12fe5173d43341772df2b197fcf7bf59bd332",
+    "pdf_pages": 7,
+    "excluded": false
+  },
+  {
+    "file_id": "F0414",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "EOM",
+    "sha256": "3e9a2d00a77e451454d46d6135619c1a741b697a710891dacf2c9f8449132250",
+    "pdf_pages": null,
+    "excluded": false
+  },
+  {
+    "file_id": "F0415",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "EOM",
+    "sha256": "25b38f37439d5510e60978a82822798657fea3aeed8ca6d85fa42fba7addbf4b",
+    "pdf_pages": 12,
+    "excluded": false
+  },
+  {
+    "file_id": "F0416",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "VK",
+    "sha256": "097d7e5da63dce08fcc1ee739c7fe088d7017786b2170422d107a6de926d7248",
+    "pdf_pages": 75,
+    "excluded": false
+  },
+  {
+    "file_id": "F0417",
+    "object_id": "OBJ-RECHNIKOV-7-7",
+    "split": "TEST_HIDDEN",
+    "stage": "RD",
+    "section": "VK",
+    "sha256": "38d22f14b81d50050dd96d5cce0e0225e147202e08a07d11e3e66ac7da0852d1",
+    "pdf_pages": null,
+    "excluded": false
+  }
+]

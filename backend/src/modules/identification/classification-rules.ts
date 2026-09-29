@@ -1,3 +1,4 @@
+import { analysisBlocks } from "../parsing/analysis-blocks.js";
 import type {
   ParseArtifactData,
   ParseBlock,
@@ -184,9 +185,7 @@ export function classifyByRules(
     });
   };
   for (const page of artifact.pages) {
-    const blocks = page.blocks.filter(
-      (block) => block.include_in_main !== false && blockText(block),
-    );
+    const blocks = analysisBlocks(page).filter((block) => blockText(block));
     const hasOwnExecutiveTitle = blocks.some(
       (block, index) =>
         title(blockText(block))?.stage === "ID" &&

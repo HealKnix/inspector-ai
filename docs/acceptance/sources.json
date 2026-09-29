@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "id": "TZ",
+      "path": "docs/requirements/10. Мосстройнадзор.pdf",
+      "sha256": "ceada88feb36f93278b8693b191b88f63a99649090ed3109551a49864d098513",
+      "role": "authoritative final PDF selected by owner",
+      "locator": "section and table item; source PDF has cover before printed page1"
+    },
+    {
+      "id": "ANNEX-1",
+      "path": "docs/requirements/matrix-132.xlsx",
+      "sha256": "e5ec636d1a3819c9d19d44b122561013dd79f42a676de7cd56b9e27cdc58fabd",
+      "role": "132-row source matrix, subject to final PDF"
+    },
+    {
+      "id": "ANNEX-2",
+      "path": "docs/requirements/protocol-example.docx",
+      "sha256": "ffbbbd65c32cefa234428b6a39d8eb81ecc86162a8c8cdccfb3dbba848071e28",
+      "role": "protocol example, subject to final PDF"
+    },
+    {
+      "id": "ANNEX-LEGEND",
+      "path": "docs/requirements/matrix-legend.docx",
+      "sha256": "3a8074d29b49af13bb4b84b1fb430e2a901ba826ba894fa739405c603ce1c97a",
+      "role": "matrix legend, subject to final PDF"
+    },
+    {
+      "id": "QA",
+      "external_filename": "Q&A 16.09.2026 (1).xlsx",
+      "sha256": "a77a34f0a2a630a2ef6cc41d347aaa398c8d3c7b713b10e6b343c41fd5d3c477",
+      "role": "organizer clarification",
+      "locator": "Объединённые вопросы участников!H<physical row>; all35 H cells independently matched to primary XLSX XML on2026-09-27",
+      "reproduction": "source owner supplies workbook; paraphrased applicable answers are preserved in methodology and requirement references"
+    },
+    {
+      "id": "CHAT",
+      "external_filename": "Вставленный текст.txt",
+      "sha256": "a3a40f6d9388b9dbad85fdce8a814d1576a46fee7a274ebd3f68d1e6f627080d",
+      "role": "provided organizer correspondence2026-09-20..24",
+      "locator": "2026-09-21 18:48 hardware/offline;2026-09-24 18:48 High/core/UX clarification",
+      "reproduction": "source owner supplies attachment; no personal contact details copied here"
+    }
+  ],
+  "public_material_sources": "contracts/input-inventory.json",
+  "precedence_notes": [
+    "QA H35 describes older package priority; owner-selected final PDF remains authoritative in this repository.",
+    "QA H23 hardware initially unknown is superseded by organizer answer2026-09-21.",
+    "Old public scoring100 is superseded by QA H16 rating40; schema remains byte-pinned separately.",
+    "No acceptance of legal compliance or normative parameter rules is inferred from these hashes."
+  ]
+}

@@ -5,7 +5,10 @@ import { parsingErrorMessage, useRenderedPage } from "@/api/hooks/use-parsing";
 import type { ParsingFile, RenderedPage, TextBlock } from "@/api/types/parsing";
 import { cn } from "@/lib/utils";
 
-import { isVisibleDocumentBlock } from "./document-blocks";
+import {
+  hasVisibleDocumentContent,
+  isVisibleDocumentBlock,
+} from "./document-blocks";
 import { regionKindLabels } from "./region-labels";
 
 function ProtectedPageImage({
@@ -100,6 +103,7 @@ export function RenderedDocumentPage({
   const query = admin ? adminQuery : inspectorQuery;
   const blob = query.isError ? undefined : query.data;
   const selectedRef = useRef<HTMLButtonElement>(null);
+  const selectedBlock = page.blocks.find((block) => block.id === selectedId);
 
   useEffect(() => {
     selectedRef.current?.scrollIntoView?.({
@@ -126,63 +130,121 @@ export function RenderedDocumentPage({
         </p>
       )}
       {blob && (
-        <div
-          className="relative mx-auto bg-white shadow-sm"
-          style={{
-            width: zoom === "fit" ? "100%" : page.width * zoom,
-            maxWidth: zoom === "fit" ? page.width : undefined,
-          }}
-        >
-          <ProtectedPageImage
-            blob={blob}
-            page={page}
-            name={file.original_name}
-          />
-          {showRegions &&
-            page.regions?.map((region, index) => (
-              <button
-                key={region.id}
-                type="button"
-                ref={selectedRegionId === region.id ? selectedRef : undefined}
-                aria-label={`Область ${index + 1}: ${regionKindLabels[region.kind]}`}
-                aria-pressed={selectedRegionId === region.id}
-                onClick={() => onRegionSelect?.(region.id)}
-                className={`group absolute cursor-pointer border-2 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 ${selectedRegionId === region.id ? "z-10 border-blue-700 bg-blue-500/20" : region.kind === "unknown" ? "border-dashed border-amber-600/30 hover:border-amber-600 hover:bg-amber-300/20 focus-visible:border-amber-600" : region.kind === "graphic" ? "border-violet-600 hover:bg-violet-300/20" : "border-emerald-600 hover:bg-emerald-300/20"}`}
-                style={blockRectangle(region.bbox)}
+        <>
+          {selectedBlock &&
+            (selectedBlock.provenance ||
+              selectedBlock.table_link ||
+              selectedBlock.native_valid !== undefined) && (
+              <aside
+                aria-label="Происхождение выбранного фрагмента"
+                className="bg-surface-low mb-3 rounded-lg p-3 text-sm"
               >
-                <span
-                  className={`absolute top-0 left-0 bg-white/95 px-1 text-[10px] font-semibold text-black ${region.kind === "unknown" && selectedRegionId !== region.id ? "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" : ""}`}
-                >
-                  {index + 1}
-                </span>
-              </button>
-            ))}
-          {!showRegions &&
-            page.blocks
-              .filter(isVisibleDocumentBlock)
-              .map((block) => (
+                {selectedBlock.native_valid !== undefined && (
+                  <p>
+                    {selectedBlock.native_valid
+                      ? "Текстовый слой PDF прошёл проверку читаемости."
+                      : "Текстовый слой PDF не прошёл проверку читаемости."}
+                  </p>
+                )}
+                {selectedBlock.provenance && (
+                  <>
+                    <p>
+                      {selectedBlock.provenance.reasons.includes(
+                        "DUPLICATE_NATIVE_READING",
+                      )
+                        ? "Повторное прочтение; используется основной фрагмент."
+                        : selectedBlock.provenance.status === "ambiguous"
+                          ? "Варианты текста расходятся; фрагмент исключён из автоматического анализа."
+                          : "Сохранено происхождение выбранного текста."}
+                    </p>
+                    <details>
+                      <summary>Исходные варианты текста</summary>
+                      {selectedBlock.provenance.fragments.map(
+                        (fragment, index) => (
+                          <p
+                            key={index}
+                            className="break-words whitespace-pre-wrap"
+                          >
+                            {fragment.source === "native" ? "PDF" : "OCR"}:{" "}
+                            {fragment.raw_text}
+                          </p>
+                        ),
+                      )}
+                    </details>
+                  </>
+                )}
+                {selectedBlock.table_link && (
+                  <p>
+                    {selectedBlock.table_link.status === "ambiguous"
+                      ? "Связь с ячейками таблицы неоднозначна; текст сохранён без утверждённой связи."
+                      : `Связь с таблицей подтверждена: строки ${selectedBlock.table_link.rows.map((row) => row + 1).join(", ")}, столбцы ${selectedBlock.table_link.columns.map((column) => column + 1).join(", ")}.`}
+                  </p>
+                )}
+              </aside>
+            )}
+          <div
+            className="relative mx-auto bg-white shadow-sm"
+            style={{
+              width: zoom === "fit" ? "100%" : page.width * zoom,
+              maxWidth: zoom === "fit" ? page.width : undefined,
+            }}
+          >
+            <ProtectedPageImage
+              blob={blob}
+              page={page}
+              name={file.original_name}
+            />
+            {showRegions &&
+              page.regions?.map((region, index) => (
                 <button
-                  key={block.id}
-                  ref={selectedId === block.id ? selectedRef : undefined}
+                  key={region.id}
                   type="button"
-                  aria-label={`Фрагмент ${block.order + 1}: ${block.normalized_text.slice(0, 100)}`}
-                  aria-pressed={selectedId === block.id}
-                  onClick={() => onSelect(block.id)}
-                  className={`absolute cursor-pointer border transition-colors focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 ${selectedId === block.id ? "border-blue-700 bg-blue-500/25" : matchIds.has(block.id) ? "border-amber-600 bg-amber-300/35" : "border-transparent hover:border-blue-600 hover:bg-blue-500/15"}`}
-                  style={blockRectangle(block.bbox)}
+                  ref={selectedRegionId === region.id ? selectedRef : undefined}
+                  aria-label={`Область ${index + 1}: ${regionKindLabels[region.kind]}`}
+                  aria-pressed={selectedRegionId === region.id}
+                  onClick={() => onRegionSelect?.(region.id)}
+                  className={`group absolute cursor-pointer border-2 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 ${selectedRegionId === region.id ? "z-10 border-blue-700 bg-blue-500/20" : region.kind === "unknown" ? "border-dashed border-amber-600/30 hover:border-amber-600 hover:bg-amber-300/20 focus-visible:border-amber-600" : region.kind === "graphic" ? "border-violet-600 hover:bg-violet-300/20" : "border-emerald-600 hover:bg-emerald-300/20"}`}
+                  style={blockRectangle(region.bbox)}
+                >
+                  <span
+                    className={`absolute top-0 left-0 bg-white/95 px-1 text-[10px] font-semibold text-black ${region.kind === "unknown" && selectedRegionId !== region.id ? "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" : ""}`}
+                  >
+                    {index + 1}
+                  </span>
+                </button>
+              ))}
+            {!showRegions &&
+              page.blocks
+                .filter(
+                  (block) =>
+                    isVisibleDocumentBlock(block) ||
+                    ((selectedId === block.id || matchIds.has(block.id)) &&
+                      hasVisibleDocumentContent(block)),
+                )
+                .map((block) => (
+                  <button
+                    key={block.id}
+                    ref={selectedId === block.id ? selectedRef : undefined}
+                    type="button"
+                    aria-label={`Фрагмент ${block.order + 1}: ${block.normalized_text.slice(0, 100)}`}
+                    aria-pressed={selectedId === block.id}
+                    onClick={() => onSelect(block.id)}
+                    className={`absolute cursor-pointer border transition-colors focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 ${selectedId === block.id ? "border-blue-700 bg-blue-500/25" : matchIds.has(block.id) ? "border-amber-600 bg-amber-300/35" : "border-transparent hover:border-blue-600 hover:bg-blue-500/15"}`}
+                    style={blockRectangle(block.bbox)}
+                  />
+                ))}
+            {!showRegions &&
+              evidenceRects?.map((evidence, index) => (
+                <div
+                  key={`evidence:${index}`}
+                  role="img"
+                  aria-label={`Доказательство: ${evidence.quote}`}
+                  className="pointer-events-none absolute border-2 border-amber-600 bg-amber-300/25"
+                  style={blockRectangle(evidence.bbox)}
                 />
               ))}
-          {!showRegions &&
-            evidenceRects?.map((evidence, index) => (
-              <div
-                key={`evidence:${index}`}
-                role="img"
-                aria-label={`Доказательство: ${evidence.quote}`}
-                className="pointer-events-none absolute border-2 border-amber-600 bg-amber-300/25"
-                style={blockRectangle(evidence.bbox)}
-              />
-            ))}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

@@ -6,6 +6,12 @@ import { ApiError } from "@/api/errors";
 import { useObject } from "@/api/hooks/use-objects";
 import { parsingErrorMessage, useParsingStatus } from "@/api/hooks/use-parsing";
 import {
+  sectionAnalysisStartErrorMessage,
+  sectionAnalysisStatusErrorMessage,
+  useSectionAnalysis,
+  useStartSectionAnalysis,
+} from "@/api/hooks/use-section-analysis";
+import {
   useFinding,
   useFindings,
   useProtocol,
@@ -13,7 +19,10 @@ import {
   verificationErrorMessage,
 } from "@/api/hooks/use-verification";
 import type { ParsingFile } from "@/api/types/parsing";
+import type { SectionAnalysisStartRequest } from "@/api/types/section-analysis";
 import type { ApiFindingDetail } from "@/api/types/verification";
+import { ComparisonBasis } from "@/components/rendered-document-page/ComparisonBasis";
+import { ComparisonTrace } from "@/components/rendered-document-page/ComparisonTrace";
 import { UploadIcon } from "@/components/UploadIcon";
 import { ConstrainedLayout, PageHeader } from "@/layouts/ConstrainedLayout";
 import {
@@ -23,6 +32,7 @@ import {
   findingStatusGroup,
   pickEvidencePair,
   rejectionCodeForLabel,
+  sectionEvidencePair,
   toVerificationDocument,
   toVerificationFinding,
 } from "@/pages/verification/lib/object-findings";
@@ -39,14 +49,22 @@ import {
   type VerificationUiMarker,
 } from "@/pages/verification/types";
 import routeNames from "@/routes/routeNames";
+import {
+  comparisonSourceTargets,
+  sectionEvidenceTargets,
+  sectionSourceFiles,
+} from "../lib/evidence-navigation";
+import { nextSectionAdmission } from "../lib/section-admission";
 
 import { IdentificationSelect } from "@/components/identification-select/IdentificationSelect";
 import { protocolIsCurrent } from "../lib/protocol-lifecycle";
 import { isReviewFinding } from "../lib/review-findings";
 import { DiscrepancyDetails } from "./DiscrepancyDetails";
 import { DiscrepancyList } from "./DiscrepancyList";
+import { ParameterCoverage } from "./ParameterCoverage";
 import { ParsedDocumentPane } from "./ParsedDocumentPane";
 import { ProtocolActions } from "./ProtocolActions";
+import { SectionAnalysisPanel } from "./SectionAnalysisPanel";
 
 const parsingStatePresentation: Record<
   ParsingFile["state"],
@@ -73,6 +91,14 @@ const parsingStatePresentation: Record<
     dotClassName: "bg-danger",
   },
 };
+
+/** Статусы процесса, в которых сервер принимает новую задачу анализа. */
+const SECTION_RUNNABLE_STATUSES = new Set([
+  "PENDING",
+  "PARSING",
+  "READY",
+  "VERIFYING",
+]);
 
 function positivePage(value: string | null) {
   const page = Number(value);
@@ -205,6 +231,9 @@ export function ObjectVerificationWorkspace({
   );
   const [actionError, setActionError] = useState("");
   const mutations = useVerificationMutations(objectId);
+  const sectionQuery = useSectionAnalysis(objectId, undefined, Boolean(object));
+  const sectionStatus = sectionQuery.isError ? undefined : sectionQuery.data;
+  const sectionStart = useStartSectionAnalysis(objectId);
 
   const selectedFindingId = searchParams.get("finding") ?? "";
   const reviewItems = useMemo(
@@ -219,6 +248,13 @@ export function ObjectVerificationWorkspace({
   // Помечаем находку, для которой после загрузки detail нужно
   // автоматически открыть страницы доказательств в панелях.
   const pendingEvidenceNav = useRef<string | null>(null);
+  // Пока исход предыдущего POST неизвестен, повторный клик повторяет тот же
+  // request_id/body — сервер вернёт записанную квитанцию вместо повторного
+  // выбора. Новый request_id — только после подтверждённой квитанции или при
+  // смене запуска (осознанный новый запуск).
+  const pendingSectionRequest = useRef<SectionAnalysisStartRequest | null>(
+    null,
+  );
   const detailQuery = useFinding(
     objectId,
     selectedFindingId || null,
@@ -248,6 +284,11 @@ export function ObjectVerificationWorkspace({
       (member) =>
         member.artifact_id ||
         member.evidence.some((fragment) => fragment.artifactId),
+    ) &&
+    // Frozen section sources also pin immutable PAR artifacts.
+    !(
+      detail.section_analysis?.sources.some((source) => source.artifact_id) ??
+      false
     ),
   );
   const files = useMemo<ParsingFile[]>(() => {
@@ -284,6 +325,10 @@ export function ObjectVerificationWorkspace({
         can_retry: false,
       });
     }
+    // Immutable sources of the section payload open the same frozen pane.
+    for (const file of sectionSourceFiles(detail, parsing?.items ?? [])) {
+      if (!byId.has(file.file_id)) byId.set(file.file_id, file);
+    }
     return [...byId.values()];
   }, [
     parsing,
@@ -305,6 +350,10 @@ export function ObjectVerificationWorkspace({
     const stages = new Map<string, string>();
     for (const member of detail?.members ?? []) {
       if (member.stage) stages.set(member.file_id, member.stage);
+    }
+    for (const source of detail?.section_analysis?.sources ?? []) {
+      if (source.document_stage && !stages.has(source.file_id))
+        stages.set(source.file_id, source.document_stage);
     }
     return stages;
   }, [detail]);
@@ -381,13 +430,27 @@ export function ObjectVerificationWorkspace({
     );
   }, [selectedFindingId, selectedFinding, selectedIsExcluded, setSearchParams]);
 
-  const evidencePair = useMemo(
-    () =>
-      detail && selectedFinding && detail.id === selectedFinding.id
-        ? pickEvidencePair(detail)
-        : null,
-    [detail, selectedFinding],
-  );
+  // Панели открывают файл+страницу — единый вид для скалярных членов и
+  // секционных цитат (у последних нет extraction_id/member).
+  const evidencePair = useMemo(() => {
+    if (!detail || !selectedFinding || detail.id !== selectedFinding.id)
+      return null;
+    const scalar = pickEvidencePair(detail);
+    const section = sectionEvidencePair(detail.section_analysis);
+    const expected = scalar.expected
+      ? {
+          file_id: scalar.expected.member.file_id,
+          page: scalar.expected.fragment?.pageNumber ?? null,
+        }
+      : section.expected;
+    const actual = scalar.actual
+      ? {
+          file_id: scalar.actual.member.file_id,
+          page: scalar.actual.fragment?.pageNumber ?? null,
+        }
+      : section.actual;
+    return { expected, actual };
+  }, [detail, selectedFinding]);
   // После выбора находки и загрузки detail переводим обе панели на файл
   // и первую страницу доказательства — иначе подсветка остаётся на другой
   // странице и не видна. Срабатывает один раз на выбор, чтобы не перебивать
@@ -405,14 +468,10 @@ export function ObjectVerificationWorkspace({
         const next = new URLSearchParams(current);
         const expected = evidencePair.expected;
         const actual = evidencePair.actual;
-        if (expected?.member.file_id)
-          next.set("leftFile", expected.member.file_id);
-        if (expected?.fragment?.pageNumber)
-          next.set("leftPage", String(expected.fragment.pageNumber));
-        if (actual?.member.file_id)
-          next.set("rightFile", actual.member.file_id);
-        if (actual?.fragment?.pageNumber)
-          next.set("rightPage", String(actual.fragment.pageNumber));
+        if (expected?.file_id) next.set("leftFile", expected.file_id);
+        if (expected?.page) next.set("leftPage", String(expected.page));
+        if (actual?.file_id) next.set("rightFile", actual.file_id);
+        if (actual?.page) next.set("rightPage", String(actual.page));
         return next;
       },
       { replace: true },
@@ -521,6 +580,20 @@ export function ObjectVerificationWorkspace({
     }
   };
 
+  // Рольная маршрутизация секционных цитат: эталон — левая панель,
+  // проверяемый — правая, независимо от текущего выбора в панели.
+  const locateSectionCitation = (target: {
+    fileId: string;
+    page: number;
+    role: "reference" | "actual";
+  }) => {
+    setPane(
+      target.role === "reference" ? "left" : "right",
+      target.fileId,
+      target.page,
+    );
+  };
+
   const applyDecision = async (decision: VerificationFindingDecision) => {
     if (!selectedFinding?.findingVersion) return;
 
@@ -569,6 +642,18 @@ export function ObjectVerificationWorkspace({
     }
   };
 
+  const startSectionAnalysis = () => {
+    const runId = sectionStatus?.run_id;
+    if (!runId || sectionStart.isPending) return;
+    pendingSectionRequest.current = nextSectionAdmission(
+      pendingSectionRequest.current,
+      runId,
+      sectionStart.isSuccess,
+    );
+    sectionStart.reset();
+    sectionStart.mutate(pendingSectionRequest.current);
+  };
+
   const leftFile =
     hasProtocol && !browsingOriginals && evidencePair && !evidencePair.expected
       ? undefined
@@ -576,7 +661,7 @@ export function ObjectVerificationWorkspace({
           (file) => file.file_id === searchParams.get("leftFile"),
         ) ??
         readyFiles.find(
-          (file) => file.file_id === evidencePair?.expected?.member.file_id,
+          (file) => file.file_id === evidencePair?.expected?.file_id,
         ) ??
         (evidencePair && !browsingOriginals ? undefined : readyFiles[0]));
   const rightFile =
@@ -588,7 +673,7 @@ export function ObjectVerificationWorkspace({
             (!browsingOriginals || file.file_id !== leftFile?.file_id),
         ) ??
         readyFiles.find(
-          (file) => file.file_id === evidencePair?.actual?.member.file_id,
+          (file) => file.file_id === evidencePair?.actual?.file_id,
         ) ??
         (evidencePair && !browsingOriginals
           ? undefined
@@ -628,9 +713,7 @@ export function ObjectVerificationWorkspace({
     if (explicit) return positivePage(explicit);
     const evidence =
       slot === "left" ? evidencePair?.expected : evidencePair?.actual;
-    return evidence?.member.file_id === file.file_id
-      ? (evidence.fragment?.pageNumber ?? 1)
-      : 1;
+    return evidence?.file_id === file.file_id ? (evidence.page ?? 1) : 1;
   };
   const paneLabel = (role: "expected" | "actual", file: ParsingFile) => {
     const stage = fileStages.get(file.file_id);
@@ -671,10 +754,60 @@ export function ObjectVerificationWorkspace({
     ).length ?? 0;
   // Решения принимаются только в READY/VERIFYING: в COMPLETED находки уже
   // решены, в FINALIZED протокол закрыт — форму скрываем, не дожидаясь 409.
+  // Выбранная сервером задача анализа является основанием; пока она
+  // выполняется или её результат помечен устаревшим (task.stale), находки
+  // могут измениться — решения и финализация ждут свежего результата.
+  // enabled=false с исторической задачей не должен блокировать интерфейс.
+  const sectionPending = Boolean(
+    sectionStatus?.enabled && sectionStatus.current && sectionStatus.active,
+  );
+  const sectionTaskStale = Boolean(
+    sectionStatus?.enabled &&
+    sectionStatus.current &&
+    sectionStatus.task?.stale,
+  );
+  // Устаревший протокол (backend is_current=false) не отражает текущий
+  // выбранный результат — требуется пересборка, не решение инспектора.
+  // Идентичность основы определяет только сервер, без сравнения меток времени.
+  const sectionStale = Boolean(
+    sectionStatus?.current &&
+    sectionStatus.task?.state === "succeeded" &&
+    sectionStatus.results &&
+    protocol?.protocol &&
+    !protocolIsCurrent(protocol),
+  );
   const decisionsLocked =
     hasProtocol &&
     (!protocolIsCurrent(protocol) ||
-      !["READY", "VERIFYING"].includes(processStatus));
+      !["READY", "VERIFYING"].includes(processStatus) ||
+      sectionPending ||
+      sectionTaskStale);
+
+  // Запуск анализа разделов разрешён только на актуальном запуске с
+  // опубликованным снимком источников; серверные конфликты (409) остаются
+  // последней проверкой — UI лишь объясняет очевидные причины.
+  const sectionBlockedReason = (() => {
+    if (!sectionStatus?.enabled || sectionStatus.active) return null;
+    if (!sectionStatus.current || !sectionStatus.run_id)
+      return "Анализ разделов доступен только для актуального запуска обработки.";
+    if (!sectionStatus.resolved_input_hash)
+      return "Дождитесь завершения идентификации: снимок источников ещё не опубликован.";
+    if (processStatus && !SECTION_RUNNABLE_STATUSES.has(processStatus))
+      return "Запуск недоступен: обработка завершена или закрыта.";
+    return null;
+  })();
+  const canStartSection = Boolean(
+    sectionStatus?.enabled &&
+    sectionStatus.current &&
+    sectionStatus.run_id &&
+    sectionStatus.resolved_input_hash &&
+    !sectionStatus.active &&
+    !sectionStart.isPending &&
+    !sectionBlockedReason,
+  );
+  // Секционные цитаты разрешаются только в файлы, которые панели могут
+  // открыть (run/artifact из замороженного снимка находки).
+  const sectionTargets = sectionEvidenceTargets(detail, readyFiles);
   const expectedDocument = selectedFinding?.expectedEvidence.documentId
     ? documentsById.get(selectedFinding.expectedEvidence.documentId)
     : undefined;
@@ -701,6 +834,9 @@ export function ObjectVerificationWorkspace({
             }
             findingsReady={Boolean(findingsResponse)}
             busy={mutations.generate.isPending || mutations.finalize.isPending}
+            sectionPending={sectionPending}
+            sectionStale={sectionStale}
+            sectionTaskStale={sectionTaskStale}
             onGenerate={() =>
               runProtocolAction(async () => {
                 const result = await mutations.generate.mutateAsync();
@@ -769,6 +905,35 @@ export function ObjectVerificationWorkspace({
           {browsingOriginals ? " Можно просмотреть исходные документы." : ""}
         </p>
       ) : null}
+      {protocol?.protocol && (
+        <ParameterCoverage
+          protocol={protocol.protocol}
+          items={findingsResponse?.items}
+          release={findingsResponse?.rule_release}
+          loading={findingsQuery.isPending}
+          error={findingsQuery.isError}
+        />
+      )}
+      <SectionAnalysisPanel
+        canStart={canStartSection}
+        onRetryStatus={() => void sectionQuery.refetch()}
+        onStart={startSectionAnalysis}
+        staleResults={sectionStale}
+        startBlockedReason={sectionBlockedReason}
+        startError={
+          sectionStart.isError
+            ? sectionAnalysisStartErrorMessage(sectionStart.error)
+            : null
+        }
+        starting={sectionStart.isPending}
+        status={sectionStatus}
+        statusError={
+          sectionQuery.isError
+            ? sectionAnalysisStatusErrorMessage(sectionQuery.error)
+            : null
+        }
+        statusLoading={sectionQuery.isPending}
+      />
       {
         <div className="mt-5 grid items-stretch gap-4 min-[1440px]:grid-cols-12">
           <div
@@ -884,6 +1049,22 @@ export function ObjectVerificationWorkspace({
 
       {hasProtocol && selectedFinding ? (
         <div className="mt-4 pb-6">
+          {detail?.id === selectedFinding.id && (
+            <ComparisonBasis basis={detail.verdict?.rule_basis} />
+          )}
+          {detail?.id === selectedFinding.id && detail.verdict?.composite && (
+            <ComparisonTrace
+              composite={detail.verdict.composite}
+              sources={comparisonSourceTargets(detail, readyFiles)}
+              onOpenSource={(source) =>
+                locateEvidence(source.fileId, source.page)
+              }
+            />
+          )}
+          {detail?.id === selectedFinding.id &&
+            detail.verdict?.pairs.map((pair, index) => (
+              <ComparisonTrace key={index} trace={pair.trace} />
+            ))}
           {detail?.evidence_absent_reason ? (
             <p role="status" className="text-warning mb-3 text-sm">
               Источники этой исторической находки не были зафиксированы. Текущие
@@ -910,6 +1091,8 @@ export function ObjectVerificationWorkspace({
             decisionsDisabled={decisionsLocked}
             onDecision={applyDecision}
             onLocate={locateEvidence}
+            onLocateSection={locateSectionCitation}
+            sectionTargets={sectionTargets}
             onNext={() => {
               const index = visibleFindings.findIndex(
                 (finding) => finding.id === selectedFinding.id,

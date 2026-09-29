@@ -13,6 +13,9 @@ export function ProtocolActions({
   visibleCandidateCount,
   findingsReady,
   busy,
+  sectionPending = false,
+  sectionStale = false,
+  sectionTaskStale = false,
   onGenerate,
   onFinalize,
 }: {
@@ -23,6 +26,12 @@ export function ProtocolActions({
   visibleCandidateCount?: number;
   findingsReady: boolean;
   busy: boolean;
+  /** Selected section task is queued/processing — results are pending. */
+  sectionPending?: boolean;
+  /** Shown protocol no longer reflects the selected section result. */
+  sectionStale?: boolean;
+  /** Selected task's stored result was marked unusable by the backend. */
+  sectionTaskStale?: boolean;
   onGenerate: () => Promise<unknown>;
   onFinalize: () => Promise<unknown>;
 }) {
@@ -41,12 +50,17 @@ export function ProtocolActions({
     COMPLETED: "Проверка завершена",
     FINALIZED: "Финализирован",
   };
+  // D7: pending or stale selected section results are not an inspector
+  // choice — analysis/protocol must catch up before decisions/finalization.
   const canFinalize =
     Boolean(protocol) &&
     current &&
     findingsReady &&
     candidateCount === 0 &&
     !finalized &&
+    !sectionPending &&
+    !sectionStale &&
+    !sectionTaskStale &&
     ["READY", "VERIFYING", "COMPLETED"].includes(
       response?.process_status ?? "",
     );
@@ -69,13 +83,37 @@ export function ProtocolActions({
             : ""}
         </p>
       ) : null}
-      {!loading && !finalized && (!protocol || !current) ? (
+      {!loading && !finalized && (!protocol || !current || sectionStale) ? (
         <Button
-          isDisabled={busy || processing || !response}
+          isDisabled={
+            busy ||
+            processing ||
+            !response ||
+            sectionPending ||
+            sectionTaskStale
+          }
           onPress={() => void onGenerate()}
         >
           {protocol ? "Пересобрать протокол" : "Сформировать протокол"}
         </Button>
+      ) : null}
+      {sectionPending ? (
+        <p className="text-copy-muted text-xs" role="status">
+          Выполняется анализ разделов — формирование и финализация протокола
+          дождутся его результата.
+        </p>
+      ) : null}
+      {sectionTaskStale && !sectionPending ? (
+        <p className="text-warning text-xs" role="status">
+          Сохранённый результат анализа разделов устарел — запустите анализ
+          заново, затем пересоберите протокол.
+        </p>
+      ) : null}
+      {sectionStale && !sectionPending && !sectionTaskStale ? (
+        <p className="text-warning text-xs" role="status">
+          Показанный протокол не отражает результат анализа разделов —
+          пересоберите его.
+        </p>
       ) : null}
       {protocol && !finalized && current ? (
         <Button

@@ -5,8 +5,8 @@ import { IDENTIFICATION_ENGINE_VERSION } from "./identification-contract.js";
 
 export const IDENTIFICATION_POLICY_VERSIONS = {
   identification: IDENTIFICATION_ENGINE_VERSION,
-  merge: "whole-document-grouping-v1",
-  selection: "explicit-reference-period-selection-v1",
+  merge: "sheet-document-grouping-v2",
+  selection: "explicit-sheet-period-selection-v2",
 } as const;
 
 export function identificationHash(value: unknown) {

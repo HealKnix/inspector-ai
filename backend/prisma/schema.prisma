@@ -15,42 +15,43 @@ enum Role {
 }
 
 model User {
-  id                  String               @id @default(uuid())
-  login               String               @unique @db.VarChar(64)
-  passwordHash        String               @map("password_hash")
-  role                Role?                @default(INSPECTOR)
-  lastName            String               @map("last_name") @db.VarChar(100)
-  firstName           String               @map("first_name") @db.VarChar(100)
-  patronymic          String?              @db.VarChar(100)
-  phone               String?              @db.VarChar(32)
-  email               String?              @db.VarChar(320)
-  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                  String                   @id @default(uuid())
+  login               String                   @unique @db.VarChar(64)
+  passwordHash        String                   @map("password_hash")
+  role                Role?                    @default(INSPECTOR)
+  lastName            String                   @map("last_name") @db.VarChar(100)
+  firstName           String                   @map("first_name") @db.VarChar(100)
+  patronymic          String?                  @db.VarChar(100)
+  phone               String?                  @db.VarChar(32)
+  email               String?                  @db.VarChar(320)
+  createdAt           DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
   authSessions        AuthSession[]
-  createdObjects      ConstructionObject[] @relation("ObjectCreator")
-  objectAccess        ObjectAccess[]       @relation("ObjectMember")
-  grantedObjectAccess ObjectAccess[]       @relation("AccessGrantor")
+  createdObjects      ConstructionObject[]     @relation("ObjectCreator")
+  objectAccess        ObjectAccess[]           @relation("ObjectMember")
+  grantedObjectAccess ObjectAccess[]           @relation("AccessGrantor")
   uploadedFiles       File[]
   uploadReceipts      UploadReceipt[]
   auditEvents         AuditEvent[]
   findingDecisions    FindingDecision[]
-
+  sectionReceipts     SectionAnalysisReceipt[]
   @@map("users")
 }
 
 model ConstructionObject {
-  id          String           @id @default(uuid()) @db.Uuid
-  name        String
-  createdBy   String           @map("created_by")
-  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
-  creator     User             @relation("ObjectCreator", fields: [createdBy], references: [id], onDelete: Restrict)
-  access      ObjectAccess[]
-  processes   Process[]
-  files       File[]
-  receipts    UploadReceipt[]
-  auditEvents AuditEvent[]
-  packages    PackageVersion[]
+  id                 String                   @id @default(uuid()) @db.Uuid
+  name               String
+  createdBy          String                   @map("created_by")
+  createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
+  creator            User                     @relation("ObjectCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  access             ObjectAccess[]
+  processes          Process[]
+  files              File[]
+  receipts           UploadReceipt[]
+  auditEvents        AuditEvent[]
+  packages           PackageVersion[]
+  sectionReceipts    SectionAnalysisReceipt[]
 
   @@index([createdAt, id])
   @@map("objects")
@@ -117,6 +118,8 @@ model Run {
   version                 Int
   inputManifest           Json                    @map("input_manifest")
   inputManifestHash       String                  @map("input_manifest_hash") @db.Char(64)
+  ruleSetReleaseId        String?                 @map("rule_set_release_id") @db.Uuid
+  ruleSetRelease          RuleSetRelease?         @relation(fields: [ruleSetReleaseId], references: [id], onDelete: Restrict)
   createdAt               DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
   process                 Process                 @relation(fields: [processId, objectId], references: [id, objectId], onDelete: Restrict)
   files                   File[]
@@ -129,7 +132,7 @@ model Run {
   documentParts           FileDocumentPart[]
   identificationSnapshots ResolvedInputSnapshot[]
   evidenceGroups          EvidenceGroup[]
-
+  sectionAnalysisTasks    SectionAnalysisTask[]
   @@unique([id, processId, objectId])
   @@unique([processId, version])
   @@map("runs")
@@ -370,35 +373,58 @@ model ParsingRetryReceipt {
 // Matrix catalog import. Each import keeps the raw JSONL rows verbatim; rules
 // reference the parameter by code so a re-import never invalidates them.
 model MatrixImport {
-  id           String      @id @default(uuid()) @db.Uuid
-  sourceName   String      @map("source_name")
-  sourceSha256 String      @map("source_sha256") @db.Char(64)
-  originSha256 String      @map("origin_sha256") @db.Char(64)
-  rowCount     Int         @map("row_count")
-  importedBy   String?     @map("imported_by")
-  importedAt   DateTime    @default(now()) @map("imported_at") @db.Timestamptz(3)
+  id           String                @id @default(uuid()) @db.Uuid
+  sourceName   String                @map("source_name")
+  sourceSha256 String                @map("source_sha256") @db.Char(64)
+  originSha256 String                @map("origin_sha256") @db.Char(64)
+  rowCount     Int                   @map("row_count")
+  importedBy   String?               @map("imported_by")
+  importedAt   DateTime              @default(now()) @map("imported_at") @db.Timestamptz(3)
   rows         MatrixRow[]
+  sectionTasks SectionAnalysisTask[]
 
   @@unique([sourceSha256])
   @@map("matrix_imports")
 }
 
+// Immutable executable manifest. legacy_capture records technical provenance,
+// never a reviewed admission. The singleton selection is changed under one lock.
+model RuleSetRelease {
+  id           String   @id @default(uuid()) @db.Uuid
+  manifest     Json
+  manifestHash String   @unique @map("manifest_hash") @db.Char(64)
+  createdBy    String   @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  runs         Run[]
+
+  @@map("rule_set_releases")
+}
+
+model RuleSetSelection {
+  id        Int      @id
+  releaseId String?  @map("release_id") @db.Uuid
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@map("rule_set_selection")
+}
+
 model MatrixRow {
-  id            String       @id @default(uuid()) @db.Uuid
-  importId      String       @map("import_id") @db.Uuid
-  parameterId   Int          @map("parameter_id")
-  parameterCode String       @map("parameter_code") @db.VarChar(32)
-  pdSection     String       @map("pd_section")
+  id            String         @id @default(uuid()) @db.Uuid
+  importId      String         @map("import_id") @db.Uuid
+  parameterId   Int            @map("parameter_id")
+  parameterCode String         @map("parameter_code") @db.VarChar(32)
+  pdSection     String         @map("pd_section")
   name          String
   unit          String?
-  sourcePd      String?      @map("source_pd")
-  sourceRd      String?      @map("source_rd")
-  sourceId      String?      @map("source_id")
-  triggerText   String       @map("trigger_text")
+  sourcePd      String?        @map("source_pd")
+  sourceRd      String?        @map("source_rd")
+  sourceId      String?        @map("source_id")
+  triggerText   String         @map("trigger_text")
   criticality   String?
-  matrixRow     Int          @map("matrix_row")
+  matrixRow     Int            @map("matrix_row")
   raw           Json
-  import        MatrixImport @relation(fields: [importId], references: [id], onDelete: Restrict)
+  import        MatrixImport   @relation(fields: [importId], references: [id], onDelete: Restrict)
+  passports     RulePassport[]
 
   @@unique([importId, parameterId])
   @@unique([importId, parameterCode])
@@ -416,23 +442,64 @@ enum RuleStatus {
 // A versioned extraction plan for one matrix parameter. Only the newest
 // approved version is executed; drafts are never picked up by the worker.
 model RuleVersion {
-  id            String     @id @default(uuid()) @db.Uuid
-  parameterCode String     @map("parameter_code") @db.VarChar(32)
-  parameterId   Int        @map("parameter_id")
-  version       Int
-  status        RuleStatus @default(draft)
-  plan          Json
-  comparison    Json?
-  applicability Json?
-  note          String?
-  createdBy     String?    @map("created_by")
-  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
-  approvedBy    String?    @map("approved_by")
-  approvedAt    DateTime?  @map("approved_at") @db.Timestamptz(3)
+  id                String                 @id @default(uuid()) @db.Uuid
+  parameterCode     String                 @map("parameter_code") @db.VarChar(32)
+  parameterId       Int                    @map("parameter_id")
+  version           Int
+  status            RuleStatus             @default(draft)
+  plan              Json
+  comparison        Json?
+  applicability     Json?
+  note              String?
+  createdBy         String?                @map("created_by")
+  createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  approvedBy        String?                @map("approved_by")
+  approvedAt        DateTime?              @map("approved_at") @db.Timestamptz(3)
+  passports         RulePassport[]
+  regressionReports RuleRegressionReport[]
 
   @@unique([parameterCode, version])
   @@index([status, parameterCode])
   @@map("rule_versions")
+}
+
+// Additive review records. Historical approved versions remain readable without
+// either record; only a new approval must pass the review gate.
+model RulePassport {
+  id            String                 @id @default(uuid()) @db.Uuid
+  ruleVersionId String                 @map("rule_version_id") @db.Uuid
+  matrixRowId   String                 @map("matrix_row_id") @db.Uuid
+  revision      Int
+  content       Json
+  contentHash   String                 @map("content_hash") @db.Char(64)
+  createdBy     String                 @map("created_by")
+  createdAt     DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  rule          RuleVersion            @relation(fields: [ruleVersionId], references: [id], onDelete: Restrict)
+  matrixRow     MatrixRow              @relation(fields: [matrixRowId], references: [id], onDelete: Restrict)
+  reports       RuleRegressionReport[]
+
+  @@unique([ruleVersionId, revision])
+  @@unique([ruleVersionId, contentHash])
+  @@map("rule_passports")
+}
+
+model RuleRegressionReport {
+  id                String       @id @default(uuid()) @db.Uuid
+  ruleVersionId     String       @map("rule_version_id") @db.Uuid
+  passportId        String       @map("passport_id") @db.Uuid
+  ruleHash          String       @map("rule_hash") @db.Char(64)
+  fixturesHash      String       @map("fixtures_hash") @db.Char(64)
+  engineFingerprint String       @map("engine_fingerprint") @db.Char(64)
+  reportHash        String       @map("report_hash") @db.Char(64)
+  report            Json
+  createdBy         String       @map("created_by")
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  rule              RuleVersion  @relation(fields: [ruleVersionId], references: [id], onDelete: Restrict)
+  passport          RulePassport @relation(fields: [passportId], references: [id], onDelete: Restrict)
+
+  @@unique([ruleVersionId, reportHash])
+  @@index([ruleVersionId, createdAt])
+  @@map("rule_regression_reports")
 }
 
 // Same lifecycle as ClassificationTask: one task per artifact per ruleset
@@ -476,6 +543,8 @@ model Extraction {
   stage         String?
   valueRaw      String?            @map("value_raw")
   value         Json?
+  numerical     Json?
+  selectionKey  String?            @map("selection_key") @db.VarChar(64)
   unit          String?
   alternatives  Json?
   reason        String?
@@ -957,6 +1026,77 @@ model ResolvedInputSnapshot {
   @@unique([runId, resolvedInputHash])
   @@index([processId, createdAt])
   @@map("resolved_input_snapshots")
+}
+
+// Validated LLM-discovered section boundaries, reusable across runs. The key
+// is purely semantic: source/selection content, parser pipeline, model,
+// prompt/engine versions and matrix identity. Run ids never enter it (D2).
+model SectionIndexCache {
+  fingerprint String   @id @db.Char(64)
+  boundaries  Json
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("section_index_cache")
+}
+
+// One admitted section-context analysis for one Run. matrix_rows pins the
+// exact SectionMatrixRow payloads; source_manifest pins the resolved
+// context/revision/artifact/selection provenance. Result is the
+// server-validated SectionAnalysisOutput of the core engine; there is no
+// business status here, only the technical task lifecycle (D6).
+model SectionAnalysisTask {
+  id                String                   @id @default(uuid()) @db.Uuid
+  runId             String                   @map("run_id") @db.Uuid
+  processId         String                   @map("process_id") @db.Uuid
+  objectId          String                   @map("object_id") @db.Uuid
+  cycle             Int                      @default(1)
+  fingerprint       String                   @db.Char(64)
+  resolvedInputHash String                   @map("resolved_input_hash") @db.Char(64)
+  sourceFingerprint String                   @map("source_fingerprint") @db.Char(64)
+  configFingerprint String                   @map("config_fingerprint") @db.Char(64)
+  matrixImportId    String                   @map("matrix_import_id") @db.Uuid
+  matrixRows        Json                     @map("matrix_rows")
+  sourceManifest    Json                     @map("source_manifest")
+  state             String                   @default("queued")
+  attempts          Int                      @default(0)
+  availableAt       DateTime                 @default(now()) @map("available_at") @db.Timestamptz(3)
+  dispatchedAt      DateTime?                @map("dispatched_at") @db.Timestamptz(3)
+  leaseUntil        DateTime?                @map("lease_until") @db.Timestamptz(3)
+  leaseToken        String?                  @map("lease_token") @db.Uuid
+  errorCode         String?                  @map("error_code")
+  result            Json?
+  createdAt         DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt       DateTime?                @map("completed_at") @db.Timestamptz(3)
+  run               Run                      @relation(fields: [runId, processId, objectId], references: [id, processId, objectId], onDelete: Restrict)
+  matrixImport      MatrixImport             @relation(fields: [matrixImportId], references: [id], onDelete: Restrict)
+  receipts          SectionAnalysisReceipt[]
+
+  @@unique([runId, fingerprint, cycle])
+  @@index([state, availableAt, leaseUntil])
+  @@index([processId, createdAt])
+  @@map("section_analysis_tasks")
+}
+
+// Idempotent admission receipt. seq orders NEW admissions only; the current
+// section-analysis basis of a run is the task of its latest receipt, so a
+// replayed old request_id can never reactivate a superseded basis (D6).
+model SectionAnalysisReceipt {
+  seq         BigInt              @default(autoincrement())
+  userId      String              @map("user_id")
+  objectId    String              @map("object_id") @db.Uuid
+  requestId   String              @map("request_id") @db.Uuid
+  runId       String              @map("run_id") @db.Uuid
+  taskId      String              @map("task_id") @db.Uuid
+  fingerprint String              @db.Char(64)
+  bodyHash    String              @map("body_hash") @db.Char(64)
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  user        User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  object      ConstructionObject  @relation(fields: [objectId], references: [id], onDelete: Restrict)
+  task        SectionAnalysisTask @relation(fields: [taskId], references: [id], onDelete: Restrict)
+
+  @@id([userId, objectId, requestId])
+  @@index([runId, seq])
+  @@map("section_analysis_receipts")
 }
 
 model DocumentResolutionReceipt {

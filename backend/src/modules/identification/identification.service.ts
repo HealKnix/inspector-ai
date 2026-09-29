@@ -6,8 +6,11 @@ import {
 } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
 import type { Prisma } from "../../generated/prisma/client.js";
+import { writeAuditEvent } from "../../infrastructure/audit/audit-envelope.js";
+import { writeOutboxEvent } from "../../infrastructure/observability/trace-context.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import { CompletenessService } from "../completeness/completeness.service.js";
+import { pinRunRelease } from "../extraction/rule-set-release.js";
 import {
   ObjectAccessService,
   type AuditContext,
@@ -42,6 +45,11 @@ import {
   identificationSources,
   type IdentificationSources,
 } from "./identification-state.js";
+import {
+  predecessorId,
+  resolveSheetSet,
+  validateRevisionSheetMap,
+} from "./sheet-selection.js";
 
 const EDITABLE = ["PENDING", "READY", "VERIFYING", "COMPLETED"];
 interface StoredIdentificationSnapshot extends IdentificationSnapshot {
@@ -94,6 +102,10 @@ function applyPatch(
     revision.approval = structuredClone(patch.approval);
   if (patch.reference_revision_id !== undefined)
     revision.reference_revision_id = patch.reference_revision_id;
+  if (patch.sheet_map !== undefined)
+    revision.sheet_map = structuredClone(patch.sheet_map);
+  if (patch.sheet_replacement !== undefined)
+    revision.sheet_replacement = structuredClone(patch.sheet_replacement);
 }
 
 @Injectable()
@@ -501,7 +513,7 @@ export class IdentificationService {
         snapshot: identificationJson(snapshot),
       },
     });
-    await tx.outbox.create({
+    await writeOutboxEvent(tx, {
       data: {
         eventType: "identification.resolved",
         payload: {
@@ -689,12 +701,14 @@ export class IdentificationService {
         const runId = randomUUID();
         const version = process.version + 1;
         const priorManifest = oldRun.inputManifest as Prisma.JsonObject;
+        const ruleRelease = await pinRunRelease(tx, context.userId);
         const manifest = {
           ...priorManifest,
           run_id: runId,
           versions: {
             ...((priorManifest.versions as Prisma.JsonObject) ?? {}),
             decisions: input.request_id,
+            rules: ruleRelease.manifestHash,
           },
         };
         await tx.process.update({
@@ -709,6 +723,7 @@ export class IdentificationService {
             version,
             inputManifest: identificationJson(manifest),
             inputManifestHash: identificationHash(manifest),
+            ruleSetReleaseId: ruleRelease.id,
           },
         });
         await tx.runInput.createMany({
@@ -760,7 +775,7 @@ export class IdentificationService {
           },
         });
         const eventId = randomUUID();
-        await tx.outbox.create({
+        await writeOutboxEvent(tx, {
           data: {
             id: eventId,
             jobId: job.id,
@@ -779,7 +794,7 @@ export class IdentificationService {
             },
           },
         });
-        await tx.auditEvent.create({
+        await writeAuditEvent(tx, {
           data: {
             ...context,
             objectId: process.objectId,
@@ -866,6 +881,22 @@ export class IdentificationService {
       revisions.map((revision) => [revision.revision_id, revision]),
     );
     for (const revision of revisions) {
+      try {
+        validateRevisionSheetMap(revision);
+        const sheetErrors = resolveSheetSet(
+          documents,
+          revision.revision_id,
+        ).blockers;
+        if (sheetErrors.length)
+          throw new IdentificationContractError(sheetErrors[0]!);
+      } catch (error) {
+        if (error instanceof IdentificationContractError)
+          throw new BadRequestException({
+            code: error.code,
+            message: "Проверьте карту листов и основание частичной замены",
+          });
+        throw error;
+      }
       if (
         revision.fields.works_from &&
         revision.fields.works_to &&
@@ -881,7 +912,7 @@ export class IdentificationService {
       )
         throw new BadRequestException("Недопустимая ссылка на редакцию");
       const seen = new Set([revision.revision_id]);
-      let parent = revision.approval.replaces_revision_id;
+      let parent = predecessorId(revision);
       while (parent) {
         const prior = byId.get(parent);
         if (!prior || seen.has(parent))
@@ -898,7 +929,7 @@ export class IdentificationService {
             "Заменяемая редакция должна относиться к тому же документу и области",
           );
         seen.add(parent);
-        parent = prior.approval.replaces_revision_id;
+        parent = predecessorId(prior);
       }
     }
   }

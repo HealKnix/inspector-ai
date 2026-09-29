@@ -19,7 +19,7 @@ import { fallbackAvatars } from "@/lib/fallback-avatars";
 import { cn } from "@/lib/utils";
 import routeNames from "@/routes/routeNames";
 import { DashboardIcon, type DashboardIconName } from "./DashboardIcon";
-import { SystemStatusPopover } from "./SystemStatusPopover";
+
 import { ThemeSwitcher } from "./ThemeSwitcher";
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "inspector-ai:sidebar-collapsed:v1";
@@ -65,7 +65,6 @@ interface NavigationItem {
 }
 
 const primaryItems: readonly NavigationItem[] = [
-  { href: routeNames.ROOT, icon: "grid", label: "Дашборд" },
   { href: routeNames.OBJECTS, icon: "folder", label: "Объекты" },
   {
     href: routeNames.OBJECTS,
@@ -336,7 +335,6 @@ function SidebarContent({
             items={secondaryItems}
             onActiveHrefChange={onActiveHrefChange}
           />
-          <SystemStatusPopover compact={collapsed} />
         </nav>
       </ScrollShadow>
       <div className="mt-4">

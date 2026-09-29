@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import type { ParseBlock } from "../parsing/parsing-contract.js";
+import { analysisBlocks } from "../parsing/analysis-blocks.js";
+import type { ParseBlock, ParsePage } from "../parsing/parsing-contract.js";
 import { classifyByRules } from "./classification-rules.js";
 import {
   IDENTIFICATION_ENGINE_VERSION,
@@ -18,6 +19,12 @@ import {
   type RevisionApproval,
   type RevisionReference,
 } from "./identification-contract.js";
+import { revisionTableCandidates } from "./revision-table-candidates.js";
+import {
+  predecessorId,
+  resolveSheetSet,
+  structuralSheetBlockers,
+} from "./sheet-selection.js";
 
 const A = "http://idActs/AOSR.xsd";
 const C = "http://types/CommonTypes.xsd";
@@ -71,7 +78,9 @@ function evidenceFor(
   representation: DocumentRepresentation,
   page: number,
   block: ParseBlock,
+  context?: ParsePage,
 ): IdentificationEvidence {
+  const region = context?.regions?.find((item) => item.id === block.region_id);
   return {
     file_id: representation.file_id,
     artifact_id: representation.artifact_id,
@@ -82,6 +91,26 @@ function evidenceFor(
     quote: block.raw_text || block.normalized_text,
     bbox: [...block.bbox],
     structural_path: block.structural_path,
+    ...(context
+      ? {
+          parse_context: {
+            source: block.source,
+            native_valid: block.native_valid ?? null,
+            include_in_main: block.include_in_main ?? null,
+            region_id: block.region_id ?? null,
+            region_kind: region?.kind ?? null,
+            region_method: region?.method ?? null,
+            text_status: block.provenance?.status ?? null,
+            reasons: [
+              ...new Set([
+                ...context.reasons,
+                ...(region?.reasons ?? []),
+                ...(block.provenance?.reasons ?? []),
+              ]),
+            ].sort(),
+          },
+        }
+      : {}),
   };
 }
 
@@ -290,20 +319,35 @@ export function identifyArtifact(
       if (item.document_kind)
         add("title", item.document_kind, evidence, "own", "rules", reliable);
     }
-    for (const page of artifact.pages)
-      for (const [index, block] of page.blocks.entries()) {
-        if (block.include_in_main === false) continue;
+    for (const page of artifact.pages) {
+      for (const item of revisionTableCandidates(page)) {
+        add(
+          item.field,
+          item.value.raw_text || item.value.normalized_text,
+          [item.value, ...item.context].map((block) =>
+            evidenceFor(representation, page.page_number, block, page),
+          ),
+          item.field === "observed_replaced_sheet" ? "observed" : "own",
+          "rules",
+          false,
+        );
+        blockers.add("unsupported_partial_replacement");
+      }
+      const blocks = analysisBlocks(page);
+      for (const [index, block] of blocks.entries()) {
         const text = normalizeIdentificationText(
           block.raw_text || block.normalized_text,
         );
-        const evidence = [evidenceFor(representation, page.page_number, block)];
+        const evidence = [
+          evidenceFor(representation, page.page_number, block, page),
+        ];
         if (
-          /замен[аыя]\s+(?:отдельных\s+)?листов|частичная\s+замена|лист\s+\S+\s+взамен\s+листа/i.test(
+          /замен[аыя]\s+(?:отдельных\s+)?лист(?:ов|а)|частичная\s+замена|лист\s+\S+\s+взамен\s+листа/i.test(
             text,
           )
         )
           blockers.add("unsupported_partial_replacement");
-        const prefix = page.blocks
+        const prefix = blocks
           .slice(Math.max(0, index - 2), index)
           .map((item) => item.raw_text || item.normalized_text)
           .join(" ");
@@ -319,7 +363,22 @@ export function identifyArtifact(
           role: FieldCandidate["role"] = "own",
         ) => {
           if (match?.[1])
-            add(field, match[1], evidence, role, "rules", reliable);
+            add(
+              field,
+              match[1],
+              evidence,
+              role,
+              "rules",
+              reliable &&
+                (field !== "revision_label" ||
+                  (block.include_in_main !== false &&
+                    !page.regions?.some(
+                      (region) =>
+                        region.id === block.region_id &&
+                        (region.kind === "unknown" ||
+                          region.reasons.length > 0),
+                    ))),
+            );
         };
         addMatch(
           "number",
@@ -373,6 +432,7 @@ export function identifyArtifact(
           add("works_to", period[2]!, evidence, "own", "rules", reliable);
         }
       }
+    }
   }
 
   if (classification) {
@@ -479,6 +539,13 @@ export function canMergeRepresentations(
   left: RevisionData,
   right: RevisionData,
 ): boolean {
+  if (
+    left.sheet_map ||
+    right.sheet_map ||
+    left.sheet_replacement ||
+    right.sheet_replacement
+  )
+    return false;
   const required = identityFields(left.fields.stage);
   if (!required || left.fields.stage !== right.fields.stage) return false;
   if (
@@ -577,17 +644,7 @@ function reference(item: LocatedRevision): RevisionReference {
 }
 
 function structuralBlockers(revision: IdentificationRevision): string[] {
-  return revision.blockers.filter((blocker) => {
-    if (blocker.startsWith("field_conflict:"))
-      return !revision.fields[
-        blocker.slice("field_conflict:".length) as IdentificationField
-      ];
-    return (
-      blocker.startsWith("unsupported_") ||
-      blocker === "source_unreadable" ||
-      blocker === "source_integrity_mismatch"
-    );
-  });
+  return structuralSheetBlockers(revision);
 }
 function approved(revision: IdentificationRevision): boolean {
   return (
@@ -620,9 +677,10 @@ function replacementErrors(items: LocatedRevision[]): Map<string, string[]> {
   for (const item of items) {
     const seen = new Set([item.revision.revision_id]);
     let current: LocatedRevision | undefined = item;
-    while (current?.revision.approval.replaces_revision_id) {
+    while (current && predecessorId(current.revision)) {
       const predecessorId: string =
-        current.revision.approval.replaces_revision_id;
+        current.revision.sheet_replacement?.predecessor_revision_id ??
+        current.revision.approval.replaces_revision_id!;
       if (seen.has(predecessorId)) {
         errors.set(item.revision.revision_id, ["replacement_cycle"]);
         break;
@@ -698,6 +756,14 @@ export function buildSelectionSnapshot(
   );
   const byId = new Map(all.map((item) => [item.revision.revision_id, item]));
   const replacementProblems = replacementErrors(all);
+  for (const item of all) {
+    const sheetProblems = resolveSheetSet(
+      documents,
+      item.revision.revision_id,
+    ).blockers;
+    if (sheetProblems.length)
+      replacementProblems.set(item.revision.revision_id, sheetProblems);
+  }
   const contexts: ComparisonContext[] = [];
   const snapshotBlockers = new Set<string>();
   for (const actual of all) {
@@ -813,8 +879,7 @@ export function buildSelectionSnapshot(
         (candidate) =>
           !all.some(
             (item) =>
-              item.revision.approval.replaces_revision_id ===
-                candidate.revision.revision_id &&
+              predecessorId(item.revision) === candidate.revision.revision_id &&
               approved(item.revision) &&
               validApprovalPeriod(item.revision) &&
               !replacementProblems.has(item.revision.revision_id) &&
@@ -827,8 +892,39 @@ export function buildSelectionSnapshot(
     }
     const actualRef = reference(actual);
     const selectedRef = selected ? reference(selected) : null;
+    const actualSheets = resolveSheetSet(documents, revision.revision_id, {
+      from,
+      to,
+    });
+    const referenceSheets = selected
+      ? resolveSheetSet(documents, selected.revision.revision_id, { from, to })
+      : { selection: null, blockers: [] };
+    for (const blocker of [
+      ...actualSheets.blockers,
+      ...referenceSheets.blockers,
+    ])
+      blockers.add(blocker);
+    const sheetSelection =
+      actualSheets.selection || referenceSheets.selection
+        ? {
+            actual: actualSheets.selection,
+            reference: referenceSheets.selection,
+          }
+        : undefined;
     const context: ComparisonContext = {
-      context_id: hash([actualRef, selectedRef, key(scope), from, to]),
+      context_id: hash([
+        actualRef,
+        selectedRef,
+        key(scope),
+        from,
+        to,
+        ...(sheetSelection
+          ? [
+              actualSheets.selection?.selection_hash ?? null,
+              referenceSheets.selection?.selection_hash ?? null,
+            ]
+          : []),
+      ]),
       scope,
       works_period: { from, to },
       reference: selectedRef,
@@ -836,6 +932,7 @@ export function buildSelectionSnapshot(
       status:
         selected && blockers.size === 0 ? "READY" : "CLARIFICATION_REQUIRED",
       blockers: [...blockers].sort(),
+      ...(sheetSelection ? { sheet_selection: sheetSelection } : {}),
     };
     contexts.push(context);
     for (const blocker of context.blockers) snapshotBlockers.add(blocker);

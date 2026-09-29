@@ -1,4 +1,4 @@
-import { mockVerificationPackage } from "@/data/verification";
+import { mockVerificationPackage } from "./verification-test-fixtures";
 
 import {
   FindingStatus,

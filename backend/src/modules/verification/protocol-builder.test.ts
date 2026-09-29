@@ -12,6 +12,7 @@ import {
   type BuilderGroup,
   type BuilderParameter,
 } from "./protocol-builder.js";
+import type { SectionFindingInput } from "./section-findings.js";
 import {
   decisionTarget,
   REJECTION_REASON_CODES,
@@ -287,7 +288,323 @@ describe("buildProtocol", () => {
   });
 });
 
+function section(
+  overrides: Partial<SectionFindingInput> = {},
+): SectionFindingInput {
+  return {
+    parameter_code: "P1",
+    context_id: "ctx-a",
+    assessment: "potential_difference",
+    fact: "В ИД указана марка B25 вместо B30 по ПД.",
+    question_for_inspector: "Подтвердите фактическую марку.",
+    missing_context: [],
+    evidence: [
+      {
+        source_ref: "reference:1",
+        role: "reference",
+        section_id: "sec-1",
+        document_id: "doc-pd",
+        revision_id: "rev-pd",
+        file_id: "file-1",
+        artifact_id: "art-pd",
+        page_number: 4,
+        sheet_label: null,
+        block_id: "b-12",
+        table_id: null,
+        table_row: null,
+        table_column: null,
+        quote: "Бетон В30",
+        bbox: null,
+        structural_path: null,
+      },
+      {
+        source_ref: "actual:1",
+        role: "actual",
+        section_id: "sec-2",
+        document_id: "doc-id",
+        revision_id: "rev-id",
+        file_id: "file-1",
+        artifact_id: "art-id",
+        page_number: 10,
+        sheet_label: null,
+        block_id: "b-21",
+        table_id: null,
+        table_row: null,
+        table_column: null,
+        quote: "Бетон В25",
+        bbox: null,
+        structural_path: null,
+      },
+    ],
+    coverage: { complete: true, missing: [] },
+    context: {
+      context_id: "ctx-a",
+      scope: "object",
+      works_period: { from: null, to: null },
+      reference: { document_id: "doc-pd", revision_id: "rev-pd" },
+      actual: { document_id: "doc-id", revision_id: "rev-id" },
+    },
+    sources: [
+      {
+        source_ref: "reference:1",
+        role: "reference",
+        document_id: "doc-pd",
+        revision_id: "rev-pd",
+        document_stage: "PD",
+        file_id: "file-1",
+        artifact_id: "art-pd",
+        artifact_sha256: "sha-pd",
+        source_sha256: "s-pd",
+        selection_hash: null,
+        pages: [4],
+      },
+      {
+        source_ref: "actual:1",
+        role: "actual",
+        document_id: "doc-id",
+        revision_id: "rev-id",
+        document_stage: "ID",
+        file_id: "file-1",
+        artifact_id: "art-id",
+        artifact_sha256: "sha-id",
+        source_sha256: "s-id",
+        selection_hash: null,
+        pages: [10],
+      },
+    ],
+    sections: [
+      {
+        section_id: "sec-1",
+        source_ref: "reference:1",
+        title: "Материалы",
+        start_block_id: "b-10",
+        end_block_id: "b-14",
+        parameter_codes: ["P1"],
+      },
+      {
+        section_id: "sec-2",
+        source_ref: "actual:1",
+        title: "Ведомость",
+        start_block_id: "b-20",
+        end_block_id: "b-22",
+        parameter_codes: ["P1"],
+      },
+    ],
+    matrix: {
+      parameter_code: "P1",
+      name: "Марка бетона",
+      unit: "класс",
+      source_pd: "ПД п.4",
+      source_rd: null,
+      source_id: "ИД ведомость",
+      trigger: "все",
+    },
+    analysis_basis: {
+      matrix_identity: "matrix-abc",
+      model: "test-model",
+      discovery_prompt_version: "d1",
+      analysis_prompt_version: "a1",
+    },
+    task_fingerprint: "task-fp-1",
+    result_fingerprint: "result-fp-1",
+    ...overrides,
+  };
+}
+
+describe("buildProtocol + sectionResults", () => {
+  it("VR5: READY section-only контекст без regex-правила даёт CANDIDATE", () => {
+    const result = buildProtocol({
+      parameters: [parameter("P1", { has_rule: false })],
+      groups: [],
+      evaluation: null,
+      fileSha256: new Map([["file-1", "sha-1"]]),
+      unresolvedSources: ["comparison_context_unresolved"],
+      contextBlockers: new Map([["ctx-a", []]]),
+      sectionResults: [section()],
+    });
+    expect(result.findings).toHaveLength(1);
+    const finding = result.findings[0]!;
+    expect(finding.status).toBe("CANDIDATE");
+    expect(finding.scope_key).toBe("ctx-a");
+    // Готовый контекст не наследует общий comparison_context_unresolved.
+    expect(finding.gate_reasons).not.toContain("comparison_context_unresolved");
+    expect(finding.gate_reasons).not.toContain("rule_not_approved");
+    // Нет сфабрикованных Extraction/RuleVersion ссылок.
+    expect(finding.evidence_group_id).toBeNull();
+    expect(finding.verdict).toBeNull();
+    expect(finding.evidence_snapshot.section_analysis?.assessment).toBe(
+      "potential_difference",
+    );
+    expect(finding.evidence_snapshot.section_analysis?.task_fingerprint).toBe(
+      "task-fp-1",
+    );
+  });
+
+  it("VR5: заблокированный контекст сохраняет собственные причины", () => {
+    const result = buildProtocol({
+      parameters: [parameter("P1", { has_rule: false })],
+      groups: [],
+      evaluation: null,
+      fileSha256: new Map([["file-1", "sha-1"]]),
+      unresolvedSources: ["comparison_context_unresolved"],
+      contextBlockers: new Map([["ctx-a", ["reference_revision_ambiguous"]]]),
+      sectionResults: [section()],
+    });
+    const finding = result.findings[0]!;
+    expect(finding.status).toBe("CLARIFICATION_REQUIRED");
+    expect(finding.gate_reasons).toContain("reference_revision_ambiguous");
+  });
+
+  it("завершённый детерминированный вердикт сохраняет статус, разделы — advisory", () => {
+    const withMatch = buildProtocol({
+      parameters: [parameter("P1")],
+      groups: [{ ...group("P1", "match"), scope_key: "ctx-a" }],
+      evaluation: null,
+      fileSha256: new Map([["file-1", "sha-1"]]),
+      contextBlockers: new Map([["ctx-a", []]]),
+      sectionResults: [section()],
+    });
+    expect(withMatch.findings[0]!.status).toBe("NEGATIVE_VERIFIED");
+    expect(
+      withMatch.findings[0]!.evidence_snapshot.section_analysis?.fact,
+    ).toBe("В ИД указана марка B25 вместо B30 по ПД.");
+    const withDiscrepancy = buildProtocol({
+      parameters: [parameter("P1")],
+      groups: [{ ...group("P1", "discrepancy"), scope_key: "ctx-a" }],
+      evaluation: null,
+      fileSha256: new Map([["file-1", "sha-1"]]),
+      contextBlockers: new Map([["ctx-a", []]]),
+      sectionResults: [section()],
+    });
+    expect(withDiscrepancy.findings[0]!.status).toBe("CANDIDATE");
+    expect(withDiscrepancy.findings[0]!.verdict?.status).toBe("discrepancy");
+  });
+
+  it("неполный факт раздела даёт NOT_COMPARABLE с конкретными причинами", () => {
+    const result = buildProtocol({
+      parameters: [parameter("P1", { has_rule: false })],
+      groups: [],
+      evaluation: null,
+      fileSha256: new Map([["file-1", "sha-1"]]),
+      contextBlockers: new Map([["ctx-a", []]]),
+      sectionResults: [
+        section({
+          assessment: "insufficient_context",
+          fact: null,
+          missing_context: ["В ИД нет раздела с маркой"],
+        }),
+      ],
+    });
+    const finding = result.findings[0]!;
+    expect(finding.status).toBe("NOT_COMPARABLE");
+    expect(finding.gate_reasons).toContain("section_context_incomplete");
+  });
+
+  it("CR18: неполный агрегат не стирает покрытый ряд — P1 кандидат, P2 нет", () => {
+    const result = buildProtocol({
+      parameters: [
+        parameter("P1", { has_rule: false }),
+        parameter("P2", { has_rule: false }),
+      ],
+      groups: [],
+      evaluation: null,
+      fileSha256: new Map([["file-1", "sha-1"]]),
+      contextBlockers: new Map([["ctx-a", []]]),
+      sectionResults: [
+        section(), // effective coverage complete (parameter.coverage)
+        section({
+          parameter_code: "P2",
+          assessment: "insufficient_context",
+          fact: null,
+          evidence: [],
+          missing_context: ["В ИД нет раздела с отметками"],
+          coverage: {
+            complete: false,
+            missing: ["row_unanswered:P2"],
+          },
+        }),
+      ],
+    });
+    const p1 = result.findings.find((f) => f.parameter_code === "P1")!;
+    const p2 = result.findings.find((f) => f.parameter_code === "P2")!;
+    expect(p1.status).toBe("CANDIDATE");
+    // P2 has no section coverage of its own: it can never become a
+    // candidate, and its own incomplete coverage is what gets frozen.
+    expect(p2.status).not.toBe("CANDIDATE");
+    expect(p2.evidence_snapshot.section_analysis?.coverage).toEqual({
+      complete: false,
+      missing: ["row_unanswered:P2"],
+    });
+    expect(p1.evidence_snapshot.section_analysis?.coverage).toEqual({
+      complete: true,
+      missing: [],
+    });
+  });
+
+  it("members_fingerprint включает базис задачи и результата", () => {
+    const options = {
+      parameters: [parameter("P1", { has_rule: false })],
+      groups: [] as BuilderGroup[],
+      evaluation: null,
+      fileSha256: new Map([["file-1", "sha-1"]]),
+      contextBlockers: new Map([["ctx-a", []]]),
+    };
+    const first = buildProtocol({
+      ...options,
+      sectionResults: [section()],
+    }).findings[0]!.members_fingerprint;
+    const otherTask = buildProtocol({
+      ...options,
+      sectionResults: [section({ task_fingerprint: "task-fp-2" })],
+    }).findings[0]!.members_fingerprint;
+    const otherResult = buildProtocol({
+      ...options,
+      sectionResults: [section({ result_fingerprint: "result-fp-2" })],
+    }).findings[0]!.members_fingerprint;
+    expect(otherTask).not.toBe(first);
+    expect(otherResult).not.toBe(first);
+  });
+
+  it("protocolContent фиксирует базис даже без section findings", () => {
+    const built = buildProtocol({
+      parameters: [parameter("P1")],
+      groups: [group("P1", "match")],
+      evaluation: null,
+      fileSha256: new Map([["file-1", "sha-1"]]),
+      sectionResults: [],
+    });
+    const basis = { task_fingerprint: "t", result_fingerprint: "r" };
+    expect(protocolContent(built, null, basis).section_analysis).toEqual(basis);
+    // Базис фиксируется и при нулевом покрытии — идемпотентность протокола.
+    const empty = buildProtocol({
+      parameters: [parameter("P1")],
+      groups: [group("P1", "match")],
+      evaluation: null,
+      fileSha256: new Map([["file-1", "sha-1"]]),
+      sectionResults: [],
+    });
+    expect(
+      protocolContent(empty, null, basis).parameters_with_section_analysis,
+    ).toBe(0);
+    expect(protocolContent(built, null, null).section_analysis).toBeNull();
+  });
+});
+
 describe("membersFingerprint", () => {
+  it("unrelated release changes preserve a per-rule semantic fingerprint", () => {
+    const first = {
+      ...group("P002", "match"),
+      ruleset_hash: "release-A",
+      rule_fingerprint: "same-rule-and-basis",
+    };
+    const second = { ...first, ruleset_hash: "release-B" };
+    const fingerprint = (g: BuilderGroup) =>
+      build([parameter("P002")], [g]).findings[0]!.members_fingerprint;
+    expect(fingerprint(first)).toBe(fingerprint(second));
+    expect(fingerprint({ ...second, rule_fingerprint: "new-basis" })).not.toBe(
+      fingerprint(first),
+    );
+  });
   it("одно значение не переносит решение при смене редакции, правила, области или цитаты", () => {
     const baseMember = member({
       value: 100,
@@ -391,6 +708,7 @@ describe("decisionTarget", () => {
       "ocr_error",
       "evidence_binding_error",
       "not_applicable",
+      "no_discrepancy",
     ]);
   });
 });

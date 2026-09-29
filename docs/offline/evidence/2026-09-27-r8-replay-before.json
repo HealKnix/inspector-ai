@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "project": "inspector-foundations-r8",
+  "phase": "before",
+  "captured_at": "2026-09-27T07:37:21.865Z",
+  "stable": {
+    "manifest_sha256": "b899ad410f1307ffe767d07c4ec2711750506534e66c912a2a29ef41db0e7692",
+    "catalog_sha256": "69a576ed1a0ef7ed91076ebc26a4ebba746072abbd7692c0f7f1d6a1fd6f9cf1",
+    "entities": {
+      "users": {
+        "count": 7,
+        "ids_sha256": "88ce07afa23307b3d676e39423dc52a87b38da594bdcc40171ee767ddaef9075"
+      },
+      "objects": {
+        "count": 3,
+        "ids_sha256": "1f56c72ccd34e4263c23e4f49497f9f8ee391b5aa2b8e6eb441da97029b53803"
+      },
+      "object_access": {
+        "count": 3,
+        "ids_sha256": "712f9b3f2d5fbf9569d668bee334dc47c1c811975878bfcffb31b6b6e2de0f4c"
+      },
+      "processes": {
+        "count": 3,
+        "ids_sha256": "e80b5f5fad36d70a35fc280a19065bd5a02522de97d9ac6aa70718d93cab2848"
+      },
+      "runs": {
+        "count": 3,
+        "ids_sha256": "333538d8edc031b04c1fe93e8e66a21fcb6f11ae35d3cde328947fd0bc28cfc8"
+      },
+      "files": {
+        "count": 3,
+        "ids_sha256": "e43d38de279324fa8ca0b0246072e0d4d047d32b5c63a086bebbc70be0c52d57"
+      },
+      "parse_artifacts": {
+        "count": 3,
+        "ids_sha256": "955da2a11192a6d15c9c531d307a390a419fcbd572aabc15a85957e162e56662"
+      },
+      "matrix_rows": {
+        "count": 132,
+        "ids_sha256": "4a12795f29b14b92512650184137c965d6787ff7c6cd899fcd90e2a9abd0f06f"
+      },
+      "rule_versions": {
+        "count": 13,
+        "ids_sha256": "8a93afe9d1fe60acff4d1343095f091913879e04e234c82de46e8d8c9b2020c2"
+      },
+      "framework_sets": {
+        "count": 1,
+        "ids_sha256": "56b8a667c3ab47d022ffe15eb0f108e521b47337c38064432e1b0b27133b0d9c"
+      }
+    },
+    "catalog_restore_events": 1,
+    "administrators": 1
+  },
+  "scope": "Stable entity identities and exact catalog; auth sessions are intentionally excluded because login creates a new session"
+}

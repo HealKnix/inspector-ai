@@ -19,6 +19,7 @@ export interface ExtractionRow {
   value_raw: string | null;
   value: unknown;
   unit: string | null;
+  numerical: unknown;
   alternatives: unknown;
   reason: string | null;
   created_at: Date;
@@ -126,7 +127,7 @@ export class ExtractionService {
       const items = await tx.$queryRaw<ExtractionRow[]>`
         SELECT e.id, e.task_id, e.artifact_id, e.file_id, f.original_name,
                e.parameter_code, e.rule_version_id, e.status, e.stage,
-               e.value_raw, e.value, e.unit, e.alternatives, e.reason, e.created_at
+               e.value_raw, e.value, e.unit, e.numerical, e.alternatives, e.reason, e.created_at
         FROM extractions e
         JOIN extraction_tasks t ON t.id=e.task_id
         JOIN parse_artifacts a ON a.id=t.artifact_id AND a.id=e.artifact_id
@@ -184,7 +185,9 @@ export class ExtractionService {
       }));
       const fingerprints = [...new Set(tasks.map((task) => task.fingerprint))];
       const currentRules =
-        current && !tasks.length ? await this.jobs.approvedRules(tx) : [];
+        current && !tasks.length
+          ? await this.jobs.approvedRules(tx, run.id)
+          : [];
       // Historical configuration is the one recorded on these tasks; do not
       // relabel an old result with today's approved ruleset.
       const fingerprint =

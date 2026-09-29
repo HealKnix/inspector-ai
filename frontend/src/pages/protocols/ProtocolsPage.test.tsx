@@ -13,7 +13,7 @@ import {
   useParams,
 } from "react-router-dom";
 
-import { mockProtocols } from "@/data/protocols";
+import { mockProtocols } from "@/pages/protocols/protocols-test-fixtures";
 import routeNames from "@/routes/routeNames";
 import { useProtocolStore } from "@/store/protocols";
 
@@ -57,7 +57,6 @@ describe("ProtocolsPage", () => {
     expect(
       screen.getByRole("heading", { name: "Протоколы", level: 1 }),
     ).toBeInTheDocument();
-    expect(screen.getByText("ДЕМО")).toBeVisible();
     expect(screen.getByText("3 из 3")).toBeInTheDocument();
     const table = screen.getByRole("grid", { name: "Протоколы проверок" });
     expect(table).toBeInTheDocument();

@@ -41,3 +41,20 @@ RUN mkdir -p /data/originals /data/quarantine /data/derived && chown -R bun:bun 
 USER bun
 EXPOSE 3000
 CMD ["bun", "backend/dist/main.js"]
+
+# The offline delivery follows the Node.js runtime required by the specification.
+# Bun remains the pinned workspace/package manager used by the build stages.
+FROM node:24.16.0-bookworm-slim AS node-runtime-base
+
+FROM migrate AS node-migrate
+ENV CHECKPOINT_DISABLE=1 PRISMA_HIDE_UPDATE_MESSAGE=1
+COPY --from=node-runtime-base /usr/local/bin/node /usr/local/bin/node
+RUN node --version
+CMD ["node", "/app/backend/node_modules/prisma/build/index.js", "migrate", "deploy"]
+
+FROM runtime AS node-runtime
+USER root
+COPY --from=node-runtime-base /usr/local/bin/node /usr/local/bin/node
+RUN node --version
+USER bun
+CMD ["node", "backend/dist/main.js"]

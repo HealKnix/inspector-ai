@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-09-27T11:42:49.721Z",
+  "qualification": "authorised diagnostic PAR replay; no new OCR, domain acceptance or active sheet selection",
+  "engine": "whole-document-identification-v3",
+  "source_sha256": "777ff0d07b12cacc100e5bc661890c9909855c991314d014c8b0f876739ef602",
+  "original_source_sha256": "b8b03fee48855b066fd27eb0c46c832cf2755870857208213eaebb5c33fc709f",
+  "original_page_numbers": [1],
+  "artifact_sha256": "1e39624b7a321d5e9943c9cbfd996fb17ec2222b65d3f9cbb262540ea9c4e2a4",
+  "pipeline_fingerprint": "7b8b1aa6cecb4c3b1605cdcbb02e6305d497de86dce5130a173226b20b0760d3",
+  "candidates": [
+    {
+      "field": "number",
+      "raw": "158-26",
+      "locator": {
+        "page_number": 1,
+        "block_id": "p1-b16",
+        "bbox": [0.1428108, 0.0769213, 0.1903786, 0.0899651]
+      },
+      "context_block_ids": ["p1-b4"]
+    },
+    {
+      "field": "observed_replaced_sheet",
+      "raw": "4",
+      "locator": {
+        "page_number": 1,
+        "block_id": "p1-b36",
+        "bbox": [0.1971961, 0.2027957, 0.2067022, 0.2158395]
+      },
+      "context_block_ids": ["p1-b4", "p1-b17", "p1-b18", "p1-b19", "p1-b38"]
+    },
+    {
+      "field": "revision_label",
+      "raw": "3",
+      "locator": {
+        "page_number": 1,
+        "block_id": "p1-b29",
+        "bbox": [0.1263574, 0.175509, 0.1346822, 0.1885528]
+      },
+      "context_block_ids": ["p1-b4", "p1-b17", "p1-b18", "p1-b19"]
+    },
+    {
+      "field": "observed_replaced_sheet",
+      "raw": "1",
+      "locator": {
+        "page_number": 1,
+        "block_id": "p1-b30",
+        "bbox": [0.1989824, 0.1752053, 0.204926, 0.1882491]
+      },
+      "context_block_ids": ["p1-b4", "p1-b17", "p1-b18", "p1-b19", "p1-b32"]
+    },
+    {
+      "field": "observed_replaced_sheet",
+      "raw": "8",
+      "locator": {
+        "page_number": 1,
+        "block_id": "p1-b40",
+        "bbox": [0.1977915, 0.2303861, 0.2061163, 0.2434299]
+      },
+      "context_block_ids": ["p1-b4", "p1-b17", "p1-b18", "p1-b19", "p1-b42"]
+    }
+  ],
+  "accepted_revision": false,
+  "selected_sheets": false,
+  "passed": true
+}

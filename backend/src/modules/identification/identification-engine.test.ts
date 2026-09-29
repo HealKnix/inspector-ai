@@ -401,6 +401,68 @@ describe("whole-document identification", () => {
       works_to: "2026-04-21",
     });
   });
+  it("identifies valid native skipped labels but does not promote legacy, invalid or ambiguous variants", () => {
+    const source = artifact([
+      block("title", "Рабочая документация"),
+      block("code", "Шифр: TEST-Р-КЖ"),
+    ]);
+    source.pages[0]!.regions = [
+      {
+        id: "unknown",
+        kind: "unknown",
+        bbox: [0, 0, 1, 1],
+        raw_class: null,
+        raw_score: null,
+        method: "skipped",
+        reasons: ["LAYOUT_UNCERTAIN"],
+        table_status: "not_applicable",
+      },
+    ];
+    for (const item of source.pages[0]!.blocks)
+      Object.assign(item, {
+        region_id: "unknown",
+        include_in_main: false,
+        native_valid: true,
+      });
+    const before = JSON.stringify(source);
+    const identify = () =>
+      identifyArtifact({
+        representation: { ...rep, format: "PDF" },
+        artifact: source,
+      });
+    expect(identify().fields).toMatchObject({ stage: "RD", code: "TEST-Р-КЖ" });
+    expect(
+      identify().candidates.find((item) => item.field === "code")!.evidence[0],
+    ).toMatchObject({
+      block_id: "code",
+      quote: "Шифр: TEST-Р-КЖ",
+      bbox: [0.1, 0.1, 0.8, 0.2],
+    });
+    expect(JSON.stringify(source)).toBe(before);
+    delete source.pages[0]!.blocks[0]!.native_valid;
+    source.pages[0]!.blocks[1]!.native_valid = false;
+    expect(identify().fields.stage).toBeUndefined();
+    expect(identify().fields.code).toBeUndefined();
+    const code = source.pages[0]!.blocks[1]!;
+    code.native_valid = true;
+    code.provenance = {
+      schema_version: 1,
+      status: "ambiguous",
+      method: "hybrid",
+      fragments: [
+        {
+          source: "native",
+          raw_text: code.raw_text,
+          bbox: [...code.bbox],
+          native_valid: true,
+          role: "alternative",
+        },
+      ],
+      reasons: ["TEXT_CONFLICT"],
+    };
+    expect(identify().fields.code).toBeUndefined();
+  });
+
   it("marks mixed documents and partial replacement unsupported", () => {
     const result = identifyArtifact({
       representation: { ...rep, format: "PDF" },

@@ -39,9 +39,7 @@ export function reviewFields(
       (reason) => reason.slice("field_conflict:".length) as IdentificationField,
     )
     .filter(
-      (field) =>
-        !["observed_edition", "observed_status"].includes(field) &&
-        field in reviewFieldLabels,
+      (field) => !field.startsWith("observed_") && field in reviewFieldLabels,
     );
   return [...new Set([...regular, ...conflicts])];
 }
@@ -123,7 +121,13 @@ export function referenceOptions(
 }
 
 export type ReviewQuestion = {
-  kind: "restriction" | "field" | "reference" | "approval" | "reference-review";
+  kind:
+    | "restriction"
+    | "sheets"
+    | "field"
+    | "reference"
+    | "approval"
+    | "reference-review";
   text: string;
 };
 export function nextReviewQuestion(
@@ -131,16 +135,28 @@ export function nextReviewQuestion(
   revision: IdentificationRevision,
 ): ReviewQuestion | null {
   const context = revisionContext(registry, revision);
-  const reasons = [...revision.blockers, ...(context?.blockers ?? [])];
-  if (reasons.includes("unsupported_partial_replacement"))
-    return {
-      kind: "restriction",
-      text: "В файле заменены отдельные листы. Проверка реквизитов не определяет состав действующей редакции; такой комплект пока нельзя сравнить автоматически.",
-    };
+  const selectedSheets = registry.contexts.some(
+    (item) =>
+      item.status === "READY" &&
+      [item.sheet_selection?.reference, item.sheet_selection?.actual].some(
+        (selection) =>
+          selection?.chain.some(
+            (entry) => entry.revision_id === revision.revision_id,
+          ),
+      ),
+  );
+  const reasons = [...revision.blockers, ...(context?.blockers ?? [])].filter(
+    (reason) => reason !== "unsupported_partial_replacement" || !selectedSheets,
+  );
   if (reasons.includes("unsupported_mixed_document"))
     return {
       kind: "restriction",
       text: "В файле обнаружено несколько документов. Уточнение реквизитов не разделит их; для сравнения нужны отдельные документы.",
+    };
+  if (reasons.includes("unsupported_partial_replacement"))
+    return {
+      kind: "sheets",
+      text: "В файле заменены отдельные листы. Уточните карту страниц, предшествующую редакцию и заменяемые листы. Утверждение и сроки действия проверяются отдельно.",
     };
   if (
     reasons.some(

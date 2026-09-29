@@ -31,6 +31,38 @@ export interface FindingEvidencePreview {
   value_raw: string | null;
   unit: string | null;
   quote: string;
+  /** Section evidence wire identity; absent for legacy member evidence. */
+  source_ref?: string;
+}
+
+function locatedSectionFragment(
+  fragment: Record<string, unknown>,
+): fragment is Record<string, unknown> & {
+  source_ref: string;
+  file_id: string;
+  artifact_id: string;
+  role: string;
+  quote: string;
+  page_number: number;
+} {
+  return (
+    nonempty(fragment.source_ref) &&
+    nonempty(fragment.file_id) &&
+    nonempty(fragment.artifact_id) &&
+    ["reference", "actual"].includes(String(fragment.role)) &&
+    nonempty(fragment.quote) &&
+    typeof fragment.page_number === "number" &&
+    Number.isSafeInteger(fragment.page_number) &&
+    fragment.page_number > 0 &&
+    (nonempty(fragment.block_id) ||
+      nonempty(fragment.structural_path) ||
+      (Array.isArray(fragment.bbox) &&
+        fragment.bbox.length === 4 &&
+        fragment.bbox.every(
+          (coordinate) =>
+            typeof coordinate === "number" && Number.isFinite(coordinate),
+        )))
+  );
 }
 
 /** First located source in the immutable protocol snapshot. Never infer
@@ -83,6 +115,24 @@ export function frozenFindingEvidencePreview(
             typeof member.value_raw === "string" ? member.value_raw : null,
           unit: typeof member.unit === "string" ? member.unit : null,
           quote: fragment.quote,
+        };
+    }
+  }
+  // Section evidence has genuine source/file/artifact/page/quote locators but
+  // no Extraction id by design — it is a separate, additive proof path.
+  const section = record(frozen.section_analysis);
+  if (section && Array.isArray(section.evidence)) {
+    for (const candidate of section.evidence as unknown[]) {
+      const fragment = record(candidate);
+      if (fragment && locatedSectionFragment(fragment))
+        return {
+          file_id: fragment.file_id,
+          role: fragment.role === "reference" ? "expected" : "actual",
+          value: null,
+          value_raw: null,
+          unit: null,
+          quote: fragment.quote,
+          source_ref: fragment.source_ref,
         };
     }
   }

@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import type { Prisma } from "../../generated/prisma/client.js";
+import { writeAuditEvent } from "../../infrastructure/audit/audit-envelope.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import {
   ObjectAccessService,
@@ -266,7 +267,7 @@ export class ClassificationService {
       await tx.classificationRetryReceipt.create({
         data: { userId: context.userId, objectId, requestId, taskId: next.id },
       });
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           objectId,

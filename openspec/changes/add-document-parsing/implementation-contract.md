@@ -38,6 +38,7 @@ ParseArtifact:
 {
   schema_version: 1;
   region_schema_version?: 1; // regional PDF only; absent for legacy/DOCX/XML
+  text_provenance_schema_version?: 1; // new PDF fusion profile; absent for legacy/DOCX/XML
   source_sha256: string;
   pipeline_fingerprint: string;
   versions: Record<string, string>;
@@ -83,6 +84,28 @@ ParseArtifact:
       column_span: number | null;
       region_id?: string; // required in regional PDF, same-page region
       include_in_main?: boolean; // required in regional PDF; never evidence eligibility
+      native_valid?: boolean; // actual native Unicode/geometry check; absent is unknown
+      provenance?: {
+        schema_version: 1;
+        status: "selected" | "ambiguous";
+        method: "native" | "ocr" | "hybrid";
+        fragments: Array<{
+          source: "native" | "ocr";
+          raw_text: string;
+          bbox: [number, number, number, number]; // original visible-page coordinates
+          native_valid: boolean | null; // null for OCR, never a fabricated legacy result
+          role: "selected" | "alternative";
+        }>;
+        reasons: string[];
+      };
+      table_link?: { // original text crossing columns can remain one unsplit block
+        schema_version: 1;
+        status: "associated" | "ambiguous";
+        table_id: string | null; // null if a unique displayed table cannot be established
+        rows: number[];
+        columns: number[];
+        reasons: string[];
+      };
     }>;
   }>;
 }
@@ -99,6 +122,48 @@ coordinates. pdf_to_normalized/normalized_to_pdf explicitly include that scaling
 OCR orientation is inverted before publishing blocks; the displayed page retains
 the source's visible orientation. Structural views identify their renderer and
 do not pretend to reproduce Microsoft Word pagination.
+
+### Native/OCR fusion extension, 27 September 2026
+
+The new profile declares `parser=par-local-2`,
+`pdf_region_profile=paddle-regions-v2`,
+`table_detector=pp-structure-v3-guarded-v2` and
+`text_provenance=par-text-provenance-v1`. New PDF artifacts carry both schema
+markers. DOCX/XML keep their existing structural route; the common versions map
+does not require PDF markers on them. Legacy artifacts remain readable without
+inventing native validity or fragment provenance. Source and configuration hashes
+are part of the pipeline fingerprint, so incompatible Redis/cache/checkpoints
+cannot become results of the new profile.
+
+Suitable native text has priority over a conflicting OCR reading of the same
+location. Raw candidates and original coordinates remain available; conflict is
+never resolved by concatenating both readings. Uncertain selection is explicit
+and is not eligible as a verified fact merely because a model supplied a score.
+Table structure and text selection have separate evidence: a table model label
+does not assert that the selected characters came from OCR.
+Every nonempty new-profile block must carry provenance; a genuine empty table
+cell may omit it. Its method reflects the sources of all retained fragments,
+including alternatives, while selected roles identify the chosen reading.
+Backend, frontend and OpenAPI reject a method that contradicts those sources.
+
+Cross-column text is not split into invented words or assigned to one column by
+its centre. A table link can preserve the original block and an established row
+association. Rows/columns are zero-based, unique and nonempty. An associated link
+must reference actual cells of the same displayed table on the same page. When
+the original grid is separated into overlapping display parts, an unresolved or
+multiple target becomes an ambiguous link with `table_id=null` and a reason.
+This ambiguity does not erase the underlying native text.
+
+ID/EXT share the PAR eligibility selector. Hidden native fragments from a
+`skipped` region can be read only when `native_valid=true`; they retain their
+original region and locator. The viewer's `include_in_main` selection is not
+changed. Native source blocks hidden behind a reconstructed table are not added
+again as duplicate evidence. Legacy hidden native without an explicit validity
+check is not assumed suitable. `DUPLICATE_NATIVE_READING` marks the suppressed
+duplicate and is also excluded from analysis; the retained primary uses
+`NATIVE_DUPLICATE_ALTERNATIVE_RETAINED`. Conflicting native readings stay
+ambiguous even if OCR happens to agree with one of them. OCR of
+`graphic`/`unknown` remains forbidden.
 
 ## Public read and retry API
 
@@ -172,8 +237,9 @@ limitations; it does not turn the experiment into a quality pass. VLM remains
 excluded. The region viewer exposes the selected boundaries and explanations.
 
 `region_schema_version: 1` is an additive extension of PAR schema 1, used only
-for PDFs. `versions.pdf_region_profile = "paddle-regions-v1"` identifies the
-processing profile and contributes, with code/configuration, to the complete
+for PDFs. The original `versions.pdf_region_profile = "paddle-regions-v1"`
+and the current `paddle-regions-v2` identify the processing profiles and
+contribute, with code/configuration, to the complete
 fingerprint. DOCX/XML may carry the globally configured PDF profile in versions
 but retain their existing non-regional result. New-profile PDF results cannot
 omit the marker; markers and incomplete links cannot be bypassed by stored reads.

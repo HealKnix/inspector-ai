@@ -22,8 +22,8 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import type { Response } from "express";
-import { randomUUID } from "node:crypto";
 import { pipeline } from "node:stream/promises";
+import { currentRequestId } from "../../infrastructure/observability/trace-context.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import { PrivateStorageService } from "../../infrastructure/storage/private-storage.service.js";
 import { type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
@@ -122,7 +122,7 @@ export class DocumentsController {
       this.access.requireInspector(tx, request.user.id),
     );
     const started = Date.now();
-    const requestId = randomUUID();
+    const requestId = currentRequestId();
     const deadline = started + 600_000;
     const upload = await receiveUpload(
       request,

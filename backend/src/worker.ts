@@ -5,7 +5,10 @@ import { createServer } from "node:http";
 import { setTimeout } from "node:timers/promises";
 import "reflect-metadata";
 import { validateEnvironment } from "./config/environment.js";
+import { serveWorkerMetrics } from "./infrastructure/observability/metrics.js";
+import { StructuredLogger } from "./infrastructure/observability/structured-logger.js";
 import { PrismaModule } from "./infrastructure/prisma/prisma.module.js";
+import { PrismaService } from "./infrastructure/prisma/prisma.service.js";
 import { OutboxService } from "./infrastructure/rabbitmq/outbox.service.js";
 import { PrivateStorageService } from "./infrastructure/storage/private-storage.service.js";
 import { IntegrityService } from "./modules/documents/integrity.service.js";
@@ -20,6 +23,7 @@ import { IntegrityService } from "./modules/documents/integrity.service.js";
 class WorkerModule {}
 
 async function main() {
+  Logger.overrideLogger(new StructuredLogger("outbox-worker"));
   const app = await NestFactory.createApplicationContext(WorkerModule);
   const logger = new Logger("IngestionWorker");
   const outbox = app.get(OutboxService);
@@ -27,9 +31,14 @@ async function main() {
   let stopping = false;
   let lastTick = Date.now();
   let cleanupAt = 0;
-  const server = createServer((_request, response) => {
-    response.writeHead(Date.now() - lastTick < 120_000 ? 200 : 503);
-    response.end();
+  const server = createServer((request, response) => {
+    void serveWorkerMetrics(request, response, app.get(PrismaService))
+      .then((handled) => {
+        if (handled) return;
+        response.writeHead(Date.now() - lastTick < 120_000 ? 200 : 503);
+        response.end();
+      })
+      .catch(() => response.writeHead(503).end());
   }).listen(Number(process.env.WORKER_HEALTH_PORT ?? 3001), "0.0.0.0");
   const stop = () => {
     stopping = true;

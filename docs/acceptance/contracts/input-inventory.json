@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "scope": "public methodology inventory, not model quality acceptance",
+  "source_file_hashes_verified": false,
+  "source_file_hash_note": "Original document hashes below are declared by the public manifest; this command independently hashes only allowlisted contract/index/label files. No original PDFs or hidden answers are read.",
+  "hidden_answers_read": false,
+  "sources": [
+    {
+      "path": "ХАКАТОН_УЧАСТНИКАМ_ГОТОВО_К_ПЕРЕДАЧЕ/02_ФОРМАТ_ДАННЫХ_И_ПРИМЕРЫ/data/submission_schema.json",
+      "role": "participant_public_contract_or_metadata",
+      "bytes": 2141,
+      "sha256": "75c58bef6b580528e7e4af8e4fdcdf5a5d40599b8966dae90df38b3a5f04a8d7"
+    },
+    {
+      "path": "ХАКАТОН_УЧАСТНИКАМ_ГОТОВО_К_ПЕРЕДАЧЕ/02_ФОРМАТ_ДАННЫХ_И_ПРИМЕРЫ/data/split_policy.json",
+      "role": "participant_public_contract_or_metadata",
+      "bytes": 333,
+      "sha256": "3ebe82cb742d802a943e7898be81e52ddc569d8f5ee399f162bad042c8104174"
+    },
+    {
+      "path": "ХАКАТОН_УЧАСТНИКАМ_ГОТОВО_К_ПЕРЕДАЧЕ/02_ФОРМАТ_ДАННЫХ_И_ПРИМЕРЫ/data/scoring_summary_without_answers.json",
+      "role": "participant_public_contract_or_metadata",
+      "bytes": 474,
+      "sha256": "4b597e94804053e7be1cf0ed0327594c6932ef921d86e0cc671ecb9b99bd7d9b"
+    },
+    {
+      "path": "ХАКАТОН_УЧАСТНИКАМ_ГОТОВО_К_ПЕРЕДАЧЕ/02_ФОРМАТ_ДАННЫХ_И_ПРИМЕРЫ/data/document_manifest.jsonl",
+      "role": "participant_public_contract_or_metadata",
+      "bytes": 287663,
+      "sha256": "853225daec1888fbed19bbeb45e958154135f069799cea883dcd3c754c6c4ee7"
+    },
+    {
+      "path": "ХАКАТОН_УЧАСТНИКАМ_ГОТОВО_К_ПЕРЕДАЧЕ/02_ФОРМАТ_ДАННЫХ_И_ПРИМЕРЫ/data/parameter_catalog_132.jsonl",
+      "role": "participant_public_contract_or_metadata",
+      "bytes": 98071,
+      "sha256": "c6b73dffbea6bb366fc50f08392522c390bdf7b19420051802bd0bcbd32b4e4f"
+    },
+    {
+      "path": "ХАКАТОН_УЧАСТНИКАМ_ГОТОВО_К_ПЕРЕДАЧЕ/02_ФОРМАТ_ДАННЫХ_И_ПРИМЕРЫ/data/public_train_checks.jsonl",
+      "role": "public_example_labels_not_inference",
+      "bytes": 12512,
+      "sha256": "f992db4b339fa2d5a49176e65693fd38be3b6cbffc5a6838ca9819050db32658"
+    },
+    {
+      "path": "ХАКАТОН_УЧАСТНИКАМ_ГОТОВО_К_ПЕРЕДАЧЕ/02_ФОРМАТ_ДАННЫХ_И_ПРИМЕРЫ/data/public_train_finding_groups.jsonl",
+      "role": "public_example_labels_not_inference",
+      "bytes": 4220,
+      "sha256": "d65f65fd2d2eb023fbde0bc89013fc19bad156bbdc971ebe4703322c7811ea5a"
+    },
+    {
+      "path": "02_ЭТАЛОННАЯ_РАЗМЕТКА_И_МЕТОДИКА/hackathon_gold_20260811/УЧАСТНИКАМ_БЕЗ_ОТВЕТОВ/data/submission_schema.json",
+      "role": "archived_participant_public",
+      "bytes": 2141,
+      "sha256": "75c58bef6b580528e7e4af8e4fdcdf5a5d40599b8966dae90df38b3a5f04a8d7"
+    },
+    {
+      "path": "02_ЭТАЛОННАЯ_РАЗМЕТКА_И_МЕТОДИКА/hackathon_gold_20260811/УЧАСТНИКАМ_БЕЗ_ОТВЕТОВ/data/split_policy.json",
+      "role": "archived_participant_public",
+      "bytes": 333,
+      "sha256": "3ebe82cb742d802a943e7898be81e52ddc569d8f5ee399f162bad042c8104174"
+    },
+    {
+      "path": "02_ЭТАЛОННАЯ_РАЗМЕТКА_И_МЕТОДИКА/hackathon_gold_20260811/УЧАСТНИКАМ_БЕЗ_ОТВЕТОВ/data/scoring_summary_without_answers.json",
+      "role": "archived_participant_public",
+      "bytes": 474,
+      "sha256": "4b597e94804053e7be1cf0ed0327594c6932ef921d86e0cc671ecb9b99bd7d9b"
+    },
+    {
+      "path": "02_ЭТАЛОННАЯ_РАЗМЕТКА_И_МЕТОДИКА/hackathon_gold_20260811/УЧАСТНИКАМ_БЕЗ_ОТВЕТОВ/data/document_manifest.jsonl",
+      "role": "archived_participant_public",
+      "bytes": 287663,
+      "sha256": "853225daec1888fbed19bbeb45e958154135f069799cea883dcd3c754c6c4ee7"
+    },
+    {
+      "path": "02_ЭТАЛОННАЯ_РАЗМЕТКА_И_МЕТОДИКА/hackathon_gold_20260811/УЧАСТНИКАМ_БЕЗ_ОТВЕТОВ/data/parameter_catalog_132.jsonl",
+      "role": "archived_participant_public",
+      "bytes": 98071,
+      "sha256": "c6b73dffbea6bb366fc50f08392522c390bdf7b19420051802bd0bcbd32b4e4f"
+    },
+    {
+      "path": "02_ЭТАЛОННАЯ_РАЗМЕТКА_И_МЕТОДИКА/hackathon_gold_20260811/УЧАСТНИКАМ_БЕЗ_ОТВЕТОВ/data/public_train_checks.jsonl",
+      "role": "archived_participant_public",
+      "bytes": 12512,
+      "sha256": "f992db4b339fa2d5a49176e65693fd38be3b6cbffc5a6838ca9819050db32658"
+    },
+    {
+      "path": "02_ЭТАЛОННАЯ_РАЗМЕТКА_И_МЕТОДИКА/hackathon_gold_20260811/УЧАСТНИКАМ_БЕЗ_ОТВЕТОВ/data/public_train_finding_groups.jsonl",
+      "role": "archived_participant_public",
+      "bytes": 4220,
+      "sha256": "d65f65fd2d2eb023fbde0bc89013fc19bad156bbdc971ebe4703322c7811ea5a"
+    },
+    {
+      "path": "ХАКАТОН_УЧАСТНИКАМ_ГОТОВО_К_ПЕРЕДАЧЕ/02_ФОРМАТ_ДАННЫХ_И_ПРИМЕРЫ/sha256sums_public_package.txt",
+      "role": "public_integrity_manifest",
+      "bytes": 2231,
+      "sha256": "3ddadcb2f4ef49c51a83b13469b07d22357a1a426732792cdbfc7d39577c5a7f"
+    },
+    {
+      "path": "РАЗМЕЧЕННЫЙ_TRAIN_PUBLIC_203/data/files_index.jsonl",
+      "role": "public_annotation_index_not_inference",
+      "bytes": 220740,
+      "sha256": "2f859d7d53b6e4dcaebd22902ce3734b7c7210ebf5e667716c8a6f6d7f80fb78"
+    },
+    {
+      "path": "РАЗМЕЧЕННЫЙ_TRAIN_PUBLIC_203/data/public_gold_checks.jsonl",
+      "role": "public_example_labels_not_inference",
+      "bytes": 18843,
+      "sha256": "9ce45c0af71dd0cea8d775c4246bd7c005a0b5d4ce13779cbefcb351eb189252"
+    },
+    {
+      "path": "РАЗМЕЧЕННЫЙ_TRAIN_PUBLIC_203/data/parameter_catalog_132.jsonl",
+      "role": "public_annotation_catalog",
+      "bytes": 98071,
+      "sha256": "c6b73dffbea6bb366fc50f08392522c390bdf7b19420051802bd0bcbd32b4e4f"
+    },
+    {
+      "path": "РАЗМЕЧЕННЫЙ_TRAIN_PUBLIC_203/QA_SUMMARY.json",
+      "role": "supplier_claim_not_independent_verification",
+      "bytes": 408,
+      "sha256": "26ac90f518f1e764df804fb7eed693291d9c8cf7e1f525e98067d39c4e658927"
+    },
+    {
+      "path": "РАЗМЕЧЕННЫЙ_TRAIN_PUBLIC_203/VALIDATION.json",
+      "role": "supplier_claim_not_independent_verification",
+      "bytes": 1114,
+      "sha256": "eb43278d215cece609af57a76d47d5a12ec9ab85db079e0ccbe52ef9a55bdfac"
+    },
+    {
+      "path": "РАЗМЕЧЕННЫЙ_TRAIN_PUBLIC_203/SHA256SUMS.jsonl",
+      "role": "public_annotation_integrity_manifest",
+      "bytes": 36209,
+      "sha256": "8edf4d1fdc7dae61c4c1ba626c2767d6a581a9f140fb5ced3df0beac7b34e440"
+    }
+  ],
+  "archive_matches_current": [
+    {
+      "name": "submission_schema.json",
+      "matches_current": true
+    },
+    {
+      "name": "split_policy.json",
+      "matches_current": true
+    },
+    {
+      "name": "scoring_summary_without_answers.json",
+      "matches_current": true
+    },
+    {
+      "name": "document_manifest.jsonl",
+      "matches_current": true
+    },
+    {
+      "name": "parameter_catalog_132.jsonl",
+      "matches_current": true
+    },
+    {
+      "name": "public_train_checks.jsonl",
+      "matches_current": true
+    },
+    {
+      "name": "public_train_finding_groups.jsonl",
+      "matches_current": true
+    }
+  ],
+  "public_checksums": [
+    {
+      "name": "submission_schema.json",
+      "match": true
+    },
+    {
+      "name": "split_policy.json",
+      "match": true
+    },
+    {
+      "name": "scoring_summary_without_answers.json",
+      "match": true
+    },
+    {
+      "name": "document_manifest.jsonl",
+      "match": true
+    },
+    {
+      "name": "parameter_catalog_132.jsonl",
+      "match": true
+    },
+    {
+      "name": "public_train_checks.jsonl",
+      "match": true
+    },
+    {
+      "name": "public_train_finding_groups.jsonl",
+      "match": true
+    }
+  ],
+  "manifest": {
+    "total": 416,
+    "included": 416,
+    "by_split": {
+      "TEST_HIDDEN": 213,
+      "TRAIN_PUBLIC": 203
+    },
+    "by_object": {
+      "OBJ-NOVOSLOBODSKAYA": 145,
+      "OBJ-RECHNIKOV-7-7": 213,
+      "OBJ-TYUMENSKAYA-5-GOLD-SEED": 58
+    },
+    "by_extension": {
+      ".7z": 11,
+      ".docx": 6,
+      ".dwg": 5,
+      ".pdf": 366,
+      ".rar": 7,
+      ".txt": 1,
+      ".zip": 20
+    },
+    "cross_split_hash_collisions": []
+  },
+  "catalog": {
+    "rows": 132,
+    "unique_parameter_codes": 132
+  },
+  "public_examples": {
+    "atomic_checks": 10,
+    "groups": 4,
+    "objects": {
+      "OBJ-TYUMENSKAYA-5-GOLD-SEED": 10
+    },
+    "labels": {
+      "VIOLATION_PRESENT": 10
+    },
+    "page_only_evidence": true
+  },
+  "annotated_public": {
+    "files": 203,
+    "objects": {
+      "OBJ-NOVOSLOBODSKAYA": 145,
+      "OBJ-TYUMENSKAYA-5-GOLD-SEED": 58
+    },
+    "statuses": {
+      "FORMAT_CARD_ONLY_NOT_COORDINATE_GOLD": 1,
+      "MACHINE_ASSISTED_PREANNOTATION_NEEDS_EXPERT_ACCEPTANCE": 202
+    },
+    "gold_checks": 15,
+    "gold_statuses": {
+      "FINAL_GOLD_EXISTENCE": 10,
+      "GOLD_READY_SECOND_REVIEW": 5
+    },
+    "labels": {
+      "NO_VIOLATION": 5,
+      "VIOLATION_PRESENT": 10
+    }
+  },
+  "errors": [],
+  "passed": true
+}

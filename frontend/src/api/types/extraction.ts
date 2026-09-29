@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  compositeSpecSchema,
+  compositeTraceSchema,
+} from "./composite-comparison";
 
 const coordinate = z.number().min(0).max(1);
 
@@ -26,12 +30,14 @@ const extractionItemStatusSchema = z.enum([
 ]);
 
 const extractionAlternativeSchema = z.object({
+  numerical: z.record(z.string(), z.unknown()).nullish(),
   value_raw: z.string().nullable(),
   value: z.union([z.number(), z.string()]).nullable(),
   unit: z.string().nullable(),
 });
 
 export const extractionItemSchema = z.object({
+  numerical: z.record(z.string(), z.unknown()).nullish(),
   id: z.uuid(),
   task_id: z.uuid(),
   artifact_id: z.uuid(),
@@ -69,6 +75,7 @@ export const extractionStatusSchema = z.object({
 });
 
 const evidenceMemberSchema = z.object({
+  numerical: z.record(z.string(), z.unknown()).nullish(),
   extraction_id: z.uuid(),
   file_id: z.uuid(),
   artifact_id: z.uuid(),
@@ -81,19 +88,44 @@ const evidenceMemberSchema = z.object({
   rule_version_id: z.uuid(),
 });
 
-const comparisonSpecSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("equals") }),
+const scalarComparisonSpecSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("equals"),
+    numerical_policy: z.record(z.string(), z.unknown()).optional(),
+  }),
   z.object({
     kind: z.literal("numeric_delta"),
-    tolerance_abs: z.number().optional(),
-    tolerance_pct: z.number().optional(),
+    tolerance_abs: z.union([z.number(), z.string()]).optional(),
+    tolerance_pct: z.union([z.number(), z.string()]).optional(),
+    numerical_policy: z.record(z.string(), z.unknown()).optional(),
+    inclusive: z.boolean().optional(),
   }),
-  z.object({ kind: z.literal("no_decrease") }),
-  z.object({ kind: z.literal("no_increase") }),
+  z.object({
+    kind: z.literal("no_decrease"),
+    numerical_policy: z.record(z.string(), z.unknown()).optional(),
+  }),
+  z.object({
+    kind: z.literal("no_increase"),
+    numerical_policy: z.record(z.string(), z.unknown()).optional(),
+  }),
   z.object({
     kind: z.literal("threshold"),
-    min: z.number().optional(),
-    max: z.number().optional(),
+    min: z.union([z.number(), z.string()]).optional(),
+    max: z.union([z.number(), z.string()]).optional(),
+    numerical_policy: z.record(z.string(), z.unknown()).optional(),
+    min_inclusive: z.boolean().optional(),
+    max_inclusive: z.boolean().optional(),
+  }),
+  z.object({
+    kind: z.literal("ordered_category"),
+    direction: z.enum(["no_decrease", "no_increase"]),
+    map_version: z.string(),
+    ranks: z.record(z.string(), z.number()),
+    basis: z.object({
+      reference: z.string(),
+      version: z.string(),
+      locator: z.string(),
+    }),
   }),
 ]);
 
@@ -117,6 +149,7 @@ const verdictMemberSchema = z.object({
 });
 
 const comparisonPairSchema = z.object({
+  trace: z.record(z.string(), z.unknown()).optional(),
   expected_extraction_id: z.uuid().nullable(),
   actual_extraction_id: z.uuid().nullable(),
   result: z.enum(["match", "mismatch", "not_comparable"]),
@@ -126,9 +159,11 @@ const comparisonPairSchema = z.object({
 });
 
 const groupVerdictSchema = z.object({
+  composite: compositeTraceSchema.optional(),
+  rule_basis: z.record(z.string(), z.unknown()).optional(),
   engine: z.string(),
   status: verdictStatusSchema,
-  spec: comparisonSpecSchema.nullable(),
+  spec: z.union([scalarComparisonSpecSchema, compositeSpecSchema]).nullable(),
   expected: z.array(verdictMemberSchema).nullable(),
   actual: z.array(verdictMemberSchema).nullable(),
   pairs: z.array(comparisonPairSchema),

@@ -4,6 +4,7 @@ import math
 from common import ParseError, bbox_pixels, block, finalize_page, save_page
 from pdf_regions import (attach_native, layout_regions, native_table_cells, overlap,
                          residual_regions, uncovered_lines, valid_native)
+from pdf_fusion import annotate, eligible, provenance, fragment, reconcile_readings, reconcile_table
 
 
 def render_region(page, region, settings):
@@ -42,9 +43,12 @@ def map_to_page(item, crop_box, owner):
 
 
 def process_region(page, owner, blocks, settings, ocr, progress, excluded):
-    if owner["kind"] in ("graphic", "unknown"):
-        return
     native = [item for item in blocks if item.get("region_id") == owner["id"] and item["source"] == "native"]
+    if owner["kind"] in ("graphic", "unknown"):
+        # Skipping recognition does not make duplicate or conflicting native
+        # strings reliable. They are inspected without rendering/detection/OCR.
+        reconcile_readings(native, [], include_hidden_native=True)
+        return
     usable = [item for item in native if item["_native_valid"]]
     if len(usable) != len(native):
         owner["reasons"].append("NATIVE_TEXT_ENCODING")
@@ -73,9 +77,14 @@ def process_region(page, owner, blocks, settings, ocr, progress, excluded):
             owner["reasons"].append("OCR_LOW_CONFIDENCE")
     elif not polygons and not usable:
         owner["reasons"].append("NO_DETECTED_TEXT")
+    # Reconcile in the page coordinate system, before giving the table model
+    # any lines. Overlapping native/OCR alternatives must not enter its HTML
+    # matcher as two independent text fragments.
+    recognized = [map_to_page(item, crop_box, owner) for item in recognized]
+    reconcile_readings(native, recognized)
     if owner["kind"] == "text":
         owner["method"] = "hybrid" if missing and usable else "ocr" if missing or not usable else "native"
-        blocks.extend(map_to_page(item, crop_box, owner) for item in recognized)
+        blocks.extend(recognized)
         return
     cells = []
     if usable and not missing:
@@ -85,20 +94,28 @@ def process_region(page, owner, blocks, settings, ocr, progress, excluded):
             item.update(region_id=owner["id"], include_in_main=True)
     else:
         owner["method"] = "hybrid" if usable else "table_ocr"
-        if local or recognized:
+        selected = [item for item in usable + recognized if eligible(item)]
+        if selected:
             progress("ocr")
-            candidates, table_reasons = ocr.structure_region(crop, local + recognized)
+            candidates, table_reasons = ocr.structure_region(crop, local_native(selected, crop_box))
             cells = [map_to_page(item, crop_box, owner) for item in candidates if item["kind"] == "table_cell"]
             owner["reasons"].extend(reason for reason in table_reasons if reason != "OCR_TABLE_TEXT_DIFFERENCE")
-            blocks.extend(map_to_page(item, crop_box, owner) for item in candidates if item["kind"] != "table_cell")
-        blocks.extend(map_to_page(item, crop_box, owner) for item in recognized)
+            for item in candidates:
+                if item["kind"] == "table_cell":
+                    continue
+                map_to_page(item, crop_box, owner)
+                annotate(item)
+                # This enclosing-table audit text duplicates the supplied
+                # located lines and cannot assert a second extraction value.
+                item["include_in_main"] = False
+                item["provenance"] = provenance([fragment(item, "alternative")], ambiguous=True,
+                                                 reasons=["TABLE_AGGREGATE_AUDIT_ONLY"])
+                blocks.append(item)
+        blocks.extend(recognized)
     if cells:
         owner["table_status"] = "structured"
         owner["reasons"].append("TABLE_STRUCTURE_UNVERIFIED")
-        for item in native:
-            if any(overlap(item["bbox"], cell["bbox"]) >= .5 and item["raw_text"] in cell["raw_text"] for cell in cells):
-                item["include_in_main"] = False
-        blocks.extend(cells)
+        blocks.extend(reconcile_table(cells, native, recognized))
     else:
         owner["table_status"] = "unconfirmed" if usable or recognized else "unreadable"
         owner["reasons"].append("TABLE_STRUCTURE_UNAVAILABLE")
@@ -176,10 +193,18 @@ def parse_pdf(path, settings, versions, ocr, progress, checkpoint=None):
                                              and valid_native(strict_text, strict.get("dir", []), strict["bbox"]))
                     blocks.append(item)
             attach_native(blocks, regions, number)
+            for item in blocks:
+                annotate(item)
             residual_regions(image, regions, number)
             excluded = [owner["bbox"] for owner in regions if owner["kind"] in ("graphic", "unknown")]
             for owner in regions:
                 process_region(page, owner, blocks, settings, ocr, stage, excluded)
+                owned = [item for item in blocks if item.get("region_id") == owner["id"]]
+                if any(item.get("provenance", {}).get("status") == "ambiguous" for item in owned):
+                    owner["reasons"].append("TEXT_READING_AMBIGUOUS")
+                    reasons.append("TEXT_READING_AMBIGUOUS")
+                if any(item.get("table_link", {}).get("status") == "ambiguous" for item in owned):
+                    owner["reasons"].append("TABLE_TEXT_ASSOCIATION_AMBIGUOUS")
                 owner["reasons"] = sorted(set(owner["reasons"]))
                 if owner["kind"] in ("text", "table"):
                     reasons.extend(owner["reasons"])

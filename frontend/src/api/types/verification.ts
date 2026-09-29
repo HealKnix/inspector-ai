@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { compositeTraceSchema } from "./composite-comparison";
+import { sectionAnalysisSnapshotSchema } from "./section-analysis";
 
 export const apiFindingStatusSchema = z.enum([
   "CANDIDATE",
@@ -28,6 +30,7 @@ const memberRefSchema = z.object({
 });
 
 const comparisonPairSchema = z.object({
+  trace: z.record(z.string(), z.unknown()).optional(),
   expected_extraction_id: z.uuid().nullable(),
   actual_extraction_id: z.uuid().nullable(),
   result: z.enum(["match", "mismatch", "not_comparable"]),
@@ -55,6 +58,8 @@ export const comparisonContextSchema = z.object({
 });
 
 export const groupVerdictSchema = z.object({
+  composite: compositeTraceSchema.optional(),
+  rule_basis: z.record(z.string(), z.unknown()).optional(),
   engine: z.string(),
   status: z.enum([
     "match",
@@ -102,6 +107,8 @@ export const findingItemSchema = z.object({
   finding_version: z.number().int().positive(),
   gate_reasons: z.array(z.string()).nullable(),
   verdict: groupVerdictSchema.nullable(),
+  // Additive frozen section-analysis payload (D7); absent on older responses.
+  section_analysis: sectionAnalysisSnapshotSchema.nullish(),
 });
 
 export type ApiFinding = z.infer<typeof findingItemSchema>;
@@ -121,6 +128,7 @@ const evidenceFragmentSchema = z.object({
 export type EvidenceFragment = z.infer<typeof evidenceFragmentSchema>;
 
 const groupMemberSchema = z.object({
+  numerical: z.record(z.string(), z.unknown()).nullish(),
   extraction_id: z.uuid(),
   file_id: z.uuid(),
   artifact_id: z.uuid().optional(),
@@ -149,6 +157,16 @@ const findingDecisionSchema = z.object({
 export type ApiFindingDecision = z.infer<typeof findingDecisionSchema>;
 
 export const findingsResponseSchema = z.object({
+  rule_release: z
+    .object({
+      id: z.uuid(),
+      manifest_hash: z.string(),
+      mode: z.enum(["partial", "full", "legacy_capture"]),
+      executable_parameters: z.number().int(),
+      admitted_parameters: z.number().int(),
+      omitted_parameter_codes: z.array(z.string()),
+    })
+    .nullish(),
   schema_version: z.literal(1),
   object_id: z.uuid(),
   protocol_id: z.uuid().nullable(),

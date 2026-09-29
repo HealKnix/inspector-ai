@@ -13,6 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from common import ParseError, is_uuid
 from config import Settings, fingerprint, integer
 from pipeline import parse, validate_request
+from observability import emit, trace
 
 
 def deny_network(*_args, **_kwargs):
@@ -211,6 +212,7 @@ class Handler(BaseHTTPRequestHandler):
         pass  # URL/request identifiers and documents are deliberately not logged here.
 
     def reply(self, status, body):
+        self.observation_status = status
         payload = json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -249,8 +251,14 @@ class Handler(BaseHTTPRequestHandler):
         raise ParseError("NOT_FOUND", status=404)
 
     def handle_request(self):
+        started = time.monotonic()
+        authenticated = hmac.compare_digest(self.headers.get("Authorization", ""), "Bearer " + self.server.token)
+        context = trace(self.headers if authenticated else {})
+        self.observation_status = 503
+        operation = self.path.strip("/").split("/", 1)[0]
         if not self.server.slots.acquire(blocking=False):
             self.reply(503, {"code": "parser_busy", "retryable": True})
+            emit(context, self.observation_status, time.monotonic() - started, operation)
             return
         try:
             self.reply(200, self.dispatch())
@@ -262,6 +270,7 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(503, {"code": "parser_failure", "retryable": True})
         finally:
             self.server.slots.release()
+            emit(context, self.observation_status, time.monotonic() - started, operation)
 
     do_GET = handle_request
     do_POST = handle_request

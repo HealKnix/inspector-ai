@@ -22,7 +22,9 @@ import {
   type VerificationFinding,
   type VerificationFindingDecision,
 } from "@/pages/verification/types";
+import type { SectionEvidenceTarget } from "../lib/evidence-navigation";
 
+import { SectionAnalysisDetails } from "./SectionAnalysisDetails";
 import { VerificationIcon } from "./VerificationIcon";
 import {
   findingMarkerPresentation,
@@ -30,7 +32,7 @@ import {
 } from "./verification-presentation";
 
 type DetailTab =
-  "comparison" | "rationale" | "documents" | "evidence" | "history";
+  "comparison" | "section" | "rationale" | "documents" | "evidence" | "history";
 /** Действия инспектора — целевые статусы; CANDIDATE = вернуть в работу. */
 type ReviewAction =
   | typeof FindingStatus.CONFIRMED_VIOLATION
@@ -99,11 +101,15 @@ interface DiscrepancyDetailsProps {
   finding: VerificationFinding;
   onDecision: (decision: VerificationFindingDecision) => void | Promise<void>;
   onLocate?: (fileId: string, page: number) => void;
+  /** Рольная навигация по секционным цитатам (reference→лево, actual→право). */
+  onLocateSection?: (target: SectionEvidenceTarget) => void;
   onNext: () => void;
   onPrevious: () => void;
   decisionPending?: boolean;
   /** Финализированный протокол или недоступный процесс — скрыть кнопки. */
   decisionsDisabled?: boolean;
+  /** Секционные цитаты, разрешённые в открываемые замороженные файлы. */
+  sectionTargets?: readonly SectionEvidenceTarget[];
   totalCount: number;
 }
 
@@ -184,10 +190,12 @@ export function DiscrepancyDetails({
   finding,
   onDecision,
   onLocate,
+  onLocateSection,
   onNext,
   onPrevious,
   decisionPending = false,
   decisionsDisabled = false,
+  sectionTargets,
   totalCount,
 }: DiscrepancyDetailsProps) {
   const [tabState, setTabState] = useState<{
@@ -208,9 +216,16 @@ export function DiscrepancyDetails({
   const actions = decisionsDisabled
     ? []
     : availableActions(finding.findingStatus);
-  const detailTabs = detail
-    ? [...baseDetailTabs, ...apiDetailTabs]
-    : baseDetailTabs;
+  // «Анализ разделов» показывается и у исторической записи — включая
+  // находки времени, когда режим уже отключён.
+  const detailTabs = [
+    ...baseDetailTabs.slice(0, 1),
+    ...(detail?.section_analysis
+      ? [{ id: "section" as DetailTab, label: "Анализ разделов" }]
+      : []),
+    ...baseDetailTabs.slice(1),
+    ...(detail ? apiDetailTabs : []),
+  ];
 
   const startReview = (action: ReviewAction) => {
     setReviewDraft({
@@ -622,6 +637,17 @@ export function DiscrepancyDetails({
               ) : null}
             </div>
           </Tabs.Panel>
+
+          {detail?.section_analysis ? (
+            <Tabs.Panel className="pt-4" id="section">
+              <SectionAnalysisDetails
+                fileNames={fileNames}
+                onLocate={onLocateSection}
+                section={detail.section_analysis}
+                targets={sectionTargets}
+              />
+            </Tabs.Panel>
+          ) : null}
 
           <Tabs.Panel className="pt-4" id="rationale">
             <div className="grid gap-4 min-[900px]:grid-cols-2">

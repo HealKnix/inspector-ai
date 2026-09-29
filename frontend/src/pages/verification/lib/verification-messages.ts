@@ -49,6 +49,12 @@ const reasonLabels: Record<string, string> = {
   type_mismatch: "Извлечённые значения имеют разные типы.",
   non_numeric:
     "Для этой проверки нужно числовое значение; извлечённое значение не удалось сопоставить.",
+  section_context_incomplete:
+    "Анализу разделов не хватило контекста для вывода.",
+  section_fact_missing: "Анализ разделов не вернул факт для этого параметра.",
+  section_coverage_incomplete: "Раздел проверен не полностью.",
+  section_role_missing:
+    "Анализ разделов не получил цитат с обеих сторон сравнения.",
 };
 
 export function verificationReason(reason: string): string {
@@ -59,5 +65,48 @@ export function verificationReason(reason: string): string {
     return "Значение ниже допустимой границы.";
   if (reason.startsWith("above_max:"))
     return "Значение выше допустимой границы.";
+  if (
+    reason.startsWith("block_omitted:") ||
+    reason.startsWith("chunk_omitted:") ||
+    reason.startsWith("discovery_candidates_omitted:")
+  )
+    return "Часть материала раздела не была проверена.";
+  if (reason.startsWith("discovery_failed:"))
+    return "Раздел найден не полностью.";
+  if (reason.startsWith("context_blocker:"))
+    return "Часть контекста раздела недоступна.";
+  if (reason.startsWith("expansion_unserved:"))
+    return "Часть раздела не вошла в проверку.";
+  if (reason.startsWith("row_unanswered:"))
+    return "Ответ по части параметров не получен.";
   return "Для продолжения проверки требуется уточнение исходных данных.";
+}
+
+const missingContextPrefixes: ReadonlyArray<readonly [string, string]> = [
+  ["discovery_failed:", "Раздел найден не полностью."],
+  ["context_blocker:", "Часть контекста раздела недоступна."],
+  ["expansion_unserved:", "Часть раздела не вошла в проверку."],
+  ["row_unanswered:", "Ответ по части параметров не получен."],
+  ["block_omitted:", "Часть материала раздела не была проверена."],
+  ["chunk_omitted:", "Часть материала раздела не была проверена."],
+  ["discovery_candidates_omitted:", "Не все кандидаты раздела проверены."],
+];
+
+/**
+ * Недостающий контекст анализа разделов: известные машинные коды переводятся
+ * в объяснение для инспектора, свободный текст от модели сохраняется как есть.
+ */
+export function missingContextText(item: string): string {
+  // `discovery_missing:<human>` carries an inspector-readable suffix.
+  if (item.startsWith("discovery_missing:")) {
+    const human = item.slice("discovery_missing:".length).trim();
+    return human || "Раздел найден не полностью.";
+  }
+  for (const [prefix, text] of missingContextPrefixes) {
+    if (item.startsWith(prefix)) return text;
+  }
+  // Opaque `code:value` entries do not explain anything to the inspector.
+  if (/^[a-z0-9_.:-]+$/i.test(item))
+    return "Часть контекста недоступна для анализа.";
+  return item;
 }

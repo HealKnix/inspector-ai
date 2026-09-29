@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// Массовое драфтинг/прогон/утверждение правил извлечения по 132 строкам матрицы.
+// Массовое создание предложений и диагностический прогон правил Матрицы.
 //
 // Цикл на параметр: draft-llm (план по реальным артефактам) → createDraft с
 // comparison-спекой, выведенной из текста триггера → dry-run по артефактам
-// объекта → approve, если хотя бы один артефакт дал `extracted`.
+// объекта. Утверждение отдельно требует паспорта и серверной регрессии.
 // Всё через публичный admin API — аудит и версионирование сохраняются.
 //
 // Пример:
@@ -17,7 +17,6 @@ const LOGIN = required(args.login, "--login");
 const PASSWORD = required(args.password, "--password");
 const OBJECT_ID = required(args.object, "--object");
 const ONLY = args.codes ? new Set(args.codes.split(",")) : null;
-const AUTO_APPROVE = args["no-approve"] !== true;
 const OUT = args.out ?? `batch-rules-${Date.now()}.json`;
 const DELAY_MS = Number(args.delay ?? 300);
 
@@ -137,7 +136,9 @@ async function call(path, opts = {}, attempt = 0) {
 async function main() {
   token = await login();
   tokenIssuedAt = Date.now();
-  console.log(`API ${API}, объект ${OBJECT_ID}, авто-approve: ${AUTO_APPROVE}`);
+  console.log(
+    `API ${API}, объект ${OBJECT_ID}; только предложения, без approve`,
+  );
 
   const rowsRes = await api("/v1/admin/matrix/rows", { token });
   if (rowsRes.status !== 200)
@@ -176,8 +177,8 @@ async function main() {
       const rules = rulesRes.data?.versions ?? rulesRes.data?.rules ?? [];
       const approved = rules.find((r) => r.status === "approved");
       if (approved) {
-        // Approved без comparison-спеки: довешиваем спеку новой версией —
-        // план извлечения уже доказан, dry-run подтверждает актуальность.
+        // Наличие исторического approved не доказывает предметную регрессию.
+        // Дополнение comparison остаётся новым предложением для ручного review.
         if (approved.comparison == null) {
           const comparison = deriveComparison(trigger, row.unit);
           const res = await call(`/v1/admin/matrix/rows/${code}/rules`, {
@@ -212,16 +213,12 @@ async function main() {
             (r) => r.outcome?.status === "extracted",
           ).length;
           entry.steps.dry_run = { extracted, comparison };
-          if (AUTO_APPROVE && dry.status === 200 && extracted > 0) {
-            const ok = await call(
-              `/v1/admin/matrix/rules/${target.id}/approve`,
-              { method: "POST" },
-            );
-            entry.final =
-              ok.status === 200 ? "comparison_backfilled" : "approve_failed";
-          } else {
-            entry.final = "backfill_no_extraction";
-          }
+          entry.final =
+            dry.status === 200
+              ? "comparison_proposed_requires_review"
+              : "dry_run_failed";
+          entry.steps.review_required =
+            "passport + hash-bound regression + administrator approval";
           report.push(entry);
           console.log(
             `${code}: ${entry.final} (extracted ${extracted}, comparison=${comparison.kind})`,
@@ -339,22 +336,13 @@ async function main() {
       entry.steps.dry_run = { outcomes };
       const extracted = outcomes.filter((o) => o.status === "extracted").length;
 
-      // 5. Авто-approve при хотя бы одном extracted.
-      if (AUTO_APPROVE && extracted > 0) {
-        const ok = await call(`/v1/admin/matrix/rules/${target.id}/approve`, {
-          method: "POST",
-        });
-        entry.steps.approve =
-          ok.status === 200
-            ? "approved"
-            : `HTTP ${ok.status} ${JSON.stringify(ok.data).slice(0, 160)}`;
-        entry.final = ok.status === 200 ? "approved" : "approve_failed";
-      } else {
-        entry.final =
-          extracted > 0
-            ? "dry_run_extracted_not_approved"
-            : "dry_run_no_extraction";
-      }
+      // Dry-run is diagnostic only: it supplies no expected values or negatives.
+      entry.steps.review_required =
+        "passport + hash-bound regression + administrator approval";
+      entry.final =
+        extracted > 0
+          ? "dry_run_extracted_requires_review"
+          : "dry_run_no_extraction";
       console.log(
         `${code}: ${entry.final} (extracted ${extracted}/${outcomes.length}, comparison=${comparison?.kind ?? "—"})`,
       );

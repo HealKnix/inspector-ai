@@ -14,10 +14,12 @@ import {
   REFRESH_TOKEN_COOKIE_NAME,
   REFRESH_TOKEN_SECURITY_NAME,
 } from "./common/const/auth.constants.js";
+import { StructuredLogger } from "./infrastructure/observability/structured-logger.js";
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bodyParser: false,
+    logger: new StructuredLogger("api"),
   });
   const configService = app.get(ConfigService);
   const frontendUrl = configService.getOrThrow<string>("FRONTEND_URL");

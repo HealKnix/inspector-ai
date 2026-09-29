@@ -4,6 +4,27 @@ export const HASH = /^[0-9a-f]{64}$/;
 export const MAX_ARTIFACT_BYTES = 64 * 1024 * 1024;
 export type Quality = "OK" | "LOW_QUALITY" | "ABSTAIN";
 export type ArtifactValidationMode = "strict" | "stored";
+export interface TextProvenance {
+  schema_version: 1;
+  status: "selected" | "ambiguous";
+  method: "native" | "ocr" | "hybrid";
+  fragments: {
+    source: "native" | "ocr";
+    raw_text: string;
+    bbox: [number, number, number, number];
+    native_valid: boolean | null;
+    role: "selected" | "alternative";
+  }[];
+  reasons: string[];
+}
+export interface TableLink {
+  schema_version: 1;
+  status: "associated" | "ambiguous";
+  table_id: string | null;
+  rows: number[];
+  columns: number[];
+  reasons: string[];
+}
 export interface ParseRegion {
   id: string;
   kind: "text" | "table" | "graphic" | "unknown";
@@ -32,6 +53,9 @@ export interface ParseBlock {
   column_span: number | null;
   region_id?: string;
   include_in_main?: boolean;
+  native_valid?: boolean;
+  provenance?: TextProvenance;
+  table_link?: TableLink;
 }
 export interface ParsePage {
   page_number: number;
@@ -49,6 +73,7 @@ export interface ParsePage {
 export interface ParseArtifactData {
   schema_version: 1;
   region_schema_version?: 1;
+  text_provenance_schema_version?: 1;
   source_sha256: string;
   pipeline_fingerprint: string;
   versions: Record<string, string>;
@@ -111,6 +136,125 @@ function box(value: unknown): value is number[] {
 }
 function vector(value: unknown, size: number): value is number[] {
   return Array.isArray(value) && value.length === size && value.every(finite);
+}
+
+function validateTextMetadata(
+  block: Record<string, unknown>,
+  versioned: boolean,
+) {
+  if (!versioned) {
+    check(
+      block.native_valid === undefined &&
+        block.provenance === undefined &&
+        block.table_link === undefined,
+    );
+    return;
+  }
+  check(
+    block.source === "native"
+      ? typeof block.native_valid === "boolean"
+      : block.native_valid === undefined,
+  );
+  if (block.native_valid === false) check(block.include_in_main === false);
+  if (typeof block.raw_text === "string" && block.raw_text.length > 0)
+    check(block.provenance !== undefined);
+  if (block.provenance !== undefined) {
+    const value = block.provenance;
+    check(
+      record(value) &&
+        Object.keys(value).every((key) =>
+          [
+            "schema_version",
+            "status",
+            "method",
+            "fragments",
+            "reasons",
+          ].includes(key),
+        ),
+    );
+    check(
+      value.schema_version === 1 &&
+        ["selected", "ambiguous"].includes(String(value.status)) &&
+        ["native", "ocr", "hybrid"].includes(String(value.method)) &&
+        reasons(value.reasons),
+    );
+    check(
+      Array.isArray(value.fragments) &&
+        value.fragments.length > 0 &&
+        value.fragments.length <= 10_000,
+    );
+    for (const fragment of value.fragments) {
+      check(
+        record(fragment) &&
+          Object.keys(fragment).every((key) =>
+            ["source", "raw_text", "bbox", "native_valid", "role"].includes(
+              key,
+            ),
+          ),
+      );
+      check(
+        ["native", "ocr"].includes(String(fragment.source)) &&
+          text(fragment.raw_text) &&
+          box(fragment.bbox) &&
+          ["selected", "alternative"].includes(String(fragment.role)),
+      );
+      check(
+        fragment.source === "native"
+          ? typeof fragment.native_valid === "boolean"
+          : fragment.native_valid === null,
+      );
+    }
+    const sources = new Set(
+      value.fragments.map(
+        (fragment: Record<string, unknown>) => fragment.source,
+      ),
+    );
+    check(value.method === (sources.size > 1 ? "hybrid" : [...sources][0]));
+    if (value.status === "ambiguous")
+      check(block.include_in_main === false && value.reasons.length > 0);
+    else
+      check(
+        value.fragments.some(
+          (fragment: Record<string, unknown>) => fragment.role === "selected",
+        ),
+      );
+  }
+  if (block.table_link !== undefined) {
+    const link = block.table_link;
+    check(
+      record(link) &&
+        Object.keys(link).every((key) =>
+          [
+            "schema_version",
+            "status",
+            "table_id",
+            "rows",
+            "columns",
+            "reasons",
+          ].includes(key),
+        ),
+    );
+    check(
+      link.schema_version === 1 &&
+        ["associated", "ambiguous"].includes(String(link.status)) &&
+        reasons(link.reasons),
+    );
+    check(
+      (typeof link.table_id === "string" &&
+        link.table_id.length > 0 &&
+        link.table_id.length <= 256) ||
+        (link.status === "ambiguous" && link.table_id === null),
+    );
+    for (const indices of [link.rows, link.columns])
+      check(
+        Array.isArray(indices) &&
+          indices.length > 0 &&
+          indices.length <= 10_000 &&
+          indices.every((item) => integer(item)) &&
+          new Set(indices).size === indices.length,
+      );
+    if (link.status === "ambiguous") check(link.reasons.length > 0);
+  }
 }
 
 function validateRegion(value: unknown): ParseRegion {
@@ -266,6 +410,7 @@ export function validateArtifact(
   const allowed = new Set([
     "schema_version",
     "region_schema_version",
+    "text_provenance_schema_version",
     "source_sha256",
     "pipeline_fingerprint",
     "versions",
@@ -288,6 +433,11 @@ export function validateArtifact(
   );
   const regional = value.region_schema_version === 1;
   check(
+    value.text_provenance_schema_version === undefined ||
+      value.text_provenance_schema_version === 1,
+  );
+  const provenanceVersioned = value.text_provenance_schema_version === 1;
+  check(
     value.source_sha256 === sourceHash &&
       value.pipeline_fingerprint === fingerprint,
   );
@@ -304,6 +454,10 @@ export function validateArtifact(
         version.length > 0 &&
         version.length <= 256,
     ),
+  );
+  check(
+    provenanceVersioned ===
+      (regional && value.versions.text_provenance === "par-text-provenance-v1"),
   );
   check(
     text(value.raw_text) &&
@@ -366,9 +520,17 @@ export function validateArtifact(
     const pdfPage = transform.structural_mapping !== true;
     if (regional)
       check(
-        pdfPage && value.versions.pdf_region_profile === "paddle-regions-v1",
+        pdfPage &&
+          ["paddle-regions-v1", "paddle-regions-v2"].includes(
+            String(value.versions.pdf_region_profile),
+          ),
       );
-    if (pdfPage && value.versions.pdf_region_profile === "paddle-regions-v1")
+    if (
+      pdfPage &&
+      ["paddle-regions-v1", "paddle-regions-v2"].includes(
+        String(value.versions.pdf_region_profile),
+      )
+    )
       check(regional);
     const pageRegions = new Map<string, ParseRegion>();
     if (regional) {
@@ -479,6 +641,7 @@ export function validateArtifact(
           block.source === "ocr" ||
           block.source === "structured",
       );
+      validateTextMetadata(block, provenanceVersioned);
       if (regional) {
         validateRegionBlock(block, pageRegions);
         if (block.kind === "table_cell")
@@ -541,6 +704,29 @@ export function validateArtifact(
           });
           tables.set(block.table_id, cells);
         }
+      }
+    }
+    for (const block of page.blocks as ParseBlock[]) {
+      const link = block.table_link;
+      if (!link || link.table_id === null) continue;
+      const cells = tables.get(link.table_id);
+      check(cells);
+      if (link.status === "associated") {
+        // A link names actual cells, including their spans; a nearby label is
+        // never silently attached to a made-up row or a different page.
+        check(
+          link.rows.every((row) =>
+            link.columns.every((column) =>
+              cells.some(
+                (cell) =>
+                  row >= cell.row &&
+                  row < cell.rowEnd &&
+                  column >= cell.column &&
+                  column < cell.columnEnd,
+              ),
+            ),
+          ),
+        );
       }
     }
     for (const region of pageRegions.values()) {

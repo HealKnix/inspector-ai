@@ -12,11 +12,6 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicOnlyRoute } from "./PublicOnlyRoute";
 import { RoleGuard } from "./RoleGuards";
 
-const DashboardPage = lazy(() =>
-  import("@/pages/dashboard/DashboardPage").then((module) => ({
-    default: module.DashboardPage,
-  })),
-);
 const AuthPage = lazy(() =>
   import("@/pages/auth/AuthPage").then((module) => ({
     default: module.AuthPage,
@@ -138,7 +133,10 @@ export function AppRoutes() {
         </Route>
         <Route element={<ProtectedRoute />}>
           <Route element={<WorkspaceLayout />}>
-            <Route element={<DashboardPage />} path={routeNames.ROOT} />
+            <Route
+              element={<Navigate replace to={routeNames.OBJECTS} />}
+              path={routeNames.ROOT}
+            />
             <Route element={<RoleGuard roles={Role.INSPECTOR} />}>
               <Route
                 element={<IdentificationPage />}

@@ -26,6 +26,7 @@ export const REJECTION_REASON_CODES = [
   "ocr_error",
   "evidence_binding_error",
   "not_applicable",
+  "no_discrepancy",
 ] as const;
 
 export type RejectionReasonCode = (typeof REJECTION_REASON_CODES)[number];

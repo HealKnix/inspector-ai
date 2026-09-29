@@ -2,8 +2,22 @@ import { normalizeTerm } from "./block-search.js";
 import {
   COMPARISON_ENGINE_VERSION,
   type ComparisonSpec,
+  type LeafComparisonSpec,
 } from "./comparison-contract.js";
+import {
+  evaluateCompositeGroup,
+  type CompositeComparisonTrace,
+  type CompositeContextBinding,
+  type CompositeEvaluationContext,
+} from "./composite-comparison.js";
+import {
+  evaluateExactGroup,
+  type CategoryComparisonTrace,
+  type NumericalComparisonTrace,
+} from "./exact-comparison.js";
 import { normalizeUnit } from "./extraction-engine.js";
+import type { RulePassportContent } from "./matrix-review-contract.js";
+import type { NumericalEvidence } from "./numerical-policy.js";
 
 // Member shape mirrors the JSON stored in evidence_groups.members.
 export interface GroupMember {
@@ -22,6 +36,8 @@ export interface GroupMember {
   revision_id?: string;
   rule_version_id?: string;
   evidence?: unknown[];
+  numerical?: NumericalEvidence;
+  comparison_context?: CompositeContextBinding;
 }
 
 export type PairResult = "match" | "mismatch" | "not_comparable";
@@ -33,6 +49,7 @@ export interface ComparisonPair {
   delta: number | null;
   delta_pct: number | null;
   detail: string | null;
+  trace?: NumericalComparisonTrace | CategoryComparisonTrace;
 }
 
 export interface MemberRef {
@@ -65,6 +82,12 @@ export interface GroupVerdict {
   context?: unknown;
   selection_basis?: unknown;
   identity_blockers?: string[];
+  composite?: CompositeComparisonTrace;
+  rule_basis?: {
+    passport_id: string;
+    passport_hash: string;
+    content: RulePassportContent;
+  };
 }
 
 const EPSILON = 1e-9;
@@ -138,7 +161,7 @@ function unitsCompatible(
 }
 
 function comparePair(
-  spec: Exclude<ComparisonSpec, { kind: "threshold" }>,
+  spec: Exclude<LeafComparisonSpec, { kind: "threshold" | "ordered_category" }>,
   expected: GroupMember,
   actual: GroupMember,
 ): ComparisonPair {
@@ -189,8 +212,8 @@ function comparePair(
   switch (spec.kind) {
     case "numeric_delta": {
       const bound = Math.max(
-        spec.tolerance_abs ?? 0,
-        ((spec.tolerance_pct ?? 0) / 100) * Math.abs(expectedNumber),
+        Number(spec.tolerance_abs ?? 0),
+        (Number(spec.tolerance_pct ?? 0) / 100) * Math.abs(expectedNumber),
       );
       pair.result = Math.abs(delta) <= bound + EPSILON ? "match" : "mismatch";
       return pair;
@@ -207,7 +230,7 @@ function comparePair(
 }
 
 function thresholdPair(
-  spec: { min?: number; max?: number },
+  spec: { min?: number | string; max?: number | string },
   member: GroupMember,
 ): ComparisonPair {
   const pair: ComparisonPair = {
@@ -225,12 +248,12 @@ function thresholdPair(
     pair.detail = "non_numeric";
     return pair;
   }
-  if (spec.min !== undefined && value < spec.min - EPSILON) {
+  if (spec.min !== undefined && value < Number(spec.min) - EPSILON) {
     pair.result = "mismatch";
     pair.detail = `below_min:${spec.min}`;
     return pair;
   }
-  if (spec.max !== undefined && value > spec.max + EPSILON) {
+  if (spec.max !== undefined && value > Number(spec.max) + EPSILON) {
     pair.result = "mismatch";
     pair.detail = `above_max:${spec.max}`;
     return pair;
@@ -255,7 +278,18 @@ export function evaluateGroup(
   members: GroupMember[],
   spec: ComparisonSpec | null,
   evaluatedAt = new Date(),
+  context?: CompositeEvaluationContext,
 ): GroupVerdict {
+  if (spec?.kind === "composite")
+    return evaluateCompositeGroup(
+      members,
+      spec,
+      evaluatedAt,
+      context,
+      evaluateGroup,
+    );
+  if (spec && (spec.kind === "ordered_category" || spec.numerical_policy))
+    return evaluateExactGroup(members, spec, evaluatedAt);
   const base: GroupVerdict = {
     engine: COMPARISON_ENGINE_VERSION,
     status: "no_comparison",

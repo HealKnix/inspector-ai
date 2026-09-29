@@ -6,6 +6,7 @@ import {
   ServiceUnavailableException,
 } from "@nestjs/common";
 import type { Prisma } from "../../generated/prisma/client.js";
+import { writeAuditEvent } from "../../infrastructure/audit/audit-envelope.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import { PrivateStorageService } from "../../infrastructure/storage/private-storage.service.js";
 import {
@@ -401,7 +402,7 @@ export class ParsingService {
       await tx.parsingRetryReceipt.create({
         data: { userId: context.userId, objectId, requestId, taskId: next.id },
       });
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           objectId,

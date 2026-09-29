@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "release": "foundations-20260927-r8",
+  "scope": "OFF-initial",
+  "created_at": "2026-09-27T07:21:50.520Z",
+  "runtime": {
+    "backend": "node-24.16.0",
+    "package_manager": "bun-1.4.2",
+    "parser": "existing-cpu-profile",
+    "gpu_acceptance": false
+  },
+  "qualification": "Initial implemented core; not a full 132-rule, H100 or final H/F acceptance.",
+  "images": [
+    {
+      "reference": "inspector-release-backend:foundations-20260927-r6",
+      "id": "sha256:a05c5b8aa461433c524ef19f44bed2985d2c5cdd5ad9c3953d7d7f110de64979",
+      "repo_digests": [
+        "inspector-release-backend@sha256:a05c5b8aa461433c524ef19f44bed2985d2c5cdd5ad9c3953d7d7f110de64979"
+      ],
+      "bytes": 248434471,
+      "platform": "linux/amd64"
+    },
+    {
+      "reference": "inspector-release-clamav:foundations-20260927-r6",
+      "id": "sha256:ba5ddf001919c71f3879246cf96d2dab51db7d9d13e213b4e9e982a9207fe459",
+      "repo_digests": [
+        "inspector-release-clamav@sha256:ba5ddf001919c71f3879246cf96d2dab51db7d9d13e213b4e9e982a9207fe459"
+      ],
+      "bytes": 143402500,
+      "platform": "linux/amd64"
+    },
+    {
+      "reference": "inspector-release-frontend:foundations-20260927-r6",
+      "id": "sha256:526ba5aa34e64dc983e75fd5520c0a9f23057a240c2fa89edff316d2e0d701ff",
+      "repo_digests": [
+        "inspector-release-frontend@sha256:526ba5aa34e64dc983e75fd5520c0a9f23057a240c2fa89edff316d2e0d701ff"
+      ],
+      "bytes": 29299721,
+      "platform": "linux/amd64"
+    },
+    {
+      "reference": "inspector-release-migrate:foundations-20260927-r6",
+      "id": "sha256:e792bb6b5430e88cf68375b8dce3a86ae91a898bfcfabcd0adb6e70bb68ef569",
+      "repo_digests": [
+        "inspector-release-migrate@sha256:e792bb6b5430e88cf68375b8dce3a86ae91a898bfcfabcd0adb6e70bb68ef569"
+      ],
+      "bytes": 373805043,
+      "platform": "linux/amd64"
+    },
+    {
+      "reference": "inspector-release-parser:foundations-20260927-r6",
+      "id": "sha256:fa74c76be25c80d0976803146cdae0315b6b3d1ec4e6ba97e877a57a39487d3e",
+      "repo_digests": [
+        "inspector-release-parser@sha256:fa74c76be25c80d0976803146cdae0315b6b3d1ec4e6ba97e877a57a39487d3e"
+      ],
+      "bytes": 624610366,
+      "platform": "linux/amd64"
+    },
+    {
+      "reference": "postgres:17.6-alpine",
+      "id": "sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+      "repo_digests": [
+        "postgres@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94"
+      ],
+      "bytes": 110633742,
+      "platform": "linux/amd64"
+    },
+    {
+      "reference": "rabbitmq:4.1-management-alpine",
+      "id": "sha256:6fb3095d1d579e11639d9033c9ded1287ca085664c97e9305ffc2a26cee433f5",
+      "repo_digests": [
+        "rabbitmq@sha256:6fb3095d1d579e11639d9033c9ded1287ca085664c97e9305ffc2a26cee433f5"
+      ],
+      "bytes": 87565743,
+      "platform": "linux/amd64"
+    },
+    {
+      "reference": "redis:7.4.2-alpine",
+      "id": "sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952",
+      "repo_digests": [
+        "redis@sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952"
+      ],
+      "bytes": 17238094,
+      "platform": "linux/amd64"
+    },
+    {
+      "reference": "inspector-release-validator:foundations-20260927-r6",
+      "id": "sha256:24d3f03db1797aedbd78d2501f032a5f897e42f834dd3e58772f479cf41c73f6",
+      "repo_digests": [
+        "inspector-release-validator@sha256:24d3f03db1797aedbd78d2501f032a5f897e42f834dd3e58772f479cf41c73f6"
+      ],
+      "bytes": 50277829,
+      "platform": "linux/amd64"
+    }
+  ],
+  "files": [
+    {
+      "path": "assets/clamav.json",
+      "bytes": 254,
+      "sha256": "96602eca4cf700f2f2175ab093fb88604ee5bcfaaa5021eac27babc326ea33d8"
+    },
+    {
+      "path": "assets/clamav.tar",
+      "bytes": 175544320,
+      "sha256": "9241718ca9a41da60c6779b83242c7ace449e37267829aa1eb34d60cb112e6bd"
+    },
+    {
+      "path": "assets/models.json",
+      "bytes": 3111,
+      "sha256": "2a3bbd6300c2066bad32159368a4bb383dd1287542f4b264325e2dc969ab97a4"
+    },
+    {
+      "path": "assets/models.tar",
+      "bytes": 790681600,
+      "sha256": "c5f55827f85e69e79b68066844686ced9dcddbad5acea6c1cfdb60d2104ef2fe"
+    },
+    {
+      "path": "catalog.json",
+      "bytes": 316967,
+      "sha256": "7fcb3ad82247cf91b29270712d90903977e7bea6129365368f25124597df2737"
+    },
+    {
+      "path": "compose.json",
+      "bytes": 18988,
+      "sha256": "92f58c82655117393125edcc2bcceaf8dbe802ff054d73e4c0d3441426a35f08"
+    },
+    {
+      "path": "images.tar",
+      "bytes": 1566343168,
+      "sha256": "dd0b39ee198c6720ff84fe154eb45c7d23d8c632c254f9d155ffb1a44325cc83"
+    },
+    {
+      "path": "nginx.conf",
+      "bytes": 1248,
+      "sha256": "0649767788ba9b68562eb92bd416571f70cac8e4e5604b3c29f78ff631b52fae"
+    },
+    {
+      "path": "README.md",
+      "bytes": 13354,
+      "sha256": "ac5c550b992293148d3955149c5a61c2057d86cb6c42aae2d0d3f6fa63aa90bd"
+    },
+    {
+      "path": "resources.json",
+      "bytes": 350527,
+      "sha256": "a60a415a448618d577c3b3d6f87cd2a95c478586af554499ab821f84f98a7a9b"
+    },
+    {
+      "path": "tools/bootstrap.mjs",
+      "bytes": 6882,
+      "sha256": "2a49f7782e0e98d6d414807f3bc5934a89d1dea0831dccf8e27ae9549ba3d3d4"
+    },
+    {
+      "path": "tools/manifest.mjs",
+      "bytes": 5311,
+      "sha256": "bd8642ed47d87acb6d1019c5cb2d546438df8b0f178bd8c2ebeb22df1a98aae3"
+    },
+    {
+      "path": "tools/offline-catalog.mjs",
+      "bytes": 7396,
+      "sha256": "fa84970016cc13ef27c83392304c235ac4146318d5471a49b16e857066ebaf59"
+    },
+    {
+      "path": "tools/restore-assets.py",
+      "bytes": 2264,
+      "sha256": "c732b3f7f3d99bc1774fb012ae4503a6aba795e83497083bc4a6c106288452bc"
+    },
+    {
+      "path": "tools/snapshot-assets.py",
+      "bytes": 1812,
+      "sha256": "23f2fd1d8c19e224dae00d9f98ae1418f99a4e173d3e981b6816451d1cd86195"
+    }
+  ],
+  "configuration_revision_of": "27c63e6c8ea237ec411172fc069748e5e446a869962ba77de80b49a9d309c085"
+}

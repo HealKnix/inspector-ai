@@ -2,10 +2,13 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
 import type { Prisma } from "../../generated/prisma/client.js";
+import { writeAuditEvent } from "../../infrastructure/audit/audit-envelope.js";
+import { writeOutboxEvent } from "../../infrastructure/observability/trace-context.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import type { Evaluation } from "../completeness/completeness-contract.js";
 import { isApplicable } from "../completeness/completeness-engine.js";
@@ -13,14 +16,30 @@ import { CompletenessService } from "../completeness/completeness.service.js";
 import type { GroupMember } from "../extraction/comparison-engine.js";
 import { rulesetFingerprint } from "../extraction/extraction-engine.js";
 import { ExtractionJobsService } from "../extraction/extraction-jobs.service.js";
+import { reviewHash } from "../extraction/matrix-review-contract.js";
+import type { ReleaseManifest } from "../extraction/rule-set-release.js";
 import type { IdentificationSnapshot } from "../identification/identification-contract.js";
 import { identificationSources } from "../identification/identification-state.js";
 import {
   ObjectAccessService,
   type AuditContext,
 } from "../objects/object-access.service.js";
+import { record } from "../parsing/parsing-contract.js";
 import { frozenFindingEvidencePreview } from "./finding-evidence.js";
 import { buildProtocol, protocolContent } from "./protocol-builder.js";
+import {
+  currentSectionBasis,
+  parseSectionOutput,
+  readSectionSnapshot,
+  SECTION_ANALYSIS_PORT,
+  SECTION_TASK_PENDING_STATES,
+  sectionBasisEqual,
+  sectionFindingInputs,
+  sectionProtocolBasis,
+  type SectionFindingInput,
+  type SectionProtocolBasis,
+  type SectionResultsPort,
+} from "./section-findings.js";
 import {
   decisionTarget,
   REJECTION_REASON_CODES,
@@ -42,6 +61,7 @@ export interface ProtocolRow {
   run_id: string;
   resolved_input_hash: string | null;
   ruleset_hash: string | null;
+  section_basis: unknown;
 }
 
 export interface DecisionInput {
@@ -59,6 +79,8 @@ export class VerificationService {
     private readonly access: ObjectAccessService,
     private readonly jobs: ExtractionJobsService,
     private readonly completeness: CompletenessService,
+    @Inject(SECTION_ANALYSIS_PORT)
+    private readonly sectionResults: SectionResultsPort,
   ) {}
 
   private async currentProcess(tx: Prisma.TransactionClient, objectId: string) {
@@ -128,7 +150,14 @@ export class VerificationService {
           `Обработка не завершена: незавершённых задач ${pending}`,
         );
 
-      const rules = await this.jobs.approvedRules(tx);
+      const rules = await this.jobs.approvedRules(tx, run.id);
+      const release = run.ruleSetReleaseId
+        ? await tx.ruleSetRelease.findUniqueOrThrow({
+            where: { id: run.ruleSetReleaseId },
+          })
+        : null;
+      const releaseManifest = release?.manifest as unknown as
+        ReleaseManifest | undefined;
       const rulesHash = rulesetFingerprint(rules);
       const source = snapshot.snapshot as unknown as IdentificationSnapshot;
       if (rules.length) {
@@ -171,7 +200,7 @@ export class VerificationService {
       const groups = [...uniqueGroups.values()];
       const executable = new Set(rules.map((rule) => rule.parameter_code));
       const versions = await tx.ruleVersion.findMany({
-        where: { status: "approved", parameterCode: { in: [...executable] } },
+        where: { id: { in: rules.map((rule) => rule.rule_version_id) } },
         orderBy: [{ parameterCode: "asc" }, { version: "desc" }],
         select: { parameterCode: true, applicability: true },
       });
@@ -179,6 +208,9 @@ export class VerificationService {
       for (const version of versions)
         if (!applicability.has(version.parameterCode))
           applicability.set(version.parameterCode, version.applicability);
+      if (releaseManifest)
+        for (const entry of releaseManifest.entries)
+          applicability.set(entry.parameter_code, entry.applicability);
       const pack = await tx.packageVersion.findFirst({
         where: { objectId, status: "confirmed" },
         orderBy: { version: "desc" },
@@ -186,9 +218,13 @@ export class VerificationService {
       });
       const attributes = (pack?.attributes ?? {}) as Record<string, unknown>;
 
-      const matrixSource = await tx.matrixImport.findFirst({
-        orderBy: { importedAt: "desc" },
-      });
+      const matrixSource = releaseManifest?.catalog
+        ? await tx.matrixImport.findUnique({
+            where: { id: releaseManifest.catalog.import_id },
+          })
+        : await tx.matrixImport.findFirst({
+            orderBy: { importedAt: "desc" },
+          });
       const rows = matrixSource
         ? await tx.matrixRow.findMany({
             where: { importId: matrixSource.id },
@@ -207,10 +243,67 @@ export class VerificationService {
         },
         orderBy: { createdAt: "desc" },
       });
+      // D6/D7: только задача, выбранная последней новой заявкой, является
+      // текущим основанием. Отключённая функция инертна и не влияет на
+      // наследуемый протокол; задача чужого resolved_input_hash текущему
+      // расчёту не принадлежит. Для текущего снимка запрошенная работа с
+      // утраченным базисом (источники/матрица/конфигурация изменились) или
+      // ожидающая завершения блокирует формирование протокола.
+      const selectedSection = await this.sectionResults.selectedTask(
+        tx,
+        run.id,
+      );
+      const sectionRequested =
+        this.sectionResults.executorState().enabled &&
+        selectedSection !== null &&
+        selectedSection.resolvedInputHash === snapshot.resolvedInputHash;
+      let sectionTask: Awaited<ReturnType<SectionResultsPort["selectedTask"]>> =
+        null;
+      if (sectionRequested && selectedSection) {
+        if (!(await this.sectionResults.taskBasisHolds(tx, selectedSection)))
+          throw new ConflictException(
+            "Основания анализа разделов изменились. Запросите анализ заново и дождитесь завершения",
+          );
+        if (
+          SECTION_TASK_PENDING_STATES.includes(
+            selectedSection.state as (typeof SECTION_TASK_PENDING_STATES)[number],
+          )
+        )
+          throw new ConflictException(
+            "Запрошенный анализ разделов ещё выполняется. Дождитесь завершения",
+          );
+        sectionTask = selectedSection;
+      }
+      let sectionResults: SectionFindingInput[] = [];
+      let sectionBasis: SectionProtocolBasis | null = null;
+      if (
+        sectionTask &&
+        sectionTask.state === "succeeded" &&
+        sectionTask.result !== null
+      ) {
+        const output = parseSectionOutput(sectionTask.result);
+        sectionResults = sectionFindingInputs(sectionTask, output);
+        sectionBasis = currentSectionBasis(sectionTask);
+        // Результат может описывать только контексты допущенного снимка;
+        // чужой context_id означает повреждённую или устаревшую публикацию.
+        const admittedContexts = new Set(
+          source.contexts.map((ctx) => ctx.context_id),
+        );
+        if (
+          sectionResults.some(
+            (entry) => !admittedContexts.has(entry.context_id),
+          )
+        )
+          throw new ConflictException(
+            "Результат анализа разделов не соответствует выбранным источникам",
+          );
+      }
       const fileIds = new Set<string>();
       for (const group of groups)
         for (const member of (group.members as unknown as GroupMember[]) ?? [])
           if (member?.file_id) fileIds.add(member.file_id);
+      for (const section of sectionResults)
+        for (const item of section.evidence) fileIds.add(item.file_id);
       const files = fileIds.size
         ? await tx.file.findMany({
             where: { id: { in: [...fileIds] } },
@@ -243,6 +336,14 @@ export class VerificationService {
           parameter_code: group.parameterCode,
           scope_key: group.scopeKey,
           ruleset_hash: group.rulesetHash,
+          rule_fingerprint: releaseManifest
+            ? reviewHash({
+                rule: releaseManifest.entries.find(
+                  (entry) => entry.parameter_code === group.parameterCode,
+                ),
+                engines: releaseManifest.engines,
+              })
+            : undefined,
           members: group.members,
           verdict: group.verdict,
         })),
@@ -251,16 +352,22 @@ export class VerificationService {
         unresolvedSources: source.blockers.length
           ? source.blockers
           : ["comparison_context_unresolved"],
+        contextBlockers: new Map(
+          source.contexts.map((ctx) => [ctx.context_id, ctx.blockers]),
+        ),
+        sectionResults,
       });
 
       const active = await tx.protocol.findFirst({
         where: { processId: process.id, status: "active" },
         include: { findings: { include: { decisions: true } } },
       });
+      const recordedSectionBasis = sectionProtocolBasis(active?.content);
       if (
         active?.findingsHash === built.findings_hash &&
         active.runId === run.id &&
-        active.resolvedInputHash === snapshot.resolvedInputHash
+        active.resolvedInputHash === snapshot.resolvedInputHash &&
+        sectionBasisEqual(recordedSectionBasis, sectionBasis)
       ) {
         return {
           schema_version: VERIFICATION_SCHEMA_VERSION,
@@ -310,6 +417,7 @@ export class VerificationService {
           content: protocolContent(
             built,
             latestCompleteness?.id ?? null,
+            sectionBasis,
           ) as unknown as Prisma.InputJsonValue,
           createdBy: context.userId,
         },
@@ -363,7 +471,7 @@ export class VerificationService {
           data: { status: "READY" },
         });
       }
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           objectId,
@@ -382,7 +490,7 @@ export class VerificationService {
           },
         },
       });
-      await tx.outbox.create({
+      await writeOutboxEvent(tx, {
         data: {
           eventType: "protocol.generated",
           payload: {
@@ -427,6 +535,7 @@ export class VerificationService {
       runId: string;
       resolvedInputHash: string | null;
       rulesetHash: string | null;
+      content: unknown;
     },
   ) {
     const run = await tx.run.findUnique({
@@ -453,10 +562,48 @@ export class VerificationService {
         !source.ready ||
         source.fingerprint !== snapshot.sourceFingerprint ||
         protocol.rulesetHash !==
-          rulesetFingerprint(await this.jobs.approvedRules(tx))
+          rulesetFingerprint(await this.jobs.approvedRules(tx, run.id))
       )
         throw new ConflictException(
           "Основания расчёта изменились. Дождитесь обработки и сформируйте новый протокол",
+        );
+    }
+    // Свежесть базиса анализа разделов (D6/D7): решает только задача,
+    // выбранная последней новой заявкой. Ожидаемая замена или утраченный
+    // базис блокируют решения и финализацию; задача чужого
+    // resolved_input_hash текущему расчёту не принадлежит, а отключённая
+    // функция инертна — решения по замороженному протоколу остаются
+    // наследуемыми.
+    if (this.sectionResults.executorState().enabled) {
+      const selected = await this.sectionResults.selectedTask(
+        tx,
+        protocol.runId,
+      );
+      let currentTask: Awaited<ReturnType<SectionResultsPort["selectedTask"]>> =
+        null;
+      if (
+        selected &&
+        selected.resolvedInputHash === protocol.resolvedInputHash
+      ) {
+        if (!(await this.sectionResults.taskBasisHolds(tx, selected)))
+          throw new ConflictException(
+            "Основания анализа разделов изменились. Запросите анализ заново и сформируйте протокол",
+          );
+        if (
+          SECTION_TASK_PENDING_STATES.includes(
+            selected.state as (typeof SECTION_TASK_PENDING_STATES)[number],
+          )
+        )
+          throw new ConflictException(
+            "Запрошенный анализ разделов ещё выполняется. Дождитесь завершения и сформируйте протокол",
+          );
+        currentTask = selected;
+      }
+      const recorded = sectionProtocolBasis(protocol.content);
+      const current = currentSectionBasis(currentTask);
+      if (!sectionBasisEqual(recorded, current))
+        throw new ConflictException(
+          "Результаты анализа разделов изменились. Сформируйте протокол заново",
         );
     }
   }
@@ -498,10 +645,19 @@ export class VerificationService {
     const evidencePreview = frozenFindingEvidencePreview(
       finding.evidenceSnapshot,
     );
+    // Замороженный payload анализа разделов — единственный источник поля в
+    // ответах; текущее изменяемое состояние задачи на него не влияет.
+    const section = readSectionSnapshot(
+      record(finding.evidenceSnapshot)
+        ? finding.evidenceSnapshot.section_analysis
+        : null,
+    );
     return {
       id: finding.id,
       parameter_code: finding.parameterCode,
-      parameter_name: names?.get(finding.parameterCode) ?? null,
+      // Имя из замороженной матричной основы, а не из последнего импорта.
+      parameter_name:
+        section?.matrix?.name ?? names?.get(finding.parameterCode) ?? null,
       scope_key: finding.scopeKey,
       status: finding.status,
       risk: finding.risk,
@@ -513,6 +669,7 @@ export class VerificationService {
       verdict: finding.verdict,
       has_evidence: evidencePreview !== null,
       evidence_preview: evidencePreview,
+      section_analysis: section,
     };
   }
 
@@ -528,7 +685,8 @@ export class VerificationService {
                (SELECT count(*) FROM findings f
                  WHERE f.protocol_id = p.id)::int AS findings,
                (SELECT count(DISTINCT f.parameter_code) FROM findings f WHERE f.protocol_id=p.id)::int AS parameters,
-               (p.content->>'parameters_compared')::int AS parameters_compared
+               (p.content->>'parameters_compared')::int AS parameters_compared,
+               p.content->'section_analysis' AS section_basis
         FROM protocols p
         WHERE p.process_id = ${process.id}::uuid
         ORDER BY p.version DESC`;
@@ -551,16 +709,52 @@ export class VerificationService {
             orderBy: { version: "desc" },
           })
         : null;
-      const rulesHash = rulesetFingerprint(await this.jobs.approvedRules(tx));
+      const rulesHash = rulesetFingerprint(
+        await this.jobs.approvedRules(tx, run?.id),
+      );
       const sources =
         snapshot && run ? await identificationSources(tx, run.id) : null;
+      // Секционный базис протокола должен совпадать с текущей выбранной
+      // задачей; ожидаемая замена и устаревший базис делают версию
+      // неактуальной. Отключённая функция инертна и не влияет на актуальность.
+      const sectionEnabled = this.sectionResults.executorState().enabled;
+      const selectedSection =
+        sectionEnabled && run
+          ? await this.sectionResults.selectedTask(tx, run.id)
+          : null;
+      let sectionBlocked = false;
+      let currentTask: Awaited<ReturnType<SectionResultsPort["selectedTask"]>> =
+        null;
+      if (
+        selectedSection &&
+        selectedSection.resolvedInputHash ===
+          (snapshot?.resolvedInputHash ?? null)
+      ) {
+        if (
+          !(await this.sectionResults.taskBasisHolds(tx, selectedSection)) ||
+          SECTION_TASK_PENDING_STATES.includes(
+            selectedSection.state as (typeof SECTION_TASK_PENDING_STATES)[number],
+          )
+        )
+          sectionBlocked = true;
+        else currentTask = selectedSection;
+      }
+      const currentSection = currentSectionBasis(currentTask);
+      const sectionCurrent = (row: ProtocolRow) =>
+        !sectionEnabled ||
+        (!sectionBlocked &&
+          sectionBasisEqual(
+            sectionProtocolBasis({ section_analysis: row.section_basis }),
+            currentSection,
+          ));
       const isCurrent = (row: ProtocolRow) =>
         row.run_id === run?.id &&
         row.resolved_input_hash === (snapshot?.resolvedInputHash ?? null) &&
         (!snapshot ||
           (sources?.ready &&
             sources.fingerprint === snapshot.sourceFingerprint &&
-            row.ruleset_hash === rulesHash));
+            row.ruleset_hash === rulesHash)) &&
+        sectionCurrent(row);
       return {
         schema_version: VERIFICATION_SCHEMA_VERSION,
         object_id: objectId,
@@ -615,12 +809,33 @@ export class VerificationService {
         tx,
         items.map((finding) => finding.parameterCode),
       );
+      const run = await tx.run.findUniqueOrThrow({
+        where: { id: protocol.runId },
+        include: { ruleSetRelease: true },
+      });
+      const release = run.ruleSetRelease;
+      const manifest = release?.manifest as unknown as
+        ReleaseManifest | undefined;
       return {
         schema_version: VERIFICATION_SCHEMA_VERSION,
         object_id: objectId,
         protocol_id: protocol.id,
         items: items.map((finding) => this.serializeFinding(finding, names)),
         findings_absent_reason: null,
+        rule_release:
+          release && manifest
+            ? {
+                id: release.id,
+                manifest_hash: release.manifestHash,
+                mode: manifest.mode,
+                executable_parameters: manifest.entries.length,
+                admitted_parameters:
+                  manifest.mode === "legacy_capture"
+                    ? 0
+                    : manifest.entries.length,
+                omitted_parameter_codes: manifest.omitted_parameter_codes,
+              }
+            : null,
       };
     });
   }
@@ -808,7 +1023,7 @@ export class VerificationService {
           data: { status },
         });
       }
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           objectId,
@@ -875,7 +1090,7 @@ export class VerificationService {
         where: { id: process.id },
         data: { status: "FINALIZED" },
       });
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           objectId,
@@ -887,7 +1102,7 @@ export class VerificationService {
           },
         },
       });
-      await tx.outbox.create({
+      await writeOutboxEvent(tx, {
         data: {
           eventType: "protocol.finalized",
           payload: {
@@ -943,7 +1158,7 @@ export class VerificationService {
         where: { id: process.id },
         data: { status: "COMPLETED" },
       });
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           objectId,
@@ -956,7 +1171,7 @@ export class VerificationService {
           },
         },
       });
-      await tx.outbox.create({
+      await writeOutboxEvent(tx, {
         data: {
           eventType: "protocol.finalization_cancelled",
           payload: {

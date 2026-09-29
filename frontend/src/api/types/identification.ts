@@ -15,6 +15,7 @@ export const identificationFieldSchema = z.enum([
   "external_id",
   "observed_edition",
   "observed_status",
+  "observed_replaced_sheet",
 ]);
 export type IdentificationField = z.infer<typeof identificationFieldSchema>;
 const hash = z.string().regex(/^[a-f0-9]{64}$/);
@@ -28,6 +29,18 @@ export const identificationEvidenceSchema = z.object({
   quote: z.string(),
   bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]),
   structural_path: z.string().nullable(),
+  parse_context: z
+    .object({
+      source: z.string(),
+      native_valid: z.boolean().nullable(),
+      include_in_main: z.boolean().nullable(),
+      region_id: z.string().nullable(),
+      region_kind: z.string().nullable(),
+      region_method: z.string().nullable(),
+      text_status: z.string().nullable(),
+      reasons: z.array(z.string()),
+    })
+    .optional(),
 });
 export type IdentificationEvidence = z.infer<
   typeof identificationEvidenceSchema
@@ -49,6 +62,70 @@ export const revisionApprovalSchema = z.object({
   replaces_revision_id: z.uuid().nullable(),
   basis: z.string().nullable(),
 });
+const sheetLabelSchema = z
+  .string()
+  .min(1)
+  .max(80)
+  .refine(
+    (value) =>
+      value === value.trim().normalize("NFC") &&
+      ![...value].some((character) => character.charCodeAt(0) < 32),
+    "Укажите обозначение листа без переносов и крайних пробелов",
+  );
+const physicalPageSchema = z.number().int().min(1).max(500);
+export const sheetMapSchema = z
+  .object({
+    file_id: z.uuid(),
+    source_sha256: hash,
+    sheets: z
+      .array(
+        z.object({ label: sheetLabelSchema, page_number: physicalPageSchema }),
+      )
+      .min(1)
+      .max(500),
+    excluded_pages: z.array(physicalPageSchema).max(500),
+    basis: z.string().trim().min(1).max(4000),
+  })
+  .refine((value) => {
+    const labels = value.sheets.map((sheet) => sheet.label);
+    const pages = [
+      ...value.sheets.map((sheet) => sheet.page_number),
+      ...value.excluded_pages,
+    ];
+    return (
+      new Set(labels).size === labels.length &&
+      new Set(pages).size === pages.length
+    );
+  }, "Листы и физические страницы не должны повторяться");
+export type SheetMap = z.infer<typeof sheetMapSchema>;
+export const sheetReplacementSchema = z
+  .object({
+    predecessor_revision_id: z.uuid(),
+    replaced_labels: z.array(sheetLabelSchema).min(1).max(500),
+    basis: z.string().trim().min(1).max(4000),
+  })
+  .refine(
+    (value) =>
+      new Set(value.replaced_labels).size === value.replaced_labels.length,
+    "Обозначения заменяемых листов не должны повторяться",
+  );
+export type SheetReplacement = z.infer<typeof sheetReplacementSchema>;
+const resolvedSheetSetSchema = z.object({
+  selection_hash: hash,
+  sheets: z.array(
+    z.object({
+      label: sheetLabelSchema,
+      page_number: physicalPageSchema,
+      document_id: z.uuid(),
+      revision_id: z.uuid(),
+      file_id: z.uuid(),
+      artifact_id: z.uuid(),
+      artifact_sha256: hash,
+      source_sha256: hash,
+    }),
+  ),
+  chain: z.array(z.object({ revision_id: z.uuid(), decision_hash: hash })),
+});
 export const identificationRevisionSchema = z.object({
   revision_id: z.uuid(),
   fields: z.partialRecord(identificationFieldSchema, z.string()),
@@ -66,6 +143,8 @@ export const identificationRevisionSchema = z.object({
   approval: revisionApprovalSchema,
   blockers: z.array(z.string()),
   reference_revision_id: z.uuid().nullable().optional(),
+  sheet_map: sheetMapSchema.nullable().optional(),
+  sheet_replacement: sheetReplacementSchema.nullable().optional(),
 });
 export type IdentificationRevision = z.infer<
   typeof identificationRevisionSchema
@@ -115,6 +194,12 @@ export const identificationRegistrySchema = z.object({
       actual: referenceSchema,
       status: z.enum(["READY", "CLARIFICATION_REQUIRED"]),
       blockers: z.array(z.string()),
+      sheet_selection: z
+        .object({
+          reference: resolvedSheetSetSchema.nullable(),
+          actual: resolvedSheetSetSchema.nullable(),
+        })
+        .optional(),
     }),
   ),
   blockers: z.array(z.string()),
@@ -159,6 +244,8 @@ export const revisionClarificationSchema = z.object({
     .optional(),
   approval: revisionApprovalSchema.optional(),
   reference_revision_id: z.uuid().nullable().optional(),
+  sheet_map: sheetMapSchema.nullable().optional(),
+  sheet_replacement: sheetReplacementSchema.nullable().optional(),
 });
 export type RevisionClarification = z.infer<typeof revisionClarificationSchema>;
 export const documentClarificationSchema = z.object({

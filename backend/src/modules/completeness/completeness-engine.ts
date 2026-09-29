@@ -22,6 +22,11 @@ export function documentFactsFromSnapshot(
   snapshot: IdentificationSnapshot,
 ): DocumentFact[] {
   return snapshot.documents.flatMap((document) => {
+    const selectedContexts = snapshot.contexts.filter(
+      (context) =>
+        context.status === "READY" &&
+        context.reference?.document_id === document.document_id,
+    );
     const selected = new Set(
       snapshot.contexts
         .filter(
@@ -36,7 +41,17 @@ export function documentFactsFromSnapshot(
           selected.has(revision.revision_id),
         )
       : document.revisions;
-    const representations = revisions
+    const sourceRevisionIds = new Set([
+      ...revisions.map((revision) => revision.revision_id),
+      ...selectedContexts.flatMap(
+        (context) =>
+          context.sheet_selection?.reference?.sheets.map(
+            (sheet) => sheet.revision_id,
+          ) ?? [],
+      ),
+    ]);
+    const representations = document.revisions
+      .filter((revision) => sourceRevisionIds.has(revision.revision_id))
       .flatMap((revision) => revision.representations)
       .sort((a, b) => a.file_id.localeCompare(b.file_id));
     const first = representations[0];
@@ -54,10 +69,18 @@ export function documentFactsFromSnapshot(
     const blocked = revisions.some((revision) =>
       revision.blockers.some(
         (blocker) =>
-          !blocker.startsWith("field_conflict:") ||
-          !revision.fields[
-            blocker.slice("field_conflict:".length) as IdentificationField
-          ],
+          !(
+            blocker === "unsupported_partial_replacement" &&
+            selectedContexts.some(
+              (context) =>
+                context.reference?.revision_id === revision.revision_id &&
+                context.sheet_selection?.reference,
+            )
+          ) &&
+          (!blocker.startsWith("field_conflict:") ||
+            !revision.fields[
+              blocker.slice("field_conflict:".length) as IdentificationField
+            ]),
       ),
     );
     const needsReview =
@@ -84,7 +107,7 @@ export function documentFactsFromSnapshot(
     return [
       {
         document_id: document.document_id,
-        revision_ids: revisions.map((revision) => revision.revision_id).sort(),
+        revision_ids: [...sourceRevisionIds].sort(),
         file_id: first.file_id,
         sha256: first.source_sha256,
         stage: stages.size === 1 ? [...stages][0]! : null,

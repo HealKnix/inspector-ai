@@ -10,7 +10,9 @@ import { useAuthSessionStore } from "@/store/auth-session";
 export { ApiError } from "@/api/errors";
 
 const clientConfig = {
-  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:3000/api",
+  baseURL:
+    import.meta.env.VITE_API_URL ??
+    (import.meta.env.PROD ? "/api" : "http://localhost:3000/api"),
   headers: { "X-Inspector-Request": "1" },
   timeout: 15_000,
   withCredentials: true,

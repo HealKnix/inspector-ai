@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
+import { syntheticPassport } from "../../../test/helpers/matrix-review-fixture.js";
 import type {
   IdentificationRevision,
   IdentificationSnapshot,
 } from "../identification/identification-contract.js";
+import { membersFingerprint } from "../verification/protocol-builder.js";
 import {
   identifiedGroups,
   type IdentifiedExtraction,
 } from "./identified-groups.js";
+import { reviewHash } from "./matrix-review-contract.js";
 
 function revision(id: string, files: string[]): IdentificationRevision {
   return {
@@ -89,6 +92,41 @@ function fixture(): IdentificationSnapshot {
   };
 }
 describe("identified comparison groups", () => {
+  it("freezes the exact passport basis and changes the decision fingerprint when that basis changes", () => {
+    const content = syntheticPassport();
+    const basis = {
+      passport_id: "synthetic-passport",
+      passport_hash: reviewHash(content),
+      content,
+    };
+    const rows = [row("rd-jan", 100), row("a1-pdf", 100), row("a1-xml", 100)];
+    const first = identifiedGroups(
+      fixture(),
+      rows,
+      { kind: "equals" },
+      undefined,
+      basis,
+    )[0]!;
+    expect(first.verdict.rule_basis).toEqual(basis);
+    const changed = structuredClone(basis);
+    changed.content.scope = "Different synthetic scope";
+    changed.passport_hash = reviewHash(changed.content);
+    const second = identifiedGroups(
+      fixture(),
+      rows,
+      { kind: "equals" },
+      undefined,
+      changed,
+    )[0]!;
+    expect(first.contentHash).not.toBe(second.contentHash);
+    expect(
+      membersFingerprint(first.members, first.verdict, new Map()),
+    ).not.toBe(membersFingerprint(second.members, second.verdict, new Map()));
+    expect(
+      identifiedGroups(fixture(), rows, { kind: "equals" })[0]!.verdict
+        .rule_basis,
+    ).toBeUndefined();
+  });
   it("ручная связь редакций не расширяет стадии утверждённого правила", () => {
     const snapshot = fixture();
     snapshot.documents[1]!.revisions[0]!.fields.stage = "ID";

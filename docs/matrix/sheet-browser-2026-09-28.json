@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-09-28T13:16:13.215Z",
+  "qualification": "real UI, synthetic sources and local GET-only preview; not domain acceptance or live save",
+  "browser": "154.0.8037.57",
+  "checks": [
+    "explicit head revision URL opens revision 2 despite preceding alias",
+    "revision buttons select both revisions",
+    "replaced sheet 1 opens new source physical page 1",
+    "inherited sheet 2 opens base page 2 without switching reviewed card",
+    "return action restores the reviewed source",
+    "map editor retains labels and basis; partial replacement shows inherited labels and selected sheet 1",
+    "cancel restores saved sheet map without API mutation"
+  ],
+  "errors": [],
+  "mutations": [],
+  "screenshots": [
+    "output/playwright/sheet-inherited-20260928.png",
+    "output/playwright/sheet-map-editor-20260928.png"
+  ]
+}

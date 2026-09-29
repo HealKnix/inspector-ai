@@ -6,12 +6,15 @@ import {
 } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
 import type { Prisma } from "../../generated/prisma/client.js";
+import { writeAuditEvent } from "../../infrastructure/audit/audit-envelope.js";
+import { writeOutboxEvent } from "../../infrastructure/observability/trace-context.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import {
   FileSafetyService,
   type FileFormat,
 } from "../../infrastructure/storage/file-safety.service.js";
 import { PrivateStorageService } from "../../infrastructure/storage/private-storage.service.js";
+import { pinRunRelease } from "../extraction/rule-set-release.js";
 import {
   ObjectAccessService,
   type AuditContext,
@@ -286,6 +289,7 @@ export class DocumentAdmissionService {
               file_hash: item.source.sha256,
             })),
           ].sort((a, b) => a.file_id.localeCompare(b.file_id));
+          const ruleRelease = await pinRunRelease(tx, context.userId);
           const manifest = {
             schema_version: 1,
             object_id: upload.object_id,
@@ -293,7 +297,7 @@ export class DocumentAdmissionService {
             run_id: runId,
             files: inputs,
             versions: {
-              rules: null,
+              rules: ruleRelease.manifestHash,
               model: null,
               dataset: null,
               expected_composition: null,
@@ -311,6 +315,7 @@ export class DocumentAdmissionService {
               version: process.version,
               inputManifest: manifest,
               inputManifestHash: manifestHash,
+              ruleSetReleaseId: ruleRelease.id,
             },
           });
           for (const item of newFiles) {
@@ -347,7 +352,7 @@ export class DocumentAdmissionService {
             },
           });
           const eventId = randomUUID();
-          await tx.outbox.create({
+          await writeOutboxEvent(tx, {
             data: {
               id: eventId,
               jobId: job.id,
@@ -391,7 +396,7 @@ export class DocumentAdmissionService {
             response: storedResponse,
           },
         });
-        await tx.auditEvent.create({
+        await writeAuditEvent(tx, {
           data: {
             ...context,
             objectId: upload.object_id,
@@ -408,6 +413,15 @@ export class DocumentAdmissionService {
                 (item) => !item.accepted && item.error !== "duplicate_file",
               ).length,
               client_upload_id: upload.client_upload_id,
+              reason_codes: [
+                ...new Set(
+                  outcomes.flatMap((item) =>
+                    item.error && item.error !== "duplicate_file"
+                      ? [item.error]
+                      : [],
+                  ),
+                ),
+              ],
             },
           },
         });
@@ -416,7 +430,7 @@ export class DocumentAdmissionService {
         );
         if (reasons.length) {
           const eventId = randomUUID();
-          await tx.outbox.create({
+          await writeOutboxEvent(tx, {
             data: {
               id: eventId,
               eventType: "documents.admission.rejected",

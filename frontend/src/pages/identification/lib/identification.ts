@@ -18,6 +18,7 @@ export const identificationFieldLabels: Record<IdentificationField, string> = {
   external_id: "Идентификатор XML",
   observed_edition: "Edition из источника",
   observed_status: "Статус из источника",
+  observed_replaced_sheet: "Лист в перечне замены (требует подтверждения)",
 };
 export function identificationCanApply(registry: IdentificationRegistry) {
   return (

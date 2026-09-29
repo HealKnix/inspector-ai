@@ -1,0 +1,474 @@
+{
+  "schema_version": 1,
+  "reviewed_at_utc": "2026-09-27T00:06:36.7855212Z",
+  "scope": "OFF-initial model-specific licensing/provenance inventory; no legal opinion or model-quality acceptance",
+  "lock_path": "backend/document-parser/model-lock.json",
+  "lock_sha256": "e8d4f7b7c2ef245593686fb910982657761e20f55efff6681bacabc0202ea2e5",
+  "model_count": 9,
+  "status_meaning": {
+    "verified": "Official publisher model card explicitly declares the recorded license and published weight LFS SHA-256 matches the pinned weight bytes; does not certify training-data rights, trademark permission, or full release legal compliance",
+    "needs_review": "Model-specific license missing/unsupported or exact weight digest linkage unconfirmed"
+  },
+  "network_reads": "Public model metadata only; no images, model weights, configuration/graph files or datasets downloaded",
+  "models": [
+    {
+      "model": "eslav_PP-OCRv5_mobile_rec",
+      "publisher": "PaddlePaddle",
+      "source": "https://huggingface.co/PaddlePaddle/eslav_PP-OCRv5_mobile_rec",
+      "repository_revision": "7553801264d3379d8d2e854971989e5e26c22e03",
+      "license": "apache-2.0",
+      "status": "verified",
+      "license_evidence": {
+        "kind": "model-specific official publisher repository cardData.license, not library-wide inference",
+        "card_url": "https://huggingface.co/PaddlePaddle/eslav_PP-OCRv5_mobile_rec/blob/7553801264d3379d8d2e854971989e5e26c22e03/README.md",
+        "metadata_url": "https://huggingface.co/api/models/PaddlePaddle/eslav_PP-OCRv5_mobile_rec?blobs=true",
+        "metadata_response_sha256": "67058a352ab356346460eb0bac2baf2420adda59f1e1b2f88f1c27f161ec08f8"
+      },
+      "provenance_evidence": {
+        "method": "Compare published LFS SHA-256 metadata to pinned inference.pdiparams SHA-256; no weights downloaded",
+        "weights_match_lock": true,
+        "graph_config_note": "All local graph/config SHA-256 values preserved from lock. Upstream Git blob IDs and sizes recorded; SHA-256 comparison unavailable for non-LFS files without fetching bytes, not claimed."
+      },
+      "files": [
+        {
+          "path": "eslav_PP-OCRv5_mobile_rec/inference.json",
+          "sha256": "3fb6e2e658f5139ff16e35260de8f0577f106a9505c902e1dfc1f4f1d03cc9cb",
+          "upstream_git_blob_id": "68150a76990304b797a9566df776d03ffaaafb4c",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 217712,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/eslav_PP-OCRv5_mobile_rec/blob/7553801264d3379d8d2e854971989e5e26c22e03/inference.json"
+        },
+        {
+          "path": "eslav_PP-OCRv5_mobile_rec/inference.pdiparams",
+          "sha256": "f11057b05d8517868bca505271278973d706600d9dcc184cbcf5c4512091c32b",
+          "upstream_git_blob_id": "0eaaeb33761a961f29bf5daadee078979d8478c0",
+          "upstream_lfs_sha256": "f11057b05d8517868bca505271278973d706600d9dcc184cbcf5c4512091c32b",
+          "upstream_bytes": 7811519,
+          "upstream_sha256_matches_lock": true,
+          "is_weight_file": true,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/eslav_PP-OCRv5_mobile_rec/blob/7553801264d3379d8d2e854971989e5e26c22e03/inference.pdiparams"
+        },
+        {
+          "path": "eslav_PP-OCRv5_mobile_rec/inference.yml",
+          "sha256": "025039bac23eb4a308efcefa4d58eab3af440767815c6ba6938468bf6353ee5a",
+          "upstream_git_blob_id": "0015bad9206cf19af608e629518a3bbb581772c1",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 4538,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/eslav_PP-OCRv5_mobile_rec/blob/7553801264d3379d8d2e854971989e5e26c22e03/inference.yml"
+        }
+      ]
+    },
+    {
+      "model": "PP-DocLayout_plus-L",
+      "publisher": "PaddlePaddle",
+      "source": "https://huggingface.co/PaddlePaddle/PP-DocLayout_plus-L",
+      "repository_revision": "aa52b8528c84f9b1a34ac3a88fe0e576edb9d11d",
+      "license": "apache-2.0",
+      "status": "verified",
+      "license_evidence": {
+        "kind": "model-specific official publisher repository cardData.license, not library-wide inference",
+        "card_url": "https://huggingface.co/PaddlePaddle/PP-DocLayout_plus-L/blob/aa52b8528c84f9b1a34ac3a88fe0e576edb9d11d/README.md",
+        "metadata_url": "https://huggingface.co/api/models/PaddlePaddle/PP-DocLayout_plus-L?blobs=true",
+        "metadata_response_sha256": "7e69f5719896272fc551c2bed8a9945f8b33ac5c1e37388fd6e18fdc12fc08f2"
+      },
+      "provenance_evidence": {
+        "method": "Compare published LFS SHA-256 metadata to pinned inference.pdiparams SHA-256; no weights downloaded",
+        "weights_match_lock": true,
+        "graph_config_note": "All local graph/config SHA-256 values preserved from lock. Upstream Git blob IDs and sizes recorded; SHA-256 comparison unavailable for non-LFS files without fetching bytes, not claimed."
+      },
+      "files": [
+        {
+          "path": "PP-DocLayout_plus-L/inference.json",
+          "sha256": "99bd09c0a1b9e88d35c65c305b91711d98055fc94b4a6eecd50da02e04729384",
+          "upstream_git_blob_id": "2c85a65a1d8a7ac2a2a1657ba3408bbaa90ed5d6",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 1081621,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/PP-DocLayout_plus-L/blob/aa52b8528c84f9b1a34ac3a88fe0e576edb9d11d/inference.json"
+        },
+        {
+          "path": "PP-DocLayout_plus-L/inference.pdiparams",
+          "sha256": "24ca3e2e442164505e250deef59f7ee9a54ea12dd32875c9cd6155d959dc97da",
+          "upstream_git_blob_id": "f62ecb12f04f22019ef07d06da1b1334206c75a2",
+          "upstream_lfs_sha256": "24ca3e2e442164505e250deef59f7ee9a54ea12dd32875c9cd6155d959dc97da",
+          "upstream_bytes": 129307978,
+          "upstream_sha256_matches_lock": true,
+          "is_weight_file": true,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/PP-DocLayout_plus-L/blob/aa52b8528c84f9b1a34ac3a88fe0e576edb9d11d/inference.pdiparams"
+        },
+        {
+          "path": "PP-DocLayout_plus-L/inference.yml",
+          "sha256": "d60f782a16f96afb27e8280399899a94c3e9ffc694ffb2f913ea00af1c522f1e",
+          "upstream_git_blob_id": "9a236587eae068a1e7906fd158f712dc41400563",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 1838,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/PP-DocLayout_plus-L/blob/aa52b8528c84f9b1a34ac3a88fe0e576edb9d11d/inference.yml"
+        }
+      ]
+    },
+    {
+      "model": "PP-LCNet_x1_0_doc_ori",
+      "publisher": "PaddlePaddle",
+      "source": "https://huggingface.co/PaddlePaddle/PP-LCNet_x1_0_doc_ori",
+      "repository_revision": "d3b95a6dff5fe8a94f2748e12b61cb26818a0df8",
+      "license": "apache-2.0",
+      "status": "verified",
+      "license_evidence": {
+        "kind": "model-specific official publisher repository cardData.license, not library-wide inference",
+        "card_url": "https://huggingface.co/PaddlePaddle/PP-LCNet_x1_0_doc_ori/blob/d3b95a6dff5fe8a94f2748e12b61cb26818a0df8/README.md",
+        "metadata_url": "https://huggingface.co/api/models/PaddlePaddle/PP-LCNet_x1_0_doc_ori?blobs=true",
+        "metadata_response_sha256": "45dbc856725a6e79e85f7be85548632ffedcc1fdf55a1d4b59074633a237751e"
+      },
+      "provenance_evidence": {
+        "method": "Compare published LFS SHA-256 metadata to pinned inference.pdiparams SHA-256; no weights downloaded",
+        "weights_match_lock": true,
+        "graph_config_note": "All local graph/config SHA-256 values preserved from lock. Upstream Git blob IDs and sizes recorded; SHA-256 comparison unavailable for non-LFS files without fetching bytes, not claimed."
+      },
+      "files": [
+        {
+          "path": "PP-LCNet_x1_0_doc_ori/inference.json",
+          "sha256": "3580978602f309c3554508dd85d4fe09b73a7e0d80d7f9e63258f5b72c390c69",
+          "upstream_git_blob_id": "afade734133bc7a8df6c0f5a11efb4cc816c8c6b",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 104441,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/PP-LCNet_x1_0_doc_ori/blob/d3b95a6dff5fe8a94f2748e12b61cb26818a0df8/inference.json"
+        },
+        {
+          "path": "PP-LCNet_x1_0_doc_ori/inference.pdiparams",
+          "sha256": "e8d6e7c5d264507e40e58a655779059d616b20d7441ea22047d829eb3931989c",
+          "upstream_git_blob_id": "6ee48078f7a490fe4ac4aa4470bb2df73f023b8a",
+          "upstream_lfs_sha256": "e8d6e7c5d264507e40e58a655779059d616b20d7441ea22047d829eb3931989c",
+          "upstream_bytes": 6754166,
+          "upstream_sha256_matches_lock": true,
+          "is_weight_file": true,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/PP-LCNet_x1_0_doc_ori/blob/d3b95a6dff5fe8a94f2748e12b61cb26818a0df8/inference.pdiparams"
+        },
+        {
+          "path": "PP-LCNet_x1_0_doc_ori/inference.yml",
+          "sha256": "9e195eb729a8173588cd0e8a852c8b373aa606e79e77b4ac7d8346f5426caf26",
+          "upstream_git_blob_id": "be5ff4a823ed0dc4fb6fa8e228608ba9ab9fc01d",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 766,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/PP-LCNet_x1_0_doc_ori/blob/d3b95a6dff5fe8a94f2748e12b61cb26818a0df8/inference.yml"
+        }
+      ]
+    },
+    {
+      "model": "PP-LCNet_x1_0_table_cls",
+      "publisher": "PaddlePaddle",
+      "source": "https://huggingface.co/PaddlePaddle/PP-LCNet_x1_0_table_cls",
+      "repository_revision": "2fa6323e7dab88fa883081db1460995f46af2922",
+      "license": "apache-2.0",
+      "status": "verified",
+      "license_evidence": {
+        "kind": "model-specific official publisher repository cardData.license, not library-wide inference",
+        "card_url": "https://huggingface.co/PaddlePaddle/PP-LCNet_x1_0_table_cls/blob/2fa6323e7dab88fa883081db1460995f46af2922/README.md",
+        "metadata_url": "https://huggingface.co/api/models/PaddlePaddle/PP-LCNet_x1_0_table_cls?blobs=true",
+        "metadata_response_sha256": "cd3459a7c4bdc1b9c1092af4dcbdac5300da0497851c87edd7181ff42e100943"
+      },
+      "provenance_evidence": {
+        "method": "Compare published LFS SHA-256 metadata to pinned inference.pdiparams SHA-256; no weights downloaded",
+        "weights_match_lock": true,
+        "graph_config_note": "All local graph/config SHA-256 values preserved from lock. Upstream Git blob IDs and sizes recorded; SHA-256 comparison unavailable for non-LFS files without fetching bytes, not claimed."
+      },
+      "files": [
+        {
+          "path": "PP-LCNet_x1_0_table_cls/inference.json",
+          "sha256": "43401e76ed7b0e34787533016ea4ec9193d5b5964c3f948991fc5b531651ef33",
+          "upstream_git_blob_id": "b590ef45eb2fab6dba8da838229e8d5f821fc79c",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 104441,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/PP-LCNet_x1_0_table_cls/blob/2fa6323e7dab88fa883081db1460995f46af2922/inference.json"
+        },
+        {
+          "path": "PP-LCNet_x1_0_table_cls/inference.pdiparams",
+          "sha256": "d0224afd9cfddf22da17407c6c78491baaa1f25922fbb312c9b0d2037c802db0",
+          "upstream_git_blob_id": "12cd557be58cfcf81def6a886ae74a4faaede9d7",
+          "upstream_lfs_sha256": "d0224afd9cfddf22da17407c6c78491baaa1f25922fbb312c9b0d2037c802db0",
+          "upstream_bytes": 6743918,
+          "upstream_sha256_matches_lock": true,
+          "is_weight_file": true,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/PP-LCNet_x1_0_table_cls/blob/2fa6323e7dab88fa883081db1460995f46af2922/inference.pdiparams"
+        },
+        {
+          "path": "PP-LCNet_x1_0_table_cls/inference.yml",
+          "sha256": "891b1f4b0ccddaf6aca0fce8c8a38e5ab5da9f62fb9adaa7c75e161ee03bb787",
+          "upstream_git_blob_id": "45dabf8130517cbfa1acaf439809fd461ad13069",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 762,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/PP-LCNet_x1_0_table_cls/blob/2fa6323e7dab88fa883081db1460995f46af2922/inference.yml"
+        }
+      ]
+    },
+    {
+      "model": "PP-OCRv5_mobile_det",
+      "publisher": "PaddlePaddle",
+      "source": "https://huggingface.co/PaddlePaddle/PP-OCRv5_mobile_det",
+      "repository_revision": "0d63e78e2b680928f6b1747d76a08db6e645efb7",
+      "license": "apache-2.0",
+      "status": "verified",
+      "license_evidence": {
+        "kind": "model-specific official publisher repository cardData.license, not library-wide inference",
+        "card_url": "https://huggingface.co/PaddlePaddle/PP-OCRv5_mobile_det/blob/0d63e78e2b680928f6b1747d76a08db6e645efb7/README.md",
+        "metadata_url": "https://huggingface.co/api/models/PaddlePaddle/PP-OCRv5_mobile_det?blobs=true",
+        "metadata_response_sha256": "28c33b0b2fd62c8140dab9e48bb77652c63542eae87caf8c91b20171d35b65f5"
+      },
+      "provenance_evidence": {
+        "method": "Compare published LFS SHA-256 metadata to pinned inference.pdiparams SHA-256; no weights downloaded",
+        "weights_match_lock": true,
+        "graph_config_note": "All local graph/config SHA-256 values preserved from lock. Upstream Git blob IDs and sizes recorded; SHA-256 comparison unavailable for non-LFS files without fetching bytes, not claimed."
+      },
+      "files": [
+        {
+          "path": "PP-OCRv5_mobile_det/inference.json",
+          "sha256": "05feef1acb00aa4cd7362b15f7f501fc4f99d7b1fa73c1c871e0c7b1504b0f5c",
+          "upstream_git_blob_id": "6cd678f39460a27372f8fe570e4e12e7a383418f",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 229777,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/PP-OCRv5_mobile_det/blob/0d63e78e2b680928f6b1747d76a08db6e645efb7/inference.json"
+        },
+        {
+          "path": "PP-OCRv5_mobile_det/inference.pdiparams",
+          "sha256": "afa1820cb16c1fd0dad589d0f8b389139061c1ef6d68019685fd07be997dda5b",
+          "upstream_git_blob_id": "5e6d602681aa10f3660406dd7ec0ba48268d56e4",
+          "upstream_lfs_sha256": "afa1820cb16c1fd0dad589d0f8b389139061c1ef6d68019685fd07be997dda5b",
+          "upstream_bytes": 4692937,
+          "upstream_sha256_matches_lock": true,
+          "is_weight_file": true,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/PP-OCRv5_mobile_det/blob/0d63e78e2b680928f6b1747d76a08db6e645efb7/inference.pdiparams"
+        },
+        {
+          "path": "PP-OCRv5_mobile_det/inference.yml",
+          "sha256": "98069072e1b6b37d727fd9d9f11725faa46d6ea0de012f2ed26caea011c37699",
+          "upstream_git_blob_id": "579d10695d2dd6e85c5ecba02d151ae5c077aa49",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 903,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/PP-OCRv5_mobile_det/blob/0d63e78e2b680928f6b1747d76a08db6e645efb7/inference.yml"
+        }
+      ]
+    },
+    {
+      "model": "RT-DETR-L_wired_table_cell_det",
+      "publisher": "PaddlePaddle",
+      "source": "https://huggingface.co/PaddlePaddle/RT-DETR-L_wired_table_cell_det",
+      "repository_revision": "e2bd53c06b3a815d86acbf5c6779dada58819cfe",
+      "license": "apache-2.0",
+      "status": "verified",
+      "license_evidence": {
+        "kind": "model-specific official publisher repository cardData.license, not library-wide inference",
+        "card_url": "https://huggingface.co/PaddlePaddle/RT-DETR-L_wired_table_cell_det/blob/e2bd53c06b3a815d86acbf5c6779dada58819cfe/README.md",
+        "metadata_url": "https://huggingface.co/api/models/PaddlePaddle/RT-DETR-L_wired_table_cell_det?blobs=true",
+        "metadata_response_sha256": "8c924ae4038b42633558aceb433a17f011968ac5a7f471647b838fb852c1792d"
+      },
+      "provenance_evidence": {
+        "method": "Compare published LFS SHA-256 metadata to pinned inference.pdiparams SHA-256; no weights downloaded",
+        "weights_match_lock": true,
+        "graph_config_note": "All local graph/config SHA-256 values preserved from lock. Upstream Git blob IDs and sizes recorded; SHA-256 comparison unavailable for non-LFS files without fetching bytes, not claimed."
+      },
+      "files": [
+        {
+          "path": "RT-DETR-L_wired_table_cell_det/inference.json",
+          "sha256": "abea237f1e53d3dc3bf7ea1321dfebe78552a6070e567dfc94028b622fd575e8",
+          "upstream_git_blob_id": "0657c163b234e9769856a3b2dbed5850dc5a1d5c",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 1081363,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/RT-DETR-L_wired_table_cell_det/blob/e2bd53c06b3a815d86acbf5c6779dada58819cfe/inference.json"
+        },
+        {
+          "path": "RT-DETR-L_wired_table_cell_det/inference.pdiparams",
+          "sha256": "357321c2845f0a035e8d118622649685a3cdb89d28b09a64e45a5a3df7a9fedc",
+          "upstream_git_blob_id": "34d213a822fb869b4c42e6472f890582e175430e",
+          "upstream_lfs_sha256": "357321c2845f0a035e8d118622649685a3cdb89d28b09a64e45a5a3df7a9fedc",
+          "upstream_bytes": 128841073,
+          "upstream_sha256_matches_lock": true,
+          "is_weight_file": true,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/RT-DETR-L_wired_table_cell_det/blob/e2bd53c06b3a815d86acbf5c6779dada58819cfe/inference.pdiparams"
+        },
+        {
+          "path": "RT-DETR-L_wired_table_cell_det/inference.yml",
+          "sha256": "edf6d6180f2b9e3e666c744ee5ded38a72c6ef9056cd193250e3e55ba268acef",
+          "upstream_git_blob_id": "12e2375734e7c34de26ae979aa40b5424571fb42",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 1630,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/RT-DETR-L_wired_table_cell_det/blob/e2bd53c06b3a815d86acbf5c6779dada58819cfe/inference.yml"
+        }
+      ]
+    },
+    {
+      "model": "RT-DETR-L_wireless_table_cell_det",
+      "publisher": "PaddlePaddle",
+      "source": "https://huggingface.co/PaddlePaddle/RT-DETR-L_wireless_table_cell_det",
+      "repository_revision": "25ca86356a601c877476bb0dcc5fd09153d9d64d",
+      "license": "apache-2.0",
+      "status": "verified",
+      "license_evidence": {
+        "kind": "model-specific official publisher repository cardData.license, not library-wide inference",
+        "card_url": "https://huggingface.co/PaddlePaddle/RT-DETR-L_wireless_table_cell_det/blob/25ca86356a601c877476bb0dcc5fd09153d9d64d/README.md",
+        "metadata_url": "https://huggingface.co/api/models/PaddlePaddle/RT-DETR-L_wireless_table_cell_det?blobs=true",
+        "metadata_response_sha256": "8900788cb49aa9df154632137e29e34f1a1c7f090271c34f08cfae93b5ddba3f"
+      },
+      "provenance_evidence": {
+        "method": "Compare published LFS SHA-256 metadata to pinned inference.pdiparams SHA-256; no weights downloaded",
+        "weights_match_lock": true,
+        "graph_config_note": "All local graph/config SHA-256 values preserved from lock. Upstream Git blob IDs and sizes recorded; SHA-256 comparison unavailable for non-LFS files without fetching bytes, not claimed."
+      },
+      "files": [
+        {
+          "path": "RT-DETR-L_wireless_table_cell_det/inference.json",
+          "sha256": "abea237f1e53d3dc3bf7ea1321dfebe78552a6070e567dfc94028b622fd575e8",
+          "upstream_git_blob_id": "0657c163b234e9769856a3b2dbed5850dc5a1d5c",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 1081363,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/RT-DETR-L_wireless_table_cell_det/blob/25ca86356a601c877476bb0dcc5fd09153d9d64d/inference.json"
+        },
+        {
+          "path": "RT-DETR-L_wireless_table_cell_det/inference.pdiparams",
+          "sha256": "c0f8c9ea07be8916ece73a8acf807bd21aed3ef11969b319c2dccb2406774c34",
+          "upstream_git_blob_id": "2c60cdda43615e2f2aaed8841156f4508f2dadcd",
+          "upstream_lfs_sha256": "c0f8c9ea07be8916ece73a8acf807bd21aed3ef11969b319c2dccb2406774c34",
+          "upstream_bytes": 128841073,
+          "upstream_sha256_matches_lock": true,
+          "is_weight_file": true,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/RT-DETR-L_wireless_table_cell_det/blob/25ca86356a601c877476bb0dcc5fd09153d9d64d/inference.pdiparams"
+        },
+        {
+          "path": "RT-DETR-L_wireless_table_cell_det/inference.yml",
+          "sha256": "f2d0f00ea42aacc162f72a35cf54330e392a7d669e9a1b43896d3bd77a512621",
+          "upstream_git_blob_id": "acbe633a4a077a1558fdd8796c65bf8ff396d6ec",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 1633,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/RT-DETR-L_wireless_table_cell_det/blob/25ca86356a601c877476bb0dcc5fd09153d9d64d/inference.yml"
+        }
+      ]
+    },
+    {
+      "model": "SLANet_plus",
+      "publisher": "PaddlePaddle",
+      "source": "https://huggingface.co/PaddlePaddle/SLANet_plus",
+      "repository_revision": "bae6e5f8c3c4e7da0c0b7639fdf3228fe76184e2",
+      "license": "apache-2.0",
+      "status": "verified",
+      "license_evidence": {
+        "kind": "model-specific official publisher repository cardData.license, not library-wide inference",
+        "card_url": "https://huggingface.co/PaddlePaddle/SLANet_plus/blob/bae6e5f8c3c4e7da0c0b7639fdf3228fe76184e2/README.md",
+        "metadata_url": "https://huggingface.co/api/models/PaddlePaddle/SLANet_plus?blobs=true",
+        "metadata_response_sha256": "9a4b5d7f26171fa80bfc3335914a9d72901a0a19b4f38c4c39795e4baca34b8a"
+      },
+      "provenance_evidence": {
+        "method": "Compare published LFS SHA-256 metadata to pinned inference.pdiparams SHA-256; no weights downloaded",
+        "weights_match_lock": true,
+        "graph_config_note": "All local graph/config SHA-256 values preserved from lock. Upstream Git blob IDs and sizes recorded; SHA-256 comparison unavailable for non-LFS files without fetching bytes, not claimed."
+      },
+      "files": [
+        {
+          "path": "SLANet_plus/inference.json",
+          "sha256": "aba91cd956f4a1648b0f89df94c3cf8acaa066b47e2b689d109843b40d8545a2",
+          "upstream_git_blob_id": "3cac190b2282531db445059f869054f37784ff90",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 315660,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/SLANet_plus/blob/bae6e5f8c3c4e7da0c0b7639fdf3228fe76184e2/inference.json"
+        },
+        {
+          "path": "SLANet_plus/inference.pdiparams",
+          "sha256": "012986b0e2bfe90410618bfb4b7cf4fcb6c978caefd84c63c2934f8387b09ab8",
+          "upstream_git_blob_id": "4acafd4127d338d8da4d93d7d2cee94e83f7c82f",
+          "upstream_lfs_sha256": "012986b0e2bfe90410618bfb4b7cf4fcb6c978caefd84c63c2934f8387b09ab8",
+          "upstream_bytes": 7666515,
+          "upstream_sha256_matches_lock": true,
+          "is_weight_file": true,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/SLANet_plus/blob/bae6e5f8c3c4e7da0c0b7639fdf3228fe76184e2/inference.pdiparams"
+        },
+        {
+          "path": "SLANet_plus/inference.yml",
+          "sha256": "8a6372d3269a6f112fe13a2da7952a84da6e112c10a3146cbb43de5bd01d19fa",
+          "upstream_git_blob_id": "9d57e936f02d62335817f936d6e779e811f56d2a",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 2035,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/SLANet_plus/blob/bae6e5f8c3c4e7da0c0b7639fdf3228fe76184e2/inference.yml"
+        }
+      ]
+    },
+    {
+      "model": "SLANeXt_wired",
+      "publisher": "PaddlePaddle",
+      "source": "https://huggingface.co/PaddlePaddle/SLANeXt_wired",
+      "repository_revision": "763069fcda6a065f2171753205a32bf899a88d15",
+      "license": "apache-2.0",
+      "status": "verified",
+      "license_evidence": {
+        "kind": "model-specific official publisher repository cardData.license, not library-wide inference",
+        "card_url": "https://huggingface.co/PaddlePaddle/SLANeXt_wired/blob/763069fcda6a065f2171753205a32bf899a88d15/README.md",
+        "metadata_url": "https://huggingface.co/api/models/PaddlePaddle/SLANeXt_wired?blobs=true",
+        "metadata_response_sha256": "40181c8484420d0591e309139ef10ba77286b15c7ccf9dd5c0cc02be94ec15d5"
+      },
+      "provenance_evidence": {
+        "method": "Compare published LFS SHA-256 metadata to pinned inference.pdiparams SHA-256; no weights downloaded",
+        "weights_match_lock": true,
+        "graph_config_note": "All local graph/config SHA-256 values preserved from lock. Upstream Git blob IDs and sizes recorded; SHA-256 comparison unavailable for non-LFS files without fetching bytes, not claimed."
+      },
+      "files": [
+        {
+          "path": "SLANeXt_wired/inference.json",
+          "sha256": "5b872f08e74f628ca1db8405db147e82e6e0c7cb358e101fd01cdafc946632d8",
+          "upstream_git_blob_id": "4761a934c8f77c2092339f233266cecdf96a6c00",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 959302,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/SLANeXt_wired/blob/763069fcda6a065f2171753205a32bf899a88d15/inference.json"
+        },
+        {
+          "path": "SLANeXt_wired/inference.pdiparams",
+          "sha256": "ff0362a30f707fa7d27d8453c4396b992fca287377a42d01515bca6eeb3908f5",
+          "upstream_git_blob_id": "60a32a154f41a3123221c1d2db1203188f6d241d",
+          "upstream_lfs_sha256": "ff0362a30f707fa7d27d8453c4396b992fca287377a42d01515bca6eeb3908f5",
+          "upstream_bytes": 364771513,
+          "upstream_sha256_matches_lock": true,
+          "is_weight_file": true,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/SLANeXt_wired/blob/763069fcda6a065f2171753205a32bf899a88d15/inference.pdiparams"
+        },
+        {
+          "path": "SLANeXt_wired/inference.yml",
+          "sha256": "abbbd1b4dc6b1a2e9cd34c035514da53a1a6b1ec267292b0b8802025650a33bf",
+          "upstream_git_blob_id": "a9491bff55efffa29a39b952d2c9f73037c5a641",
+          "upstream_lfs_sha256": null,
+          "upstream_bytes": 2066,
+          "upstream_sha256_matches_lock": null,
+          "is_weight_file": false,
+          "evidence_url": "https://huggingface.co/PaddlePaddle/SLANeXt_wired/blob/763069fcda6a065f2171753205a32bf899a88d15/inference.yml"
+        }
+      ]
+    }
+  ]
+}

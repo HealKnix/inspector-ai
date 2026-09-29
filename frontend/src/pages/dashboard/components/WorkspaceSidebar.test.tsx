@@ -223,21 +223,6 @@ describe("WorkspaceSidebar", () => {
     expect(sidebar).toHaveAttribute("data-collapsed", "false");
   });
 
-  it("показывает Popover с круглосуточной доступностью", async () => {
-    installMatchMedia();
-    renderSidebar();
-
-    fireEvent.click(screen.getByRole("button", { name: "Статус системы" }));
-
-    expect(
-      await screen.findByText("Система работает штатно"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Сервис доступен круглосуточно, 24/7"),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Онлайн")).toBeInTheDocument();
-  });
-
   it("переходит к загрузке документов и обратно к проверкам", () => {
     installMatchMedia();
     renderSidebar();

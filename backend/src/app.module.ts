@@ -5,6 +5,8 @@ import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 
 import { RolesGuard } from "./common/guards/roles.guard.js";
 import { validateEnvironment } from "./config/environment.js";
+import { AuditModule } from "./infrastructure/audit/audit.module.js";
+import { ObservabilityModule } from "./infrastructure/observability/observability.module.js";
 import { PrismaModule } from "./infrastructure/prisma/prisma.module.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
 import { JwtAuthGuard } from "./modules/auth/jwt-auth.guard.js";
@@ -25,6 +27,8 @@ import { VerificationModule } from "./modules/verification/verification.module.j
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnvironment }),
     ThrottlerModule.forRoot([{ limit: 120, ttl: 60_000 }]),
     PrismaModule,
+    ObservabilityModule,
+    AuditModule,
     AuthModule,
     HealthModule,
     ObjectsModule,

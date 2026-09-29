@@ -7,6 +7,7 @@ import {
   canMergeRepresentations,
   normalizeIdentificationText,
 } from "./identification-engine.js";
+import { structuralSheetBlockers } from "./sheet-selection.js";
 
 export interface DocumentAlias {
   document_id: string;
@@ -27,7 +28,10 @@ const normalized = (value: string | undefined) =>
 /** Identity within one process; the service supplies the object/process boundary. */
 function logicalKey(revision: IdentificationRevision): string | null {
   if (
-    revision.blockers.some(
+    revision.blockers.some((blocker) =>
+      blocker.startsWith("field_conflict:"),
+    ) ||
+    structuralSheetBlockers(revision).some(
       (blocker) =>
         blocker.startsWith("unsupported_") ||
         blocker.startsWith("field_conflict:") ||
@@ -58,6 +62,13 @@ function compatibleDecisions(
   left: IdentificationRevision,
   right: IdentificationRevision,
 ): boolean {
+  if (
+    left.sheet_map ||
+    right.sheet_map ||
+    left.sheet_replacement ||
+    right.sheet_replacement
+  )
+    return false;
   if (
     left.reference_revision_id &&
     right.reference_revision_id &&
@@ -205,6 +216,11 @@ export function groupResolvedDocuments(
         revision.approval.replaces_revision_id =
           revisionAliases.get(revision.approval.replaces_revision_id) ??
           revision.approval.replaces_revision_id;
+      if (revision.sheet_replacement)
+        revision.sheet_replacement.predecessor_revision_id =
+          revisionAliases.get(
+            revision.sheet_replacement.predecessor_revision_id,
+          ) ?? revision.sheet_replacement.predecessor_revision_id;
       if (revision.approval.replaces_revision_id === revision.revision_id)
         revision.blockers = [
           ...new Set([...revision.blockers, "replacement_cycle"]),

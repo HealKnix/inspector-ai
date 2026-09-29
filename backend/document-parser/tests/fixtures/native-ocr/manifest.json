@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "status": "visually_transcribed_regression_inputs; not expert-approved quality gold",
+  "files": [
+    {
+      "path": "material-cases.json",
+      "sha256": "61491cb2df904352aafffdcf2a70ee56f5bdca95890f5717ff1b8e7d2bfe5b3d",
+      "bytes": 57423
+    },
+    {
+      "path": "revision-native-context.json",
+      "sha256": "5b1da8f52ed70fceb4e1608e6459efcb70582557422090b60c68515e95005b09",
+      "bytes": 31969
+    },
+    {
+      "path": "images/unit-p1-b467.png",
+      "sha256": "47ce12c664904eb96a3f983136250eabca21eb5fae9aa3831da8dc756b1666db",
+      "bytes": 2603,
+      "source_page": 1,
+      "source_bbox": [
+        0.2977402883182898, 0.312080941138539, 0.32193838136342046,
+        0.3307120866297229
+      ],
+      "coordinate_space": "visible-page-normalized",
+      "render_scale": 5,
+      "image_width": 203,
+      "image_height": 110,
+      "operation": "PDFium render of original PDF clip; no OCR/retouching"
+    },
+    {
+      "path": "images/unit-p1-b479.png",
+      "sha256": "5e2f2ea11008bd34365b566da6b44a960be6af50b73adfdd3d05497b2f459333",
+      "bytes": 1424,
+      "source_page": 1,
+      "source_bbox": [
+        0.29773128057957243, 0.34530398190428213, 0.3219159399382423,
+        0.3639900653299748
+      ],
+      "coordinate_space": "visible-page-normalized",
+      "render_scale": 5,
+      "image_width": 203,
+      "image_height": 110,
+      "operation": "PDFium render of original PDF clip; no OCR/retouching"
+    },
+    {
+      "path": "images/unit-p1-b485.png",
+      "sha256": "ce286345b437beee10daa9ce5e59a051aa5d66d33c46a281ed4de0629b7ee2f3",
+      "bytes": 1391,
+      "source_page": 1,
+      "source_bbox": [
+        0.29776266740617574, 0.3619556389319899, 0.3219267866270784,
+        0.38062793118387905
+      ],
+      "coordinate_space": "visible-page-normalized",
+      "render_scale": 5,
+      "image_width": 202,
+      "image_height": 110,
+      "operation": "PDFium render of original PDF clip; no OCR/retouching"
+    },
+    {
+      "path": "images/unit-p1-b497.png",
+      "sha256": "fcabc1034524b93367d68cc6a40f46e9a2a6b5a06288699542d49b136750cd95",
+      "bytes": 1530,
+      "source_page": 1,
+      "source_bbox": [
+        0.2977595505415677, 0.3952490373602015, 0.3219342359334917,
+        0.41376430813098236
+      ],
+      "coordinate_space": "visible-page-normalized",
+      "render_scale": 5,
+      "image_width": 202,
+      "image_height": 109,
+      "operation": "PDFium render of original PDF clip; no OCR/retouching"
+    },
+    {
+      "path": "images/unit-p1-b521.png",
+      "sha256": "bd3989716701247b82a290b649a7a68e94b0aabfd221599e61bd9d51acac9ee9",
+      "bytes": 2580,
+      "source_page": 1,
+      "source_bbox": [
+        0.2977255143800475, 0.4615501569571788, 0.3219043763705463,
+        0.482544973581864
+      ],
+      "coordinate_space": "visible-page-normalized",
+      "render_scale": 5,
+      "image_width": 203,
+      "image_height": 124,
+      "operation": "PDFium render of original PDF clip; no OCR/retouching"
+    },
+    {
+      "path": "images/cross-column-material.png",
+      "sha256": "53ec02f585ab10eef5b72d6a690936994b9ffcb6f4abfd9b5f0735eade26299f",
+      "bytes": 27048,
+      "source_page": 1,
+      "source_bbox": [0.059, 0.599, 0.322, 0.624],
+      "coordinate_space": "visible-page-normalized",
+      "render_scale": 5,
+      "image_width": 2214,
+      "image_height": 147,
+      "operation": "PDFium render of original PDF clip; no OCR/retouching"
+    },
+    {
+      "path": "images/revision-table-1-4-8.png",
+      "sha256": "d7f8ea9f5f6b78f27cd3378d4e631d65e87dbbbfab0ade092ce74a034be976b7",
+      "bytes": 44470,
+      "source_page": 1,
+      "source_bbox": [0.09, 0.116, 0.98, 0.252],
+      "coordinate_space": "visible-page-normalized",
+      "render_scale": 3,
+      "image_width": 1588,
+      "image_height": 342,
+      "operation": "PDFium render of original PDF clip; no OCR/retouching"
+    },
+    {
+      "path": "public-raster-cases.json",
+      "sha256": "a4c7871b6d49ad32e444086dd347667b608cedf636a8c12c5fa9cb5dfeefdcdb",
+      "bytes": 4126
+    },
+    {
+      "path": "images/public-F0152-p8-printed.png",
+      "sha256": "1bd4986d94c995d557c4ea7e740550d5a45d4898b88aacfce43631b667b0ab3d",
+      "bytes": 466357,
+      "source_page": 8,
+      "source_bbox": [0.195, 0.328, 0.857, 0.409],
+      "coordinate_space": "visible-page-normalized",
+      "render_scale": 3,
+      "image_width": 1181,
+      "image_height": 204,
+      "operation": "PDFium render of original PDF clip; no OCR/retouching"
+    },
+    {
+      "path": "images/public-F0152-p9-printed.png",
+      "sha256": "8e7a5bb07eb96bad93af6e7b84f5a9d71a91b09adc19ec9c8c49e2b7ba223fd3",
+      "bytes": 81709,
+      "source_page": 9,
+      "source_bbox": [0.24, 0.288, 0.83, 0.331],
+      "coordinate_space": "visible-page-normalized",
+      "render_scale": 3,
+      "image_width": 1053,
+      "image_height": 108,
+      "operation": "PDFium render of original PDF clip; no OCR/retouching"
+    }
+  ],
+  "hidden_source_files_read": 0,
+  "full_source_documents_included": false,
+  "suite_version": "par-native-ocr-regressions-v1",
+  "case_counts": {
+    "unit_conflicts": 5,
+    "cross_column_material": 1,
+    "revision_native_context": 1,
+    "real_raster_pages": 2
+  },
+  "renderer": {
+    "name": "pypdfium2",
+    "version": "5.13.0"
+  },
+  "review": {
+    "method": "Assistant visual inspection of original-source PDF renders, checked again after cropping",
+    "date": "2026-09-27",
+    "human_expert_approved": false,
+    "expected_from_historical_ocr": false
+  },
+  "data_roles": {
+    "authorised_diagnostic": "Known user-authorised material outside the organiser manifest",
+    "public_raster": "TRAIN_PUBLIC / OBJ-TYUMENSKAYA-5-GOLD-SEED; used for development",
+    "validation": "OBJ-NOVOSLOBODSKAYA unchanged and not opened for these fixtures",
+    "hidden": "OBJ-RECHNIKOV-7-7 excluded; no files/answers read"
+  },
+  "limitations": [
+    "Two raster pages from one public document are not independent corpus accuracy",
+    "Original scan DPI is unconfirmed; render scale does not prove 300dpi eligibility",
+    "Revision fixture redacts eight identifying text blocks; only structural preservation is asserted for them",
+    "Real OCR/model runs and expert GOLD acceptance are separate evidence"
+  ]
+}

@@ -38,12 +38,51 @@ export const approvalSchema: Schema = object({
   replaces_revision_id: { ...uuid, nullable: true },
   basis: { type: "string", nullable: true, minLength: 1, maxLength: 4000 },
 });
+const sheetMap: Schema = {
+  ...object({
+    file_id: uuid,
+    source_sha256: hash,
+    sheets: {
+      type: "array",
+      minItems: 1,
+      maxItems: 500,
+      items: object({
+        label: { type: "string", minLength: 1, maxLength: 80 },
+        page_number: { type: "integer", minimum: 1, maximum: 500 },
+      }),
+    },
+    excluded_pages: {
+      type: "array",
+      maxItems: 500,
+      uniqueItems: true,
+      items: { type: "integer", minimum: 1, maximum: 500 },
+    },
+    basis: { type: "string", minLength: 1, maxLength: 4000 },
+  }),
+  nullable: true,
+};
+const sheetReplacement: Schema = {
+  ...object({
+    predecessor_revision_id: uuid,
+    replaced_labels: {
+      type: "array",
+      minItems: 1,
+      maxItems: 500,
+      uniqueItems: true,
+      items: { type: "string", minLength: 1, maxLength: 80 },
+    },
+    basis: { type: "string", minLength: 1, maxLength: 4000 },
+  }),
+  nullable: true,
+};
 export const revisionClarificationSchema: Schema = object(
   {
     revision_id: uuid,
     fields: fields(true),
     approval: approvalSchema,
     reference_revision_id: { ...uuid, nullable: true },
+    sheet_map: sheetMap,
+    sheet_replacement: sheetReplacement,
   },
   ["revision_id"],
 );
@@ -76,22 +115,45 @@ export const clarificationResponseSchema: Schema = object({
   resolved_input_hash: { ...hash, nullable: true },
   replayed: { type: "boolean" },
 });
-const evidence: Schema = object({
-  file_id: uuid,
-  artifact_id: uuid,
-  artifact_sha256: hash,
-  source_sha256: hash,
-  page_number: { type: "integer", minimum: 1 },
-  block_id: text,
-  quote: text,
-  bbox: {
-    type: "array",
-    items: { type: "number", minimum: 0, maximum: 1 },
-    minItems: 4,
-    maxItems: 4,
+const evidence: Schema = object(
+  {
+    file_id: uuid,
+    artifact_id: uuid,
+    artifact_sha256: hash,
+    source_sha256: hash,
+    page_number: { type: "integer", minimum: 1 },
+    block_id: text,
+    quote: text,
+    bbox: {
+      type: "array",
+      items: { type: "number", minimum: 0, maximum: 1 },
+      minItems: 4,
+      maxItems: 4,
+    },
+    structural_path: { ...text, nullable: true },
+    parse_context: object({
+      source: text,
+      native_valid: { type: "boolean", nullable: true },
+      include_in_main: { type: "boolean", nullable: true },
+      region_id: { ...text, nullable: true },
+      region_kind: { ...text, nullable: true },
+      region_method: { ...text, nullable: true },
+      text_status: { ...text, nullable: true },
+      reasons: strings,
+    }),
   },
-  structural_path: { ...text, nullable: true },
-});
+  [
+    "file_id",
+    "artifact_id",
+    "artifact_sha256",
+    "source_sha256",
+    "page_number",
+    "block_id",
+    "quote",
+    "bbox",
+    "structural_path",
+  ],
+);
 const candidate: Schema = object({
   candidate_id: text,
   field: { type: "string", enum: [...IDENTIFICATION_FIELDS] },
@@ -119,6 +181,8 @@ const revision: Schema = object(
     approval: approvalSchema,
     blockers: strings,
     reference_revision_id: { ...uuid, nullable: true },
+    sheet_map: sheetMap,
+    sheet_replacement: sheetReplacement,
   },
   [
     "revision_id",
@@ -135,15 +199,53 @@ export const identificationDocumentSchema: Schema = object({
   revisions: { type: "array", items: revision },
 });
 const ref: Schema = object({ document_id: uuid, revision_id: uuid });
-const context: Schema = object({
-  context_id: text,
-  scope: text,
-  works_period: object({ from: date, to: date }),
-  reference: { ...ref, nullable: true },
-  actual: ref,
-  status: { type: "string", enum: ["READY", "CLARIFICATION_REQUIRED"] },
-  blockers: strings,
-});
+const resolvedSheets: Schema = {
+  ...object({
+    selection_hash: hash,
+    chain: {
+      type: "array",
+      items: object({ revision_id: uuid, decision_hash: hash }),
+    },
+    sheets: {
+      type: "array",
+      items: object({
+        label: text,
+        page_number: { type: "integer", minimum: 1 },
+        document_id: uuid,
+        revision_id: uuid,
+        file_id: uuid,
+        artifact_id: uuid,
+        artifact_sha256: hash,
+        source_sha256: hash,
+      }),
+    },
+  }),
+  nullable: true,
+};
+const context: Schema = object(
+  {
+    context_id: text,
+    scope: text,
+    works_period: object({ from: date, to: date }),
+    reference: { ...ref, nullable: true },
+    actual: ref,
+    status: { type: "string", enum: ["READY", "CLARIFICATION_REQUIRED"] },
+    blockers: strings,
+    sheet_selection: object({
+      reference: resolvedSheets,
+      actual: resolvedSheets,
+    }),
+  },
+  [
+    "context_id",
+    "scope",
+    "works_period",
+    "reference",
+    "actual",
+    "status",
+    "blockers",
+  ],
+);
 const alias: Schema = object({
   document_id: uuid,
   revision_id: uuid,

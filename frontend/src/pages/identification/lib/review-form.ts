@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sheetReviewSchema } from "./sheet-review";
 
 export const confirmationBasis = "Подтверждаю сведения по документу.";
 export const reviewFormSchema = z
@@ -12,6 +13,7 @@ export const reviewFormSchema = z
     effectiveFrom: z.string(),
     effectiveTo: z.string(),
     approvalBasis: z.string().max(4000),
+    sheets: sheetReviewSchema,
   })
   .superRefine((value, context) => {
     if (value.approvalChanged && value.confirmed && !value.approvalBasis.trim())
