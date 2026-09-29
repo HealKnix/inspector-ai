@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import type { ClassificationConfig } from "../identification/classification-config.js";
 import { ClassificationError } from "../identification/classification-contract.js";
 import type { ParseArtifactData } from "../parsing/parsing-contract.js";
@@ -57,6 +58,14 @@ export function planAnchorTerms(plan: ExtractionPlan): string[] {
   return [...new Set(collected.map((term) => term.trim()))].filter(Boolean);
 }
 
+function artifactHaystack(artifact: ParseArtifactData): string {
+  return artifact.pages
+    .flatMap((page) => page.blocks)
+    .map((block) => normalizeTerm(block.normalized_text || block.raw_text))
+    .filter(Boolean)
+    .join("\n");
+}
+
 /**
  * Anti-hallucination gate: a draft whose anchors never occur in the parsed
  * artifact is rejected; partially missing terms are returned as warnings
@@ -66,14 +75,26 @@ export function missingAnchors(
   plan: ExtractionPlan,
   artifact: ParseArtifactData,
 ): string[] {
-  const haystack = artifact.pages
-    .flatMap((page) => page.blocks)
-    .map((block) => normalizeTerm(block.normalized_text || block.raw_text))
-    .filter(Boolean)
-    .join("\n");
+  const haystack = artifactHaystack(artifact);
   return planAnchorTerms(plan).filter(
     (term) => !haystack.includes(normalizeTerm(term)),
   );
+}
+
+/**
+ * Same gate for a whole object: an anchor is missing only when it occurs in
+ * none of the object's artifacts — parameters legitimately live in one
+ * document of a multi-file package.
+ */
+export function missingAnchorsAcross(
+  plan: ExtractionPlan,
+  artifacts: ParseArtifactData[],
+): string[] {
+  const haystacks = artifacts.map(artifactHaystack);
+  return planAnchorTerms(plan).filter((term) => {
+    const needle = normalizeTerm(term);
+    return !haystacks.some((haystack) => haystack.includes(needle));
+  });
 }
 
 async function boundedBody(
@@ -189,7 +210,13 @@ export async function draftPlanWithLlm(
     }
     try {
       return validateExtractionPlan(content);
-    } catch {
+    } catch (error) {
+      // The plan JSON is small model output (terms/regex), not document text —
+      // safe to log for debugging invalid drafts.
+      new Logger("ExtractionLlm").warn("extraction_llm_invalid_plan", {
+        error: error instanceof Error ? error.message : String(error),
+        content: JSON.stringify(content).slice(0, 2000),
+      });
       invalid("extraction_llm_invalid_plan");
     }
   } catch (error) {

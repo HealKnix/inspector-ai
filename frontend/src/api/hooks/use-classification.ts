@@ -4,6 +4,8 @@ import { ZodError } from "zod";
 
 import {
   getClassificationStatus,
+  getKindOptions,
+  resolveClassification,
   retryClassification,
 } from "@/api/endpoints/classification";
 import { ApiError } from "@/api/errors";
@@ -51,7 +53,12 @@ export function classificationInterval(
   available: boolean,
   parsingActive: boolean,
 ) {
-  if (!available || error || (!data?.active && !parsingActive)) return false;
+  if (
+    !available ||
+    error ||
+    (!data?.active && !data?.review_active && !parsingActive)
+  )
+    return false;
   return Math.max(1000, data?.poll_after_ms ?? 2000);
 }
 
@@ -59,6 +66,7 @@ export function useClassificationStatus(
   objectId: string,
   parsing: ParsingStatus | undefined,
   enabled = true,
+  resolvedInputHash?: string | null,
 ) {
   const available = useSyncExternalStore(
     subscribeAvailability,
@@ -74,7 +82,11 @@ export function useClassificationStatus(
       )
       .join("|") ?? "";
   return useQuery({
-    queryKey: [...queryKeys.objects.classification(objectId), parsingIdentity],
+    queryKey: [
+      ...queryKeys.objects.classification(objectId),
+      parsingIdentity,
+      resolvedInputHash ?? "latest",
+    ],
     queryFn: ({ signal }) => getClassificationStatus(objectId, signal),
     enabled: (query) =>
       enabled &&
@@ -107,6 +119,29 @@ export function useRetryClassification() {
     onSettled: async (_data, _error, input) => {
       await client.invalidateQueries({
         queryKey: queryKeys.objects.classification(input.objectId),
+      });
+    },
+  });
+}
+
+export function useKindOptions(objectId: string, enabled = true) {
+  return useQuery({
+    queryKey: [...queryKeys.objects.classification(objectId), "kind-options"],
+    queryFn: ({ signal }) => getKindOptions(objectId, signal),
+    enabled: enabled && Boolean(objectId),
+    staleTime: 5 * 60_000,
+    retry: (attempt, error) => !isPermanentError(error) && attempt < 2,
+  });
+}
+
+export function useResolveClassification() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: resolveClassification,
+    retry: false,
+    onSettled: async (_data, _error, input) => {
+      await client.invalidateQueries({
+        queryKey: queryKeys.objects.detail(input.objectId),
       });
     },
   });

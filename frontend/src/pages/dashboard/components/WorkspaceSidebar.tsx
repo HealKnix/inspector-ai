@@ -1,7 +1,6 @@
 import {
   Avatar,
   Button,
-  Chip,
   Drawer,
   Popover,
   ScrollShadow,
@@ -12,29 +11,16 @@ import {
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { Role, type UserDto } from "@/api/types/auth";
+import { Role, roleLabels, type UserDto } from "@/api/types/auth";
 import { BrandMark } from "@/components/BrandMark";
 
 import { LogoutConfirmationDialog } from "@/components/LogoutConfirmationDialog";
+import { fallbackAvatars } from "@/lib/fallback-avatars";
 import { cn } from "@/lib/utils";
 import routeNames from "@/routes/routeNames";
 import { DashboardIcon, type DashboardIconName } from "./DashboardIcon";
-import { SystemStatusPopover } from "./SystemStatusPopover";
+
 import { ThemeSwitcher } from "./ThemeSwitcher";
-
-import AvatarBlue from "@/assets/images/avatar-fallback/blue.jpg";
-import AvatarGreen from "@/assets/images/avatar-fallback/green.jpg";
-import AvatarOrange from "@/assets/images/avatar-fallback/orange.jpg";
-import AvatarPurple from "@/assets/images/avatar-fallback/purple.jpg";
-import AvatarRed from "@/assets/images/avatar-fallback/red.jpg";
-
-const fallbackAvatars = [
-  AvatarBlue,
-  AvatarRed,
-  AvatarGreen,
-  AvatarOrange,
-  AvatarPurple,
-];
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "inspector-ai:sidebar-collapsed:v1";
 
@@ -79,12 +65,12 @@ interface NavigationItem {
 }
 
 const primaryItems: readonly NavigationItem[] = [
-  { href: routeNames.ROOT, icon: "grid", label: "Дашборд" },
   { href: routeNames.OBJECTS, icon: "folder", label: "Объекты" },
   {
-    href: routeNames.DOCUMENT_UPLOAD,
+    href: routeNames.OBJECTS,
     icon: "upload",
     label: "Загрузка комплекта",
+    roles: [Role.INSPECTOR],
   },
   {
     href: routeNames.DOCUMENT_VERIFICATION,
@@ -98,15 +84,21 @@ const primaryItems: readonly NavigationItem[] = [
     label: "Протоколы",
     roles: [Role.INSPECTOR],
   },
+  {
+    href: routeNames.ADMIN_USERS,
+    icon: "user",
+    label: "Пользователи",
+    roles: [Role.ADMINISTRATOR],
+  },
+  {
+    href: routeNames.ADMIN_DOCUMENTS,
+    icon: "file",
+    label: "Документы",
+    roles: [Role.ADMINISTRATOR],
+  },
 ];
 
 const secondaryItems: readonly NavigationItem[] = [];
-
-const roleLabels: Record<Role, string> = {
-  [Role.ADMINISTRATOR]: "Администратор",
-  [Role.INSPECTOR]: "Инспектор",
-  [Role.ML_ENGINEER]: "ML-инженер",
-};
 
 interface SidebarSharedProps {
   isLoggingOut: boolean;
@@ -137,7 +129,7 @@ function NavigationList({
           item.href.split("/").at(1) === activeHref?.split("/").at(1);
 
         return (
-          <Tooltip key={item.href} isDisabled={!collapsed}>
+          <Tooltip key={`${item.href}:${item.label}`} isDisabled={!collapsed}>
             <Button
               aria-label={collapsed ? item.label : undefined}
               aria-pressed={isActive}
@@ -179,6 +171,10 @@ function AccountPopover({
 
   const isMobile = useMediaQuery("(max-width: 761px)");
   const login = user?.login ?? "Пользователь";
+  const name =
+    user?.firstName || user?.lastName
+      ? `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim()
+      : login;
   const role = user?.role ? roleLabels[user.role] : "Роль не назначена";
 
   const randomNumberFromId = useMemo(
@@ -210,7 +206,9 @@ function AccountPopover({
             )}
           >
             <span className="block truncate text-sm font-semibold">
-              {login}
+              {user?.firstName || user?.lastName
+                ? `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim()
+                : login}
             </span>
             <span className="text-copy-muted block truncate text-xs">
               {role}
@@ -219,30 +217,55 @@ function AccountPopover({
         </Button>
 
         <Popover.Content
-          className="border-border bg-surface w-[min(280px,calc(100vw-24px))] rounded-[18px] border p-0 shadow-xl"
           offset={12}
           placement={!isMobile ? "right" : undefined}
         >
-          <Popover.Dialog className="p-4 outline-none">
-            <div className="flex flex-wrap items-center gap-2">
-              <Popover.Heading className="truncate text-sm font-semibold">
-                {login}
-              </Popover.Heading>
-              <Chip className="bg-accent/15 text-accent text-xs">{role}</Chip>
-              {logoutError ? (
-                <p className="text-destructive mt-3 text-xs" role="alert">
-                  {logoutError}
-                </p>
-              ) : null}
+          <Popover.Dialog className="border-border bg-surface w-[min(280px,calc(100vw-24px))] space-y-3 rounded-[calc(var(--radius-2xl)+4px)] border p-2.5 shadow-2xl/15">
+            <div className="w-full gap-1 rounded-2xl p-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Popover.Heading className="truncate text-sm font-semibold">
+                  <div className="flex gap-3">
+                    <div className="relative shrink-0">
+                      <Avatar>
+                        <Avatar.Image
+                          src={
+                            fallbackAvatars[
+                              randomNumberFromId % fallbackAvatars.length
+                            ]
+                          }
+                        />
+                      </Avatar>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1 truncate text-sm font-medium tracking-[-0.015em]">
+                        {name}
+                      </div>
+                      <p className="text-copy-muted mt-0.5 truncate text-xs font-normal">
+                        {role}
+                      </p>
+                      <p className="text-accent-hover mt-0.5 truncate text-xs font-normal">
+                        @{user?.login ?? "Пользователь"}
+                      </p>
+                    </div>
+                  </div>
+                </Popover.Heading>
+                {logoutError ? (
+                  <p className="text-destructive mt-3 text-xs" role="alert">
+                    {logoutError}
+                  </p>
+                ) : null}
+              </div>
             </div>
-            <div className="border-border mt-4 border-t pt-4">
-              <p className="text-copy-muted text-xs font-medium">
+            <div className="space-y-1">
+              <p className="text-copy-muted ml-3 text-xs font-medium">
                 Тема оформления
               </p>
-              <ThemeSwitcher />
+              <div className="bg-surface-low w-full gap-1 rounded-2xl">
+                <ThemeSwitcher />
+              </div>
             </div>
             <Button
-              className="mt-3 w-full"
+              className="w-full"
               onPress={() => setIsLogoutDialogOpen(true)}
               size="sm"
               variant="danger-soft"
@@ -312,7 +335,6 @@ function SidebarContent({
             items={secondaryItems}
             onActiveHrefChange={onActiveHrefChange}
           />
-          <SystemStatusPopover compact={collapsed} />
         </nav>
       </ScrollShadow>
       <div className="mt-4">

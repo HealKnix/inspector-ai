@@ -1,21 +1,24 @@
-import { Button, Label, ListBox, Modal, Select } from "@heroui/react";
+import { Button, Label, ListBox, Select } from "@heroui/react";
 import { useState } from "react";
 
 import { parsingErrorMessage, useParseResult } from "@/api/hooks/use-parsing";
 import type { ParsingFile } from "@/api/types/parsing";
+import type { ApiFindingDetail } from "@/api/types/verification";
+import { DocumentViewerModal } from "@/components/document-viewer-modal/DocumentViewerModal";
 import { RenderedDocumentPage } from "@/components/rendered-document-page/RenderedDocumentPage";
 import { UploadIcon } from "@/components/UploadIcon";
 import { cn } from "@/lib/utils";
 
+import { evidenceForPage, evidenceRectangle } from "../lib/evidence-navigation";
 import { VerificationIcon } from "./VerificationIcon";
-
-const emptyMatchIds: ReadonlySet<string> = new Set<string>();
 
 interface ParsedDocumentPaneProps {
   className?: string;
   file: ParsingFile;
   files: readonly ParsingFile[];
   label: string;
+  /** Блоки доказательств — подсвечиваются на странице. */
+  detail?: ApiFindingDetail;
   objectId: string;
   onFileChange: (fileId: string) => void;
   onPageChange: (page: number) => void;
@@ -52,6 +55,7 @@ export function ParsedDocumentPane({
   file,
   files,
   label,
+  detail,
   objectId,
   onFileChange,
   onPageChange,
@@ -61,10 +65,19 @@ export function ParsedDocumentPane({
   const result = query.isError ? undefined : query.data;
   const [zoom, setZoom] = useState<number | "fit">("fit");
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
-  const page =
-    result?.artifact.pages.find(
-      (candidate) => candidate.page_number === pageNumber,
-    ) ?? result?.artifact.pages[0];
+  const page = result?.artifact.pages.find(
+    (candidate) => candidate.page_number === pageNumber,
+  );
+  const evidence = page ? evidenceForPage(detail, file, page.page_number) : [];
+  const matchIds = new Set(
+    evidence.flatMap((fragment) =>
+      fragment.blockId ? [fragment.blockId] : [],
+    ),
+  );
+  const evidenceRects = evidence.flatMap((fragment) => {
+    const bbox = evidenceRectangle(fragment.bbox);
+    return bbox ? [{ bbox, quote: fragment.quote }] : [];
+  });
   const currentPage = page?.page_number ?? 1;
   const totalPages = result?.artifact.pages.length ?? 0;
 
@@ -94,7 +107,9 @@ export function ParsedDocumentPane({
               {file.original_name}
             </h2>
             <p className="text-copy-muted mt-1 text-xs">
-              Фактический результат обработки · попытка {file.attempt}
+              {detail?.run_id
+                ? "Зафиксированный источник находки"
+                : `Результат обработки · попытка ${file.attempt}`}
             </p>
           </div>
         </div>
@@ -186,136 +201,121 @@ export function ParsedDocumentPane({
         />
 
         <div className="ml-auto">
-          <Modal>
-            <Modal.Trigger
-              aria-label="Развернуть просмотр документа"
-              className="text-copy-muted hover:bg-default/40 focus-visible:ring-ring grid size-9 place-items-center rounded-lg outline-none focus-visible:ring-2"
-            >
-              <VerificationIcon className="size-4.5" name="expand" />
-            </Modal.Trigger>
-            <Modal.Backdrop className="bg-backdrop backdrop-blur-sm">
-              <Modal.Container scroll="inside" size="full">
-                <Modal.Dialog className="border-border bg-background text-foreground overflow-hidden border p-0">
-                  <Modal.Header className="border-border relative flex flex-row items-center gap-3 border-b px-4 py-3 pr-14 sm:px-6 sm:pr-16">
-                    <Modal.Heading className="min-w-0 flex-1 truncate pr-2 text-base font-semibold">
-                      {file.original_name}
-                    </Modal.Heading>
-                    <span className="text-copy-muted hidden shrink-0 text-xs sm:inline">
-                      Стр. {currentPage} из {totalPages}
-                    </span>
-                    <Modal.CloseTrigger
-                      aria-label="Закрыть просмотр документа"
-                      className="top-1/2 right-2 size-8 -translate-y-1/2"
-                    />
-                  </Modal.Header>
-                  <Modal.Body className="bg-surface-low mt-0 flex min-h-0 flex-col overflow-hidden p-0">
-                    <div className="border-border bg-card flex flex-wrap items-center gap-2 border-b px-3 py-2 sm:px-5">
-                      <div className="flex items-center gap-1 sm:ml-auto">
-                        <ToolbarButton
-                          ariaLabel="Предыдущая страница в полноэкранном просмотре"
-                          icon="chevron-left"
-                          isDisabled={currentPage <= 1}
-                          onPress={() => onPageChange(currentPage - 1)}
-                        />
-                        <span className="text-foreground min-w-16 text-center text-xs tabular-nums">
-                          {currentPage} / {totalPages}
-                        </span>
-                        <ToolbarButton
-                          ariaLabel="Следующая страница в полноэкранном просмотре"
-                          icon="chevron-right"
-                          isDisabled={currentPage >= totalPages}
-                          onPress={() => onPageChange(currentPage + 1)}
-                        />
-                      </div>
-                      <span
-                        aria-hidden="true"
-                        className="bg-line hidden h-5 w-px sm:block"
-                      />
-                      <div className="flex items-center gap-1">
-                        <ToolbarButton
-                          ariaLabel="Уменьшить масштаб в полноэкранном просмотре"
-                          icon="zoom-out"
-                          isDisabled={typeof zoom === "number" && zoom <= 0.5}
-                          onPress={() =>
-                            setZoom(
-                              Math.max(0.5, (zoom === "fit" ? 1 : zoom) - 0.25),
-                            )
-                          }
-                        />
-                        <span className="text-foreground min-w-12 text-center text-xs tabular-nums">
-                          {zoom === "fit"
-                            ? "По ширине"
-                            : `${Math.round(zoom * 100)}%`}
-                        </span>
-                        <ToolbarButton
-                          ariaLabel="Увеличить масштаб в полноэкранном просмотре"
-                          icon="zoom-in"
-                          isDisabled={typeof zoom === "number" && zoom >= 1.5}
-                          onPress={() =>
-                            setZoom(
-                              Math.min(1.5, (zoom === "fit" ? 1 : zoom) + 0.25),
-                            )
-                          }
-                        />
-                        <ToolbarButton
-                          ariaLabel="Установить масштаб 100% в полноэкранном просмотре"
-                          icon="fit"
-                          isDisabled={zoom === "fit"}
-                          onPress={() => setZoom("fit")}
-                        />
-                      </div>
-                    </div>
-                    <div className="min-h-0 flex-1 overflow-auto">
-                      {query.isPending && (
-                        <p
-                          role="status"
-                          className="text-copy-muted p-8 text-center text-sm"
-                        >
-                          Загружаем результат обработки…
-                        </p>
-                      )}
-                      {query.error && (
-                        <div className="space-y-3 p-6" role="alert">
-                          <p className="text-danger text-sm">
-                            {parsingErrorMessage(query.error)}
-                          </p>
-                          <Button
-                            onPress={() => {
-                              void query.refetch();
-                            }}
-                            size="sm"
-                            variant="outline"
-                          >
-                            Повторить
-                          </Button>
-                        </div>
-                      )}
-                      {result && !page && (
-                        <p className="text-copy-muted p-8 text-center text-sm">
-                          В результате обработки нет страниц для предпросмотра.
-                        </p>
-                      )}
-                      {page && (
-                        <RenderedDocumentPage
-                          className="h-full max-h-none rounded-none"
-                          file={file}
-                          matchIds={emptyMatchIds}
-                          objectId={objectId}
-                          onSelect={setSelectedBlockId}
-                          page={page}
-                          selectedId={selectedBlockId}
-                          zoom={zoom}
-                        />
-                      )}
-                    </div>
-                  </Modal.Body>
-                </Modal.Dialog>
-              </Modal.Container>
-            </Modal.Backdrop>
-          </Modal>
+          <DocumentViewerModal
+            pageLabel={`Стр. ${currentPage} из ${totalPages}`}
+            title={file.original_name}
+            toolbar={
+              <>
+                <div className="flex items-center gap-1">
+                  <ToolbarButton
+                    ariaLabel="Предыдущая страница в полноэкранном просмотре"
+                    icon="chevron-left"
+                    isDisabled={currentPage <= 1}
+                    onPress={() => changePage(currentPage - 1)}
+                  />
+                  <span className="text-foreground min-w-16 text-center text-xs tabular-nums">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <ToolbarButton
+                    ariaLabel="Следующая страница в полноэкранном просмотре"
+                    icon="chevron-right"
+                    isDisabled={currentPage >= totalPages}
+                    onPress={() => changePage(currentPage + 1)}
+                  />
+                </div>
+                <span
+                  aria-hidden="true"
+                  className="bg-line hidden h-5 w-px sm:block"
+                />
+                <div className="flex items-center gap-1">
+                  <ToolbarButton
+                    ariaLabel="Уменьшить масштаб в полноэкранном просмотре"
+                    icon="zoom-out"
+                    isDisabled={typeof zoom === "number" && zoom <= 0.5}
+                    onPress={() =>
+                      setZoom(Math.max(0.5, (zoom === "fit" ? 1 : zoom) - 0.25))
+                    }
+                  />
+                  <span className="text-foreground min-w-12 text-center text-xs tabular-nums">
+                    {zoom === "fit"
+                      ? "По ширине"
+                      : `${Math.round(zoom * 100)}%`}
+                  </span>
+                  <ToolbarButton
+                    ariaLabel="Увеличить масштаб в полноэкранном просмотре"
+                    icon="zoom-in"
+                    isDisabled={typeof zoom === "number" && zoom >= 1.5}
+                    onPress={() =>
+                      setZoom(Math.min(1.5, (zoom === "fit" ? 1 : zoom) + 0.25))
+                    }
+                  />
+                  <ToolbarButton
+                    ariaLabel="Установить масштаб 100% в полноэкранном просмотре"
+                    icon="fit"
+                    isDisabled={zoom === "fit"}
+                    onPress={() => setZoom("fit")}
+                  />
+                </div>
+              </>
+            }
+          >
+            {query.isPending && (
+              <p
+                role="status"
+                className="text-copy-muted p-8 text-center text-sm"
+              >
+                Загружаем результат обработки…
+              </p>
+            )}
+            {query.error && (
+              <div className="space-y-3 p-6" role="alert">
+                <p className="text-danger text-sm">
+                  {parsingErrorMessage(query.error)}
+                </p>
+                <Button
+                  onPress={() => {
+                    void query.refetch();
+                  }}
+                  size="sm"
+                  variant="outline"
+                >
+                  Повторить
+                </Button>
+              </div>
+            )}
+            {result && !page && (
+              <p className="text-copy-muted p-8 text-center text-sm">
+                Запрошенная страница отсутствует в зафиксированном результате
+                обработки.
+              </p>
+            )}
+            {page && (
+              <RenderedDocumentPage
+                className="h-full max-h-none rounded-none"
+                file={file}
+                matchIds={matchIds}
+                evidenceRects={evidenceRects}
+                objectId={objectId}
+                onSelect={setSelectedBlockId}
+                page={page}
+                selectedId={selectedBlockId}
+                zoom={zoom}
+              />
+            )}
+          </DocumentViewerModal>
         </div>
       </div>
 
+      {evidence.length > 0 ? (
+        <div
+          className="border-line border-b px-4 py-2 text-xs"
+          aria-label="Цитаты на этой странице"
+        >
+          {evidence.map((fragment, index) => (
+            <blockquote key={index}>{fragment.quote}</blockquote>
+          ))}
+        </div>
+      ) : null}
       <div className="bg-surface-low min-h-72 flex-1 overflow-hidden">
         {query.isPending && (
           <p role="status" className="text-copy-muted p-8 text-center text-sm">
@@ -340,14 +340,16 @@ export function ParsedDocumentPane({
         )}
         {result && !page && (
           <p className="text-copy-muted p-8 text-center text-sm">
-            В результате обработки нет страниц для предпросмотра.
+            Запрошенная страница отсутствует в зафиксированном результате
+            обработки.
           </p>
         )}
         {page && (
           <RenderedDocumentPage
             className="h-full max-h-none rounded-none"
             file={file}
-            matchIds={emptyMatchIds}
+            matchIds={matchIds}
+            evidenceRects={evidenceRects}
             objectId={objectId}
             onSelect={setSelectedBlockId}
             page={page}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "dataset_version": "public-development-split-2026-09-27.1",
+  "official_manifest_sha256": "853225daec1888fbed19bbeb45e958154135f069799cea883dcd3c754c6c4ee7",
+  "official_split_policy_sha256": "3ebe82cb742d802a943e7898be81e52ddc569d8f5ee399f162bad042c8104174",
+  "unit": "object_id including all pages, documents, revisions and derived artifacts",
+  "train": ["OBJ-TYUMENSKAYA-5-GOLD-SEED"],
+  "validation": ["OBJ-NOVOSLOBODSKAYA"],
+  "hidden": ["OBJ-RECHNIKOV-7-7"],
+  "validation_role": "development holdout within organizer TRAIN_PUBLIC; public/pre-exposed and without accepted expert GOLD, not independent hidden acceptance",
+  "hidden_role": "independent evaluator only, never training/tuning; public metadata retained, answers not opened",
+  "excluded_file_ids": ["F0149", "F0418"],
+  "required_hidden_case_types": [
+    "confirmed_positive",
+    "verified_negative",
+    "missing_evidence",
+    "not_applicable",
+    "revision_conflict"
+  ],
+  "hidden_composition_attested": false,
+  "source_hashes": "contracts/permitted-manifest.json",
+  "public_byte_verification": "contracts/public-file-integrity.json",
+  "permitted_manifest_content_sha256": "88910c9dfba58a3772a82643f5a6aaeecb035219d4ce89eeb8e5ea1f6608c072"
+}

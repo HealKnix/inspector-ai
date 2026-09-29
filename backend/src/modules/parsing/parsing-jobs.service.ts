@@ -1,6 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
 import type { ParsingTask, Prisma } from "../../generated/prisma/client.js";
+import { writeAuditEvent } from "../../infrastructure/audit/audit-envelope.js";
+import { writeOutboxEvent } from "../../infrastructure/observability/trace-context.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import { PrivateStorageService } from "../../infrastructure/storage/private-storage.service.js";
 import { canonicalJson } from "../documents/canonical-json.js";
@@ -42,7 +44,7 @@ export class ParsingJobsService {
 
   async enqueue(tx: Prisma.TransactionClient, task: ParsingTask) {
     const eventId = randomUUID();
-    await tx.outbox.create({
+    await writeOutboxEvent(tx, {
       data: {
         id: eventId,
         eventType: "parsing.requested",
@@ -372,7 +374,7 @@ export class ParsingJobsService {
       pipeline_fingerprint: task.pipelineFingerprint,
       ...(code ? { error_code: code, notify_role: "ADMINISTRATOR" } : {}),
     };
-    await tx.outbox.create({
+    await writeOutboxEvent(tx, {
       data: {
         id: eventId,
         eventType: type,
@@ -388,7 +390,7 @@ export class ParsingJobsService {
       where: { id: task.fileId },
       select: { uploadedBy: true },
     });
-    await tx.auditEvent.create({
+    await writeAuditEvent(tx, {
       data: {
         userId: file.uploadedBy,
         objectId: task.objectId,

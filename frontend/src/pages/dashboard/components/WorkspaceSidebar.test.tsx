@@ -16,6 +16,8 @@ const user: UserDto = {
   createdAt: "2026-09-16T08:00:00.000Z",
   id: "27b43d75-2f24-4ff0-8bd8-d4758cfbd3cb",
   login: "inspector",
+  lastName: "Иванов",
+  firstName: "Иван",
   role: Role.INSPECTOR,
 };
 const administrator: UserDto = {
@@ -110,7 +112,7 @@ function renderSidebar(
 describe("WorkspaceSidebar", () => {
   it("выделяет раздел объектов в карточке и возвращает к списку", () => {
     installMatchMedia();
-    renderSidebar(routeNames.OBJECT_DETAILS("synthetic-id"));
+    renderSidebar(routeNames.OBJECT_UPLOAD("synthetic-id"));
     const objectsButton = screen.getByRole("button", { name: "Объекты" });
     expect(objectsButton).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(objectsButton);
@@ -221,21 +223,6 @@ describe("WorkspaceSidebar", () => {
     expect(sidebar).toHaveAttribute("data-collapsed", "false");
   });
 
-  it("показывает Popover с круглосуточной доступностью", async () => {
-    installMatchMedia();
-    renderSidebar();
-
-    fireEvent.click(screen.getByRole("button", { name: "Статус системы" }));
-
-    expect(
-      await screen.findByText("Система работает штатно"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Сервис доступен круглосуточно, 24/7"),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Онлайн")).toBeInTheDocument();
-  });
-
   it("переходит к загрузке документов и обратно к проверкам", () => {
     installMatchMedia();
     renderSidebar();
@@ -250,7 +237,7 @@ describe("WorkspaceSidebar", () => {
     fireEvent.click(uploadButton);
 
     expect(screen.getByTestId("location")).toHaveTextContent(
-      routeNames.DOCUMENT_UPLOAD,
+      routeNames.OBJECTS,
     );
     expect(uploadButton).toHaveAttribute("aria-pressed", "true");
 

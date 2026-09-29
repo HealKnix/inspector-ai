@@ -10,7 +10,6 @@ import {
   Query,
   Req,
   Res,
-  UseGuards,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
@@ -21,10 +20,7 @@ import {
 import { IsOptional, IsUUID } from "class-validator";
 import type { Response } from "express";
 import { randomUUID } from "node:crypto";
-import {
-  JwtAuthGuard,
-  type AuthenticatedRequest,
-} from "../auth/jwt-auth.guard.js";
+import { type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { apiErrorSchema } from "../documents/upload-contract.js";
 import { parseArtifactSchema } from "./parsing-openapi.js";
 import { PARSING_PHASES } from "./parsing-progress.js";
@@ -47,6 +43,15 @@ export class ParsingPageQueryDto {
   @IsOptional()
   @IsUUID()
   artifact_id?: string;
+
+  @ApiProperty({
+    format: "uuid",
+    required: false,
+    description: "Запуск исторического доказательства; требует artifact_id",
+  })
+  @IsOptional()
+  @IsUUID()
+  run_id?: string;
 }
 
 @ApiTags("parsing")
@@ -72,7 +77,6 @@ export class ParsingPageQueryDto {
   schema: apiErrorSchema,
   description: "Сохранённый результат недоступен или повреждён",
 })
-@UseGuards(JwtAuthGuard)
 @Controller("v1/objects/:objectId")
 export class ParsingController {
   constructor(private readonly parsing: ParsingService) {}
@@ -230,10 +234,17 @@ export class ParsingController {
     @Req() request: AuthenticatedRequest,
     @Param("objectId", ParseUUIDPipe) objectId: string,
     @Param("fileId", ParseUUIDPipe) fileId: string,
+    @Query() query: ParsingPageQueryDto,
     @Res({ passthrough: true }) response: Response,
   ) {
     response.setHeader("Cache-Control", "private, no-store");
-    return this.parsing.artifact(request.user.id, objectId, fileId);
+    return this.parsing.artifact(
+      request.user.id,
+      objectId,
+      fileId,
+      query.artifact_id,
+      query.run_id,
+    );
   }
   @Get("files/:fileId/parse/pages/:pageNumber")
   @ApiResponse({
@@ -256,6 +267,7 @@ export class ParsingController {
       fileId,
       pageNumber,
       query.artifact_id,
+      query.run_id,
     );
     response.setHeader("Cache-Control", "private, no-store");
     response.setHeader("Content-Type", "image/png");

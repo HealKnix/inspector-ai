@@ -1,17 +1,15 @@
 import {
   Alert,
   Button,
-  Input,
+  TextField as HeroTextField,
   Label,
   Spinner,
   TextArea,
-  TextField,
 } from "@heroui/react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
-  useApproveMatrixRule,
   useCreateMatrixRule,
   useDraftMatrixRuleLlm,
   useDryRunMatrixRule,
@@ -20,7 +18,11 @@ import {
   useRejectMatrixRule,
 } from "@/api/hooks/use-matrix";
 import type { DryRunResult, MatrixRow } from "@/api/types/matrix";
+import type { SelectedRule } from "@/api/types/rule-set-release";
+import { Input } from "@/components/input/Input";
 import routeNames from "@/routes/routeNames";
+import { MatrixReleases } from "./components/MatrixReleases";
+import { MatrixRuleReview } from "./components/MatrixRuleReview";
 
 const ruleStatusLabels: Record<string, string> = {
   draft: "Черновик",
@@ -84,14 +86,20 @@ function DryRunResults({ result }: { result: DryRunResult }) {
   );
 }
 
-function RuleEditor({ row }: { row: MatrixRow }) {
+function RuleEditor({
+  row,
+  onSelect,
+}: {
+  row: MatrixRow;
+  onSelect: (rule: SelectedRule) => void;
+}) {
   const detail = useMatrixRules(row.parameterCode);
   const createDraft = useCreateMatrixRule();
   const draftLlm = useDraftMatrixRuleLlm();
   const dryRun = useDryRunMatrixRule();
-  const approve = useApproveMatrixRule();
   const reject = useRejectMatrixRule();
   const [planText, setPlanText] = useState("");
+  const [comparisonText, setComparisonText] = useState("");
   const [note, setNote] = useState("");
   const [objectId, setObjectId] = useState("");
   const [fileId, setFileId] = useState("");
@@ -101,16 +109,30 @@ function RuleEditor({ row }: { row: MatrixRow }) {
 
   const submitDraft = () => {
     let plan: unknown;
+    let comparison: unknown;
     try {
       plan = JSON.parse(planText) as unknown;
+      comparison = comparisonText.trim()
+        ? (JSON.parse(comparisonText) as unknown)
+        : undefined;
     } catch {
-      setPlanError("План должен быть корректным JSON");
+      setPlanError("План и сравнение должны быть корректным JSON");
       return;
     }
     setPlanError(null);
     createDraft.mutate(
-      { parameterCode: row.parameterCode, plan, note: note || undefined },
-      { onSuccess: () => setPlanText("") },
+      {
+        parameterCode: row.parameterCode,
+        plan,
+        comparison,
+        note: note || undefined,
+      },
+      {
+        onSuccess: () => {
+          setPlanText("");
+          setComparisonText("");
+        },
+      },
     );
   };
 
@@ -203,14 +225,6 @@ function RuleEditor({ row }: { row: MatrixRow }) {
                       </Button>
                       <Button
                         size="sm"
-                        variant="primary"
-                        isPending={approve.isPending}
-                        onPress={() => approve.mutate(version.id)}
-                      >
-                        Утвердить
-                      </Button>
-                      <Button
-                        size="sm"
                         variant="ghost"
                         isPending={reject.isPending}
                         onPress={() => reject.mutate(version.id)}
@@ -233,6 +247,26 @@ function RuleEditor({ row }: { row: MatrixRow }) {
                     {JSON.stringify(version.plan, null, 2)}
                   </pre>
                 </details>
+                <details className="mt-1">
+                  <summary className="text-copy-muted cursor-pointer text-xs">
+                    Сравнение
+                  </summary>
+                  <pre className="bg-surface-high mt-1 overflow-x-auto rounded-lg p-2 text-xs">
+                    {version.comparison == null
+                      ? "Сравнение не задано"
+                      : JSON.stringify(version.comparison, null, 2)}
+                  </pre>
+                </details>
+                <MatrixRuleReview row={row} rule={version} />
+                {version.status === "approved" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onPress={() => onSelect(version)}
+                  >
+                    Добавить эту версию в состав выпуска
+                  </Button>
+                )}
               </li>
             ))}
           </ul>
@@ -240,28 +274,20 @@ function RuleEditor({ row }: { row: MatrixRow }) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <TextField>
-          <Label>ID объекта для прогона</Label>
-          <Input
-            placeholder="uuid объекта"
-            value={objectId}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-              setObjectId(event.target.value)
-            }
-          />
-        </TextField>
-        <TextField>
-          <Label>ID файла (необязательно)</Label>
-          <Input
-            placeholder="uuid файла"
-            value={fileId}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-              setFileId(event.target.value)
-            }
-          />
-        </TextField>
+        <Input
+          label="ID объекта для прогона"
+          onChange={(event) => setObjectId(event.target.value)}
+          placeholder="uuid объекта"
+          value={objectId}
+        />
+        <Input
+          label="ID файла (необязательно)"
+          onChange={(event) => setFileId(event.target.value)}
+          placeholder="uuid файла"
+          value={fileId}
+        />
       </div>
-      <TextField>
+      <HeroTextField>
         <Label>Поисковые термины для LLM-черновика (по строке на термин)</Label>
         <TextArea
           placeholder="общая площадь&#10;технико-экономические"
@@ -270,7 +296,7 @@ function RuleEditor({ row }: { row: MatrixRow }) {
             setTerms(event.target.value)
           }
         />
-      </TextField>
+      </HeroTextField>
       <div className="flex flex-wrap gap-2">
         <Button
           size="sm"
@@ -307,7 +333,7 @@ function RuleEditor({ row }: { row: MatrixRow }) {
 
       <div>
         <h4 className="text-sm font-semibold">Новый черновик вручную</h4>
-        <TextField className="mt-2">
+        <HeroTextField className="mt-2">
           <Label>План (JSON)</Label>
           <TextArea
             placeholder='{"kind":"table_lookup","signature":{"any":["показател"]},"row":{"anchors":["общая площадь"]},"value":{"column":"last_numeric"}}'
@@ -317,21 +343,26 @@ function RuleEditor({ row }: { row: MatrixRow }) {
             }
             rows={4}
           />
-        </TextField>
+        </HeroTextField>
+        <HeroTextField className="mt-2">
+          <Label>Сравнение (JSON, если определено)</Label>
+          <TextArea
+            value={comparisonText}
+            onChange={(event) => setComparisonText(event.target.value)}
+            rows={4}
+          />
+        </HeroTextField>
         {planError && (
           <p role="alert" className="text-danger mt-1 text-xs">
             {planError}
           </p>
         )}
-        <TextField className="mt-2">
-          <Label>Комментарий</Label>
-          <Input
-            value={note}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-              setNote(event.target.value)
-            }
-          />
-        </TextField>
+        <Input
+          className="mt-2"
+          label="Комментарий"
+          onChange={(event) => setNote(event.target.value)}
+          value={note}
+        />
         <Button
           className="mt-2"
           size="sm"
@@ -348,9 +379,9 @@ function RuleEditor({ row }: { row: MatrixRow }) {
           </p>
         )}
       </div>
-      {(approve.isError || reject.isError) && (
+      {reject.isError && (
         <p role="alert" className="text-danger text-sm">
-          {approve.error?.message ?? reject.error?.message}
+          {reject.error.message}
         </p>
       )}
     </div>
@@ -360,6 +391,7 @@ function RuleEditor({ row }: { row: MatrixRow }) {
 export function AdminMatrixPage() {
   const rows = useMatrixRows();
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [selected, setSelected] = useState<SelectedRule[]>([]);
   const data = rows.isError ? undefined : rows.data;
   return (
     <div className="h-full min-w-0 flex-1 overflow-y-auto">
@@ -381,6 +413,14 @@ export function AdminMatrixPage() {
               : " · каталог не импортирован"}
           </p>
         </header>
+        <MatrixReleases
+          selected={selected}
+          onRemove={(code) =>
+            setSelected((items) =>
+              items.filter((r) => r.parameterCode !== code),
+            )
+          }
+        />
         {rows.isPending && (
           <p role="status" className="text-copy-muted py-8">
             <Spinner size="lg" /> Загружаем матрицу…
@@ -437,7 +477,17 @@ export function AdminMatrixPage() {
                 </button>
                 {expanded === row.parameterCode && (
                   <div className="px-5 pb-5">
-                    <RuleEditor row={row} />
+                    <RuleEditor
+                      row={row}
+                      onSelect={(rule) =>
+                        setSelected((items) => [
+                          ...items.filter(
+                            (r) => r.parameterCode !== rule.parameterCode,
+                          ),
+                          rule,
+                        ])
+                      }
+                    />
                   </div>
                 )}
               </li>

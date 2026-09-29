@@ -12,6 +12,8 @@
     "extraction:worker": "bun dist/extraction-worker.js",
     "matrix:import": "bun src/matrix-import.ts import",
     "matrix:seed": "bun src/matrix-import.ts seed-rules",
+    "framework:import": "bun src/framework-import.ts import",
+    "framework:approve": "bun src/framework-import.ts approve",
     "dev": "nest start --watch",
     "build": "bun run prisma:generate && nest build --path tsconfig.build.json",
     "start": "bun dist/main.js",
@@ -24,7 +26,9 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "completeness:verify": "bun src/completeness-verify.ts",
+    "completeness:metrics": "bun src/completeness-metrics.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.2.5",
@@ -36,6 +40,7 @@
     "@nestjs/throttler": "^6.5.0",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "ajv": "8.20.0",
     "amqplib": "0.10.9",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
@@ -62,7 +67,6 @@
     "@types/stream-json": "^1.7.8",
     "@types/supertest": "^6.0.3",
     "@vitest/coverage-v8": "^5.0.1",
-    "ajv": "8.20.0",
     "prisma": "^7.10.0",
     "supertest": "^7.1.4",
     "unplugin-swc": "^1.5.7",

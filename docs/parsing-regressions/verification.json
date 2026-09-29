@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "passed": true,
+  "manifest_sha256": "f72aec13d51b188493c2409593798fa2a54f426892266cd27d0ee1693cc58a7f",
+  "payloads_verified": 12,
+  "unit_cases": 5,
+  "cross_column_cases": 1,
+  "native_revision_blocks": 46,
+  "redacted_revision_blocks": 8,
+  "raster_pages": 2,
+  "original_files_verified": 3,
+  "hidden_files_read": 0,
+  "validation_files_read": 0,
+  "model_quality_claim": false
+}

@@ -8,6 +8,14 @@ import {
 
 const fingerprint = "a".repeat(64);
 const fetchMock = vi.fn<typeof fetch>();
+vi.mock("./parser-post.js", () => ({
+  postParser: (
+    url: string,
+    headers: Record<string, string>,
+    body: string,
+    signal: AbortSignal,
+  ) => fetchMock(url, { method: "POST", headers, body, signal }),
+}));
 const client = new ParserClientService(
   new ConfigService({
     PARSER_URL: "http://parser.test:8090",

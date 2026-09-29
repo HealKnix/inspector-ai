@@ -16,12 +16,14 @@ import { ParsingService } from "./parsing.service.js";
     ParserClientService,
     ParsingCacheService,
     ParsingJobsService,
+    ParsingService,
   ],
   exports: [
     ArtifactStorageService,
     ParserClientService,
     ParsingCacheService,
     ParsingJobsService,
+    ParsingService,
   ],
 })
 export class ParsingCoreModule {}
@@ -29,6 +31,5 @@ export class ParsingCoreModule {}
 @Module({
   imports: [AuthModule, ObjectsModule, DocumentsModule, ParsingCoreModule],
   controllers: [ParsingController],
-  providers: [ParsingService],
 })
 export class ParsingModule {}

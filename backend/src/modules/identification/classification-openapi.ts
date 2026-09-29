@@ -1,4 +1,5 @@
 import type { OpenAPIObject } from "@nestjs/swagger";
+import { IDENTIFICATION_FIELDS } from "./identification-contract.js";
 type SchemaObject = NonNullable<
   NonNullable<OpenAPIObject["components"]>["schemas"]
 >[string];
@@ -76,10 +77,21 @@ const result: SchemaObject = {
 export const classificationListSchema: SchemaObject = {
   type: "object",
   additionalProperties: false,
-  required: ["schema_version", "active", "poll_after_ms", "items"],
+  required: [
+    "schema_version",
+    "active",
+    "review_active",
+    "poll_after_ms",
+    "items",
+  ],
   properties: {
     schema_version: { type: "integer", enum: [1] },
     active: { type: "boolean" },
+    review_active: {
+      type: "boolean",
+      description:
+        "Обновляется карточка идентификации; review появится после публикации актуального снимка.",
+    },
     poll_after_ms: { type: "integer", enum: [2000] },
     items: {
       type: "array",
@@ -97,6 +109,7 @@ export const classificationListSchema: SchemaObject = {
           "can_retry",
           "error_code",
           "result",
+          "review",
         ],
         properties: {
           file_id: { type: "string", format: "uuid" },
@@ -112,6 +125,50 @@ export const classificationListSchema: SchemaObject = {
           can_retry: { type: "boolean" },
           error_code: { type: "string", nullable: true },
           result,
+          review: {
+            type: "object",
+            nullable: true,
+            additionalProperties: false,
+            description:
+              "Текущая карточка и подтверждённые поля. Машинный result не изменяется; ограничения источника сохраняются отдельно.",
+            required: [
+              "document_id",
+              "revision_id",
+              "card_version",
+              "resolved_input_hash",
+              "fields",
+              "confirmed_fields",
+              "needs_review",
+              "reasons",
+              "source_issues",
+            ],
+            properties: {
+              document_id: { type: "string", format: "uuid" },
+              revision_id: { type: "string", format: "uuid" },
+              card_version: { type: "integer", minimum: 1 },
+              resolved_input_hash: {
+                type: "string",
+                pattern: "^[a-f0-9]{64}$",
+              },
+              fields: {
+                type: "object",
+                additionalProperties: false,
+                properties: Object.fromEntries(
+                  IDENTIFICATION_FIELDS.map((field) => [
+                    field,
+                    { type: "string" },
+                  ]),
+                ),
+              },
+              confirmed_fields: {
+                type: "array",
+                items: { type: "string", enum: [...IDENTIFICATION_FIELDS] },
+              },
+              needs_review: { type: "boolean" },
+              reasons,
+              source_issues: reasons,
+            },
+          },
         },
       },
     },

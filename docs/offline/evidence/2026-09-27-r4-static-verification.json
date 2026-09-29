@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-09-27T00:50:01.183Z",
+  "release": "foundations-20260927-r4",
+  "manifest_sha256": "74e92777b758ffaf11e88fe38f89aabde1abb1446230e8ff6844ab118b996070",
+  "files_verified": 15,
+  "images_declared": 9,
+  "services": [
+    "backend",
+    "clamav",
+    "classification-worker",
+    "extraction-worker",
+    "frontend",
+    "migrate",
+    "parser",
+    "parsing-worker",
+    "postgres",
+    "rabbitmq",
+    "redis",
+    "validator",
+    "worker",
+    "asset-restore"
+  ],
+  "internal_networks_only": true,
+  "runtime_build_pull": false,
+  "cold_functional_smoke": "pending",
+  "repeat_bootstrap": "pending",
+  "limitation": "Final r4 startup incomplete: RabbitMQ exited; host C: disk nearly full and Docker API unavailable. The exact RabbitMQ cause has not yet been retrieved."
+}

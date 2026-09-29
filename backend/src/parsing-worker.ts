@@ -11,7 +11,11 @@ import { createServer } from "node:http";
 import { setTimeout as delay } from "node:timers/promises";
 import "reflect-metadata";
 import { validateEnvironment } from "./config/environment.js";
+import { observeDelivery } from "./infrastructure/observability/delivery-observation.js";
+import { serveWorkerMetrics } from "./infrastructure/observability/metrics.js";
+import { StructuredLogger } from "./infrastructure/observability/structured-logger.js";
 import { PrismaModule } from "./infrastructure/prisma/prisma.module.js";
+import { PrismaService } from "./infrastructure/prisma/prisma.service.js";
 import { OutboxService } from "./infrastructure/rabbitmq/outbox.service.js";
 import {
   ParsingError,
@@ -37,6 +41,7 @@ import { ParsingCoreModule } from "./modules/parsing/parsing.module.js";
 class ParsingWorkerModule {}
 
 async function main() {
+  Logger.overrideLogger(new StructuredLogger("parsing-worker"));
   const app = await NestFactory.createApplicationContext(ParsingWorkerModule);
   const config = app.get(ConfigService);
   if ((config.get<string>("PARSER_TOKEN") ?? "").length < 32)
@@ -47,11 +52,16 @@ async function main() {
   const stopping = new AbortController();
   let connected = false;
   let lastTick = Date.now();
-  const server = createServer((_request, response) => {
-    response.writeHead(
-      connected && Date.now() - lastTick < 120_000 ? 200 : 503,
-    );
-    response.end();
+  const server = createServer((request, response) => {
+    void serveWorkerMetrics(request, response, app.get(PrismaService))
+      .then((handled) => {
+        if (handled) return;
+        response.writeHead(
+          connected && Date.now() - lastTick < 120_000 ? 200 : 503,
+        );
+        response.end();
+      })
+      .catch(() => response.writeHead(503).end());
   }).listen(Number(process.env.PARSING_WORKER_HEALTH_PORT ?? 3002), "0.0.0.0");
   process.once("SIGTERM", () => stopping.abort());
   process.once("SIGINT", () => stopping.abort());
@@ -147,7 +157,14 @@ async function main() {
             parent: boolean,
           ) => {
             void currentScope
-              .run((signal) => consume(message, parent, ownerChannel, signal))
+              .run((signal) =>
+                observeDelivery(
+                  message?.properties.headers,
+                  message?.properties.messageId,
+                  "parsing",
+                  () => consume(message, parent, ownerChannel, signal),
+                ),
+              )
               .catch(channelClosed);
           };
           for (const queue of [

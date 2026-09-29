@@ -8,11 +8,14 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import type { Request } from "express";
 
+import { Reflector } from "@nestjs/core";
 import {
   ACCESS_TOKEN_AUDIENCE,
   AUTH_TOKEN_ISSUER,
   JWT_ALGORITHM,
 } from "../../common/const/auth.constants.js";
+import { IS_PUBLIC_KEY } from "../../common/decorators/public.decorator.js";
+import { traceContext } from "../../infrastructure/observability/trace-context.js";
 import { type PublicUser, UsersService } from "../users/users.service.js";
 import { AuthSessionsService } from "./auth-sessions.service.js";
 
@@ -62,6 +65,7 @@ function getAccessTokenSubject(
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
+    private readonly reflector: Reflector,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly authSessionsService: AuthSessionsService,
@@ -69,6 +73,12 @@ export class JwtAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) return true;
+
     const request = context
       .switchToHttp()
       .getRequest<RequestWithOptionalUser>();
@@ -107,6 +117,8 @@ export class JwtAuthGuard implements CanActivate {
       }
 
       request.user = user;
+      const trace = traceContext.getStore();
+      if (trace) trace.user_id = user.id;
       request.authSessionId = subject.sessionId;
       return true;
     } catch {

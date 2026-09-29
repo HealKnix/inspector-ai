@@ -13,7 +13,6 @@ import {
   Res,
   ServiceUnavailableException,
   UnsupportedMediaTypeException,
-  UseGuards,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
@@ -23,14 +22,11 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import type { Response } from "express";
-import { randomUUID } from "node:crypto";
 import { pipeline } from "node:stream/promises";
+import { currentRequestId } from "../../infrastructure/observability/trace-context.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import { PrivateStorageService } from "../../infrastructure/storage/private-storage.service.js";
-import {
-  JwtAuthGuard,
-  type AuthenticatedRequest,
-} from "../auth/jwt-auth.guard.js";
+import { type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { ObjectAccessService } from "../objects/object-access.service.js";
 import { PageQueryDto } from "../objects/objects.dto.js";
 import { DocumentAdmissionService } from "./document-admission.service.js";
@@ -67,7 +63,6 @@ import { receiveUpload } from "./upload-stream.js";
   schema: apiErrorSchema,
   description: "Файл или подтверждение приёма не найдено",
 })
-@UseGuards(JwtAuthGuard)
 @Controller("v1")
 export class DocumentsController {
   private readonly logger = new Logger(DocumentsController.name);
@@ -127,7 +122,7 @@ export class DocumentsController {
       this.access.requireInspector(tx, request.user.id),
     );
     const started = Date.now();
-    const requestId = randomUUID();
+    const requestId = currentRequestId();
     const deadline = started + 600_000;
     const upload = await receiveUpload(
       request,

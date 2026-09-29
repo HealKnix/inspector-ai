@@ -505,6 +505,175 @@ describe("regional PDF trust boundary", () => {
     expect(validate(input)).toBe(false);
   });
 });
+describe("versioned text provenance", () => {
+  function modern() {
+    const input = regionalFixture();
+    input.text_provenance_schema_version = 1;
+    input.versions = {
+      ...input.versions,
+      pdf_region_profile: "paddle-regions-v2",
+      text_provenance: "par-text-provenance-v1",
+    };
+    const block = input.pages[0]!.blocks[0]!;
+    block.native_valid = true;
+    block.provenance = {
+      schema_version: 1,
+      status: "selected",
+      method: "native",
+      fragments: [
+        {
+          source: "native",
+          raw_text: block.raw_text,
+          bbox: [...block.bbox],
+          native_valid: true,
+          role: "selected",
+        },
+      ],
+      reasons: [],
+    };
+    return input;
+  }
+
+  it("preserves the new payload without rewriting and leaves legacy native validity unknown", () => {
+    const input = modern();
+    const before = JSON.stringify(input);
+    expect(validateArtifact(input, hash, hash)).toBe(input);
+    expect(JSON.stringify(input)).toBe(before);
+    for (const legacy of [fixture(), regionalFixture()]) {
+      expect(
+        validateArtifact(legacy, hash, hash, "stored").pages[0]!.blocks[0]!
+          .native_valid,
+      ).toBeUndefined();
+      expect(validateArtifact(legacy, hash, hash)).toBe(legacy);
+    }
+    const validate = new Ajv({ strict: false, validateFormats: false }).compile(
+      parseArtifactSchema,
+    );
+    expect(validate(input), JSON.stringify(validate.errors)).toBe(true);
+    delete input.text_provenance_schema_version;
+    expect(validate(input)).toBe(false);
+    expect(() => validateArtifact(input, hash, hash)).toThrow();
+  });
+
+  it.each([
+    "missing-native-valid",
+    "wrong-fragment-validity",
+    "unhidden-ambiguity",
+    "invalid-native-in-main",
+    "unknown-provenance-key",
+    "invalid-fragment-box",
+    "no-selected-fragment",
+    "missing-provenance",
+    "wrong-method",
+  ])("rejects %s", (invalid) => {
+    const input = modern();
+    const block = input.pages[0]!.blocks[0]!;
+    if (invalid === "missing-native-valid") delete block.native_valid;
+    if (invalid === "missing-provenance") delete block.provenance;
+    if (invalid === "wrong-method") block.provenance!.method = "hybrid";
+    if (invalid === "wrong-fragment-validity")
+      block.provenance!.fragments[0]!.native_valid = null;
+    if (invalid === "unhidden-ambiguity") {
+      block.provenance!.status = "ambiguous";
+      block.provenance!.reasons = ["TEXT_CONFLICT"];
+    }
+    if (invalid === "invalid-native-in-main") block.native_valid = false;
+    if (invalid === "unknown-provenance-key")
+      Object.assign(block.provenance!, { fabricated: true });
+    if (invalid === "invalid-fragment-box")
+      block.provenance!.fragments[0]!.bbox = [0.5, 0.2, 0.1, 0.4];
+    if (invalid === "no-selected-fragment")
+      block.provenance!.fragments[0]!.role = "alternative";
+    expect(() => validateArtifact(input, hash, hash)).toThrow(
+      "parser_invalid_result",
+    );
+  });
+
+  it("accepts hidden ambiguity with both raw candidates and unresolved table link", () => {
+    const input = modern();
+    const block = input.pages[0]!.blocks[0]!;
+    block.include_in_main = false;
+    block.provenance!.status = "ambiguous";
+    block.provenance!.reasons = ["TEXT_CONFLICT"];
+    block.provenance!.method = "hybrid";
+    block.provenance!.fragments.push({
+      source: "ocr",
+      raw_text: "другой текст",
+      bbox: [...block.bbox],
+      native_valid: null,
+      role: "alternative",
+    });
+    block.table_link = {
+      schema_version: 1,
+      status: "ambiguous",
+      table_id: null,
+      rows: [0],
+      columns: [0],
+      reasons: ["TABLE_LINK_TARGET_UNRESOLVED"],
+    };
+    expect(validateArtifact(input, hash, hash)).toBe(input);
+  });
+
+  it("validates links against real cells on this page without inventing a grid location", () => {
+    const input = modern();
+    const page = input.pages[0]!;
+    page.regions!.push({
+      id: "p1:r2",
+      kind: "table",
+      bbox: [0, 0, 1, 1],
+      raw_class: "table",
+      raw_score: 1,
+      method: "native_table",
+      reasons: [],
+      table_status: "structured",
+    });
+    page.blocks.push({
+      ...cell(1, 0, 0, 1, 2),
+      source: "native",
+      native_valid: true,
+      region_id: "p1:r2",
+      include_in_main: true,
+    });
+    const block = page.blocks[0]!;
+    block.table_link = {
+      schema_version: 1,
+      status: "associated",
+      table_id: "table-1",
+      rows: [0],
+      columns: [0, 1],
+      reasons: [],
+    };
+    expect(validateArtifact(input, hash, hash)).toBe(input);
+    for (const bad of [
+      { table_id: "other-page-table" },
+      { rows: [1] },
+      { columns: [2] },
+      { rows: [0, 0] },
+      { columns: [] },
+      { table_id: null },
+    ]) {
+      const broken = structuredClone(input);
+      Object.assign(broken.pages[0]!.blocks[0]!.table_link!, bad);
+      expect(() => validateArtifact(broken, hash, hash)).toThrow();
+    }
+  });
+
+  it("allows DOCX/XML to carry global versions without PDF metadata", () => {
+    const input = fixture();
+    input.versions = {
+      parser: "par-local-2",
+      pdf_region_profile: "paddle-regions-v2",
+      text_provenance: "par-text-provenance-v1",
+    };
+    Object.assign(input.pages[0]!.transform, {
+      structural_mapping: true,
+      font_sha256: hash,
+      layout: "semantic-structure-v1",
+    });
+    expect(validateArtifact(input, hash, hash)).toBe(input);
+  });
+});
+
 describe("parser trust boundary", () => {
   it("preserves source text and physical page/sheet distinction", () => {
     const value = validateArtifact(fixture(), hash, hash);

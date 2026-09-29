@@ -1,6 +1,6 @@
 import { Alert, Button, Spinner } from "@heroui/react";
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { useCurrentUser } from "@/api/hooks/use-auth";
 import { Role } from "@/api/types/auth";
@@ -12,11 +12,6 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicOnlyRoute } from "./PublicOnlyRoute";
 import { RoleGuard } from "./RoleGuards";
 
-const DashboardPage = lazy(() =>
-  import("@/pages/dashboard/DashboardPage").then((module) => ({
-    default: module.DashboardPage,
-  })),
-);
 const AuthPage = lazy(() =>
   import("@/pages/auth/AuthPage").then((module) => ({
     default: module.AuthPage,
@@ -37,9 +32,9 @@ const ObjectsPage = lazy(() =>
     default: module.ObjectsPage,
   })),
 );
-const ObjectDetailsPage = lazy(() =>
-  import("@/pages/object-details/ObjectDetailsPage").then((module) => ({
-    default: module.ObjectDetailsPage,
+const IdentificationPage = lazy(() =>
+  import("@/pages/identification/IdentificationPage").then((module) => ({
+    default: module.IdentificationPage,
   })),
 );
 const ProtocolsPage = lazy(() =>
@@ -57,6 +52,21 @@ const AdminMatrixPage = lazy(() =>
     default: module.AdminMatrixPage,
   })),
 );
+const UsersPage = lazy(() =>
+  import("@/pages/users/UsersPage").then((module) => ({
+    default: module.UsersPage,
+  })),
+);
+const DocumentsPage = lazy(() =>
+  import("@/pages/documents/DocumentsPage").then((module) => ({
+    default: module.DocumentsPage,
+  })),
+);
+
+function ObjectRedirect() {
+  const { objectId = "" } = useParams();
+  return <Navigate replace to={routeNames.OBJECT_UPLOAD(objectId)} />;
+}
 
 export function AppRoutes() {
   const currentUserQuery = useCurrentUser();
@@ -123,8 +133,19 @@ export function AppRoutes() {
         </Route>
         <Route element={<ProtectedRoute />}>
           <Route element={<WorkspaceLayout />}>
-            <Route element={<DashboardPage />} path={routeNames.ROOT} />
+            <Route
+              element={<Navigate replace to={routeNames.OBJECTS} />}
+              path={routeNames.ROOT}
+            />
             <Route element={<RoleGuard roles={Role.INSPECTOR} />}>
+              <Route
+                element={<IdentificationPage />}
+                path={routeNames.OBJECT_DOCUMENTS(":objectId")}
+              />
+              <Route
+                element={<DocumentUploadPage />}
+                path={routeNames.OBJECT_UPLOAD(":objectId")}
+              />
               <Route
                 element={<VerificationPage />}
                 path={routeNames.DOCUMENT_VERIFICATION}
@@ -135,19 +156,17 @@ export function AppRoutes() {
                 path={routeNames.PROTOCOL_DETAILS(":protocolId")}
               />
             </Route>
-            <Route
-              element={<DocumentUploadPage />}
-              path={routeNames.DOCUMENT_UPLOAD}
-            />
             <Route element={<ObjectsPage />} path={routeNames.OBJECTS} />
-            <Route
-              element={<ObjectDetailsPage />}
-              path={routeNames.OBJECT_DETAILS(":objectId")}
-            />
+            <Route element={<ObjectRedirect />} path="objects/:objectId" />
             <Route element={<RoleGuard roles={Role.ADMINISTRATOR} />}>
               <Route
                 element={<AdminMatrixPage />}
                 path={routeNames.ADMIN_MATRIX}
+              />
+              <Route element={<UsersPage />} path={routeNames.ADMIN_USERS} />
+              <Route
+                element={<DocumentsPage />}
+                path={routeNames.ADMIN_DOCUMENTS}
               />
             </Route>
           </Route>

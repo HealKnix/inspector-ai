@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-09-27T07:41:18.439Z",
+  "gate": "OFF-initial",
+  "accepted": true,
+  "manifest_sha256": "b899ad410f1307ffe767d07c4ec2711750506534e66c912a2a29ef41db0e7692",
+  "smoke_checks": 91,
+  "clean_image_load": 9,
+  "new_runtime_volumes": 8,
+  "replay_unchanged": true,
+  "secret_file_unchanged": true,
+  "proof_boundary": "Empty offline image daemon and separate fresh runtime volumes on the host daemon; no assertion of full runtime startup inside the empty daemon. Full startup/smoke network journal task 4.1 remains open.",
+  "reports": [
+    {
+      "file": "2026-09-27-r8-manifest.json",
+      "sha256": "b899ad410f1307ffe767d07c4ec2711750506534e66c912a2a29ef41db0e7692"
+    },
+    {
+      "file": "2026-09-27-r8-installation-first.json",
+      "sha256": "8c6906cbe2b3e10cc704cb6001131530da9ef243cc0acc36b0130ad3d345f3b2"
+    },
+    {
+      "file": "2026-09-27-r8-installation-repeat.json",
+      "sha256": "a8e9b8edf62b9b0386288bc2b7d57835c44f1a26c6a66a80de158e3e4a29b301"
+    },
+    {
+      "file": "2026-09-27-r8-replay-before.json",
+      "sha256": "b0a00fc15a0db98b0caea555c6b04fbebbfb9a17015a04464e46d2d8cf9331b1"
+    },
+    {
+      "file": "2026-09-27-r8-replay-after.json",
+      "sha256": "bb24e74a933f711917637aead4ddf2c620552064b89d838fcbfe39ab49d272b3"
+    },
+    {
+      "file": "2026-09-27-r8-smoke.json",
+      "sha256": "61cadb2a671e283b18dc44c6320484c85188abcfd661c104280fba38235e998a"
+    },
+    {
+      "file": "2026-09-27-r8-clean-load.json",
+      "sha256": "0b80a046784594df12fe3d72421fc5ec2c1eaa9512c897c4b1116ef7764d44a8"
+    },
+    {
+      "file": "2026-09-27-r8-static-and-runtime.json",
+      "sha256": "8d9ed36819ab44e8fd3312f9e9d8091bc604d005b7ecf49398e61a75ea6d72e3"
+    },
+    {
+      "file": "2026-09-27-r8-ingress-proof.json",
+      "sha256": "c0a029b1235ba63ed97cf5b89eefa9ca82e14a829c00d3e81412fd7c69d4ec75"
+    }
+  ],
+  "foundation_task_counts": [
+    {
+      "change": "add-release-acceptance",
+      "complete": 5,
+      "total": 23
+    },
+    {
+      "change": "add-platform-hardening",
+      "complete": 3,
+      "total": 18
+    },
+    {
+      "change": "add-reviewed-matrix-release",
+      "complete": 4,
+      "total": 25
+    },
+    {
+      "change": "add-offline-release-bundle",
+      "complete": 3,
+      "total": 16
+    },
+    {
+      "change": "add-observability",
+      "complete": 3,
+      "total": 16
+    },
+    {
+      "change": "add-audit-history",
+      "complete": 3,
+      "total": 17
+    }
+  ]
+}

@@ -23,6 +23,16 @@ export interface SessionResult {
   user: PublicUser;
 }
 
+export interface RegisterInput {
+  email?: string;
+  firstName: string;
+  lastName: string;
+  login: string;
+  password: string;
+  patronymic?: string;
+  phone?: string;
+}
+
 interface RefreshTokenPayload {
   jti: string;
   sid: string;
@@ -89,8 +99,8 @@ export class AuthService {
     private readonly authSessionsService: AuthSessionsService,
   ) {}
 
-  async register(login: string, password: string): Promise<SessionResult> {
-    const normalizedLogin = login.trim().normalize("NFC").toLowerCase();
+  async register(input: RegisterInput): Promise<SessionResult> {
+    const normalizedLogin = input.login.trim().normalize("NFC").toLowerCase();
     const existingUser =
       await this.usersService.findCredentialsByLogin(normalizedLogin);
 
@@ -100,13 +110,18 @@ export class AuthService {
       );
     }
 
-    const passwordHash = await this.passwordService.hash(password);
+    const passwordHash = await this.passwordService.hash(input.password);
 
     try {
-      const user = await this.usersService.create(
-        normalizedLogin,
+      const user = await this.usersService.create({
+        email: input.email,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        login: normalizedLogin,
         passwordHash,
-      );
+        patronymic: input.patronymic,
+        phone: input.phone,
+      });
       return this.createSession(user);
     } catch (error: unknown) {
       if (isUniqueConstraintError(error)) {
@@ -136,6 +151,11 @@ export class AuthService {
       id: user.id,
       login: user.login,
       role: user.role,
+      lastName: user.lastName,
+      firstName: user.firstName,
+      patronymic: user.patronymic,
+      phone: user.phone,
+      email: user.email,
       createdAt: user.createdAt,
     });
   }

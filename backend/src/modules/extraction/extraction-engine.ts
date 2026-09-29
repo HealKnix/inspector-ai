@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { analysisBlocks } from "../parsing/analysis-blocks.js";
 import type {
   ParseArtifactData,
   ParseBlock,
@@ -13,6 +14,11 @@ import {
   type TableGrid,
 } from "./block-search.js";
 import {
+  COMPARISON_ENGINE_VERSION,
+  type ComparisonSpec,
+} from "./comparison-contract.js";
+import { normalizeDecimalInput } from "./exact-decimal.js";
+import {
   EXTRACTION_ENGINE_VERSION,
   type EvidenceLocator,
   type ExtractionAlternative,
@@ -21,20 +27,27 @@ import {
   type RegexPlan,
   type TableLookupPlan,
 } from "./extraction-contract.js";
+import {
+  unitDefinition,
+  type NumberPolicy,
+  type NumericalEvidence,
+} from "./numerical-policy.js";
 
 export interface ApprovedRule {
   parameter_code: string;
   rule_version_id: string;
   version: number;
   plan: ExtractionPlan;
+  comparison: ComparisonSpec | null;
 }
 
-/** Approved ruleset + engine version: a new approved version starts a new cycle. */
+/** Approved ruleset + engine versions: a new approved version starts a new cycle. */
 export function rulesetFingerprint(rules: ApprovedRule[]): string {
   return createHash("sha256")
     .update(
       JSON.stringify({
         engine: EXTRACTION_ENGINE_VERSION,
+        comparison_engine: COMPARISON_ENGINE_VERSION,
         rules: rules
           .map((rule) => `${rule.rule_version_id}:${rule.version}`)
           .sort(),
@@ -99,6 +112,7 @@ function unitInText(text: string, accepted: string[] | undefined) {
 }
 
 interface FoundValue {
+  numerical?: NumericalEvidence;
   value_raw: string;
   value: number | string;
   unit: string | null;
@@ -132,18 +146,108 @@ function typedValue(
   return { value: trimmed, unit };
 }
 
+/** A strict plan owns the captured value and located unit. Nearby numbers and
+ * unrelated units cannot silently supply either part of a measured fact. */
+function strictNumber(
+  text: string,
+  policy: NumberPolicy,
+  accepted: string[] | undefined,
+  sources: {
+    text: string;
+    source: "value" | "row" | "header";
+    locator: EvidenceLocator;
+  }[],
+): {
+  value: number | string;
+  unit: string | null;
+  numerical: NumericalEvidence;
+} | null {
+  if (policy.reject_list_marker && /^\s*\d+[.)](?:\s|$)/u.test(text))
+    return null;
+  const tokens = [
+    ...text.matchAll(
+      /(?<![\p{L}\p{N}_.,])[+−-]?(?:\d{1,3}(?:[ \u00a0\u202f]\d{3})+|\d+)(?:[.,]\d+)?(?![\p{L}\p{N}_.,])/gu,
+    ),
+  ];
+  if (!tokens.length || (policy.mode === "single" && tokens.length !== 1))
+    return null;
+  const point = normalizeDecimalInput(tokens[0]![0]);
+  if (point === null) return null;
+  const located: NumericalEvidence["unit"][] = [];
+  for (const source of sources) {
+    for (const raw of accepted ?? []) {
+      const escaped = raw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      if (
+        !new RegExp(
+          `(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`,
+          "iu",
+        ).test(source.text)
+      )
+        continue;
+      const definition = unitDefinition(raw);
+      if (definition)
+        located.push({
+          raw,
+          canonical: definition.canonical,
+          dimension: definition.dimension,
+          source: source.source,
+          evidence: [source.locator],
+        });
+    }
+    if (located.length) break;
+  }
+  if (new Set(located.map((u) => u.canonical)).size > 1) return null;
+  const unit = located[0] ?? {
+    raw: null,
+    canonical: null,
+    dimension: null,
+    source: "missing" as const,
+    evidence: [],
+  };
+  if (policy.require_unit && unit.source === "missing") return null;
+  const numerical: NumericalEvidence = {
+    schema_version: 1,
+    decimal: point,
+    unit,
+    uncertainty: null,
+  };
+  return { value: point, unit: unit.canonical, numerical };
+}
+
 function collect(values: FoundValue[], rule: ApprovedRule): ExtractionOutcome {
   const base = {
     schema_version: 1 as const,
     parameter_code: rule.parameter_code,
     rule_version_id: rule.rule_version_id,
   };
+  // Missing unit is not a disagreement: a unitless hit merges into the
+  // same-valued bucket (adopting its unit); genuinely different units stay
+  // distinct.
   const distinct = new Map<string, FoundValue[]>();
   for (const found of values) {
-    const key = `${typeof found.value}:${String(found.value)}:${found.unit ?? ""}`;
-    const list = distinct.get(key) ?? [];
+    if (found.numerical) {
+      const key = `exact:${found.numerical.decimal}:${found.unit ?? "missing"}`;
+      const list = distinct.get(key) ?? [];
+      list.push(found);
+      distinct.set(key, list);
+      continue;
+    }
+    const valueKey = `${typeof found.value}:${String(found.value)}`;
+    let target: string | null = null;
+    for (const key of distinct.keys()) {
+      if (!key.startsWith(`${valueKey}:`)) continue;
+      const unit = key.slice(valueKey.length + 1);
+      if (unit === (found.unit ?? "") || unit === "" || !found.unit) {
+        target = key;
+        break;
+      }
+    }
+    const list = (target && distinct.get(target)) || [];
     list.push(found);
-    distinct.set(key, list);
+    if (target) distinct.delete(target);
+    const unit = target?.slice(valueKey.length + 1) || found.unit || "";
+    if (unit) for (const item of list) item.unit ??= unit;
+    distinct.set(`${valueKey}:${unit}`, list);
   }
   if (distinct.size === 0)
     return {
@@ -165,6 +269,7 @@ function collect(values: FoundValue[], rule: ApprovedRule): ExtractionOutcome {
       value_raw: first.value_raw,
       value: first.value,
       unit: first.unit,
+      ...(first.numerical ? { numerical: first.numerical } : {}),
       alternatives: null,
       reason: null,
       evidence: group.flatMap((item) => item.evidence),
@@ -177,6 +282,7 @@ function collect(values: FoundValue[], rule: ApprovedRule): ExtractionOutcome {
         value_raw: first.value_raw,
         value: first.value,
         unit: first.unit,
+        ...(first.numerical ? { numerical: first.numerical } : {}),
         evidence: group.flatMap((item) => item.evidence),
       };
     },
@@ -238,20 +344,50 @@ function runTableLookup(
   const candidates = tableCandidates(artifact, plan.signature);
   const values: FoundValue[] = [];
   for (const { grid } of candidates) {
-    for (const [, cells] of [...grid.rows.entries()].sort(
+    for (const [row, cells] of [...grid.rows.entries()].sort(
       (a, b) => a[0] - b[0],
     )) {
-      if (!rowMatches(cells, plan.row.anchors)) continue;
+      const labels = [...cells, ...(grid.rowLabels.get(row) ?? [])];
+      if (!rowMatches(labels, plan.row.anchors)) continue;
       const target = valueCell(grid, cells, plan.value);
       if (!target) continue;
-      const label = cells.find((cell) =>
+      const label = labels.find((cell) =>
         plan.row.anchors.some((anchor) => blockMatches(cell, anchor)),
       );
-      const parsed = typedValue(
-        blockText(target),
-        plan.value,
-        cells.map((cell) => blockText(cell)).join(" "),
-      );
+      const headerCells = grid.rows.get(Math.min(...grid.rows.keys())) ?? [];
+      const numericalSources = [
+        {
+          text: blockText(target),
+          source: "value" as const,
+          locator: locatorFor(target, grid.page),
+        },
+        ...labels
+          .filter((cell) => cell !== target)
+          .map((cell) => ({
+            text: blockText(cell),
+            source: "row" as const,
+            locator: locatorFor(cell, grid.page),
+          })),
+        ...headerCells
+          .filter((cell) => cell.column === target.column)
+          .map((cell) => ({
+            text: blockText(cell),
+            source: "header" as const,
+            locator: locatorFor(cell, grid.page),
+          })),
+      ];
+      const parsed = plan.value.number_policy
+        ? strictNumber(
+            blockText(target),
+            plan.value.number_policy,
+            plan.value.unit,
+            numericalSources,
+          )
+        : typedValue(
+            blockText(target),
+            plan.value,
+            labels.map((cell) => blockText(cell)).join(" "),
+          );
       if (!parsed) continue;
       const evidence = [label, target]
         .filter((block): block is ParseBlock => Boolean(block))
@@ -260,6 +396,9 @@ function runTableLookup(
         value_raw: blockText(target),
         value: parsed.value,
         unit: parsed.unit,
+        ...("numerical" in parsed
+          ? { numerical: parsed.numerical as NumericalEvidence }
+          : {}),
         evidence,
       });
     }
@@ -272,30 +411,69 @@ function runRegex(
   plan: RegexPlan,
 ): { values: FoundValue[]; searched: number } {
   const hits = findAnchorHits(artifact, plan.anchors);
-  const pattern = new RegExp(plan.pattern, "iu");
+  const pattern = new RegExp(plan.pattern, plan.number_policy ? "giu" : "iu");
   const values: FoundValue[] = [];
   const window = plan.window_blocks ?? 0;
   for (const hit of hits) {
-    const index = hit.page.blocks.indexOf(hit.block);
-    const scope =
-      window > 0
-        ? hit.page.blocks
-            .slice(index, index + 1 + window)
-            .map((block) => blockText(block))
-            .join(" ")
-        : blockText(hit.block);
-    const match = pattern.exec(scope);
-    if (!match) continue;
-    const raw = (match[1] ?? match[0]).trim();
-    if (!raw) continue;
-    const parsed = typedValue(raw, plan, scope);
-    if (!parsed) continue;
-    values.push({
-      value_raw: raw,
-      value: parsed.value,
-      unit: parsed.unit,
-      evidence: [locatorFor(hit.block, hit.page, raw)],
-    });
+    const blocks = analysisBlocks(hit.page);
+    const index = blocks.indexOf(hit.block);
+    const selectedBlocks =
+      window > 0 && hit.block.table_link?.status !== "ambiguous"
+        ? blocks.slice(index, index + 1 + window)
+        : [hit.block];
+    const scope = selectedBlocks.map(blockText).join(" ");
+    const matches = plan.number_policy
+      ? [...scope.matchAll(pattern)]
+      : [pattern.exec(scope)].filter((value) => value !== null);
+    for (const match of matches) {
+      const raw = (match[1] ?? match[0]).trim();
+      if (!raw) continue;
+      let offset = 0;
+      const ownSources = selectedBlocks.flatMap((block) => {
+        const text = blockText(block),
+          start = Math.max(0, match.index - offset);
+        const end = Math.min(
+          text.length,
+          match.index + match[0].length - offset,
+        );
+        offset += text.length + 1;
+        return end > start
+          ? [
+              {
+                text: text.slice(start, end),
+                source: "value" as const,
+                locator: locatorFor(block, hit.page, text.slice(start, end)),
+              },
+            ]
+          : [];
+      });
+      const parsed = plan.number_policy
+        ? strictNumber(raw, plan.number_policy, plan.unit, ownSources)
+        : typedValue(raw, plan, scope);
+      if (!parsed) continue;
+      values.push({
+        value_raw: raw,
+        value: parsed.value,
+        unit: parsed.unit,
+        ...("numerical" in parsed
+          ? { numerical: parsed.numerical as NumericalEvidence }
+          : {}),
+        evidence:
+          plan.number_policy && ownSources.length > 1
+            ? ownSources.map((source) => source.locator)
+            : [
+                locatorFor(
+                  ownSources.length === 1 && plan.number_policy
+                    ? selectedBlocks.find(
+                        (block) => block.id === ownSources[0]!.locator.block_id,
+                      )!
+                    : hit.block,
+                  hit.page,
+                  raw,
+                ),
+              ],
+      });
+    }
   }
   return { values, searched: hits.length };
 }

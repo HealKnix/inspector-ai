@@ -3,7 +3,9 @@ import { ApiError } from "@/api/errors";
 import {
   classificationRetrySchema,
   classificationStatusSchema,
+  kindOptionsSchema,
 } from "@/api/types/classification";
+import { clarificationResultSchema } from "@/api/types/identification";
 
 export async function getClassificationStatus(
   objectId: string,
@@ -31,5 +33,45 @@ export async function retryClassification(input: {
       status: 409,
     });
   }
+  return result;
+}
+
+export async function getKindOptions(objectId: string, signal?: AbortSignal) {
+  const response = await apiClient.get<unknown>(
+    `/v1/objects/${objectId}/classification/kind-options`,
+    { signal },
+  );
+  return kindOptionsSchema.parse(response.data);
+}
+
+export async function resolveClassification(input: {
+  objectId: string;
+  fileId: string;
+  kindCode: string;
+  stage: "PD" | "RD" | "ID";
+  requestId: string;
+  expectedRunId: string;
+  expectedVersion: number;
+  basis: string;
+}) {
+  const response = await apiClient.post<unknown>(
+    `/v1/objects/${input.objectId}/files/${input.fileId}/classification/resolve`,
+    {
+      kind_code: input.kindCode,
+      stage: input.stage,
+      request_id: input.requestId,
+      expected_run_id: input.expectedRunId,
+      expected_version: input.expectedVersion,
+      basis: input.basis,
+    },
+  );
+  const result = clarificationResultSchema.parse(response.data);
+  if (
+    result.request_id !== input.requestId ||
+    result.previous_run_id !== input.expectedRunId
+  )
+    throw new ApiError("Не удалось подтвердить уточнение классификации.", {
+      status: 409,
+    });
   return result;
 }

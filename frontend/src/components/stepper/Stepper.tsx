@@ -43,7 +43,7 @@ export function Stepper({
             )}
           >
             {isComplete ? (
-              <UploadIcon className="size-5 stroke-2" name="check" />
+              <UploadIcon className="size-5" name="check" strokeWidth={2} />
             ) : (
               stepNumber
             )}

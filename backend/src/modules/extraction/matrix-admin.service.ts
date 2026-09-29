@@ -3,15 +3,27 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
   UnprocessableEntityException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "../../generated/prisma/client.js";
+import { writeAuditEvent } from "../../infrastructure/audit/audit-envelope.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import { readClassificationConfig } from "../identification/classification-config.js";
+import { ClassificationError } from "../identification/classification-contract.js";
 import { ArtifactStorageService } from "../parsing/artifact-storage.service.js";
 import type { ParseArtifactData } from "../parsing/parsing-contract.js";
-import { contextWindows } from "./block-search.js";
+import {
+  contextWindows,
+  normalizeTerm,
+  type ContextWindow,
+} from "./block-search.js";
+import {
+  ComparisonValidationError,
+  validateComparisonSpec,
+  type ComparisonSpec,
+} from "./comparison-contract.js";
 import {
   PlanValidationError,
   validateExtractionPlan,
@@ -21,9 +33,13 @@ import { executePlan } from "./extraction-engine.js";
 import {
   DRAFT_PROMPT_VERSION,
   draftPlanWithLlm,
-  missingAnchors,
+  missingAnchorsAcross,
   planAnchorTerms,
 } from "./extraction-llm.js";
+import {
+  lockMatrixParameter,
+  requireRuleRegression,
+} from "./matrix-review.service.js";
 
 interface ArtifactSource {
   file_id: string;
@@ -90,7 +106,7 @@ export class MatrixAdminService {
   async createDraft(
     context: { userId: string; requestId: string; ip?: string },
     parameterCode: string,
-    input: { plan: unknown; note?: string },
+    input: { plan: unknown; comparison?: unknown; note?: string },
   ) {
     let plan: ExtractionPlan;
     try {
@@ -102,7 +118,20 @@ export class MatrixAdminService {
           : "Некорректный план",
       );
     }
+    let comparison: ComparisonSpec | null = null;
+    if (input.comparison !== undefined && input.comparison !== null) {
+      try {
+        comparison = validateComparisonSpec(input.comparison);
+      } catch (error) {
+        throw new BadRequestException(
+          error instanceof ComparisonValidationError
+            ? error.message
+            : "Некорректная спека сравнения",
+        );
+      }
+    }
     return this.prisma.$transaction(async (tx) => {
+      await lockMatrixParameter(tx, parameterCode);
       const row = await tx.matrixRow.findFirst({
         where: { parameterCode },
         orderBy: { importId: "desc" },
@@ -119,11 +148,17 @@ export class MatrixAdminService {
           version: (last?.version ?? 0) + 1,
           status: "draft",
           plan: JSON.parse(JSON.stringify(plan)) as Prisma.InputJsonValue,
+          comparison:
+            comparison === null
+              ? undefined
+              : (JSON.parse(
+                  JSON.stringify(comparison),
+                ) as Prisma.InputJsonValue),
           note: input.note?.slice(0, 2000),
           createdBy: context.userId,
         },
       });
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           action: "matrix.rule.draft_created",
@@ -132,6 +167,7 @@ export class MatrixAdminService {
             parameter_code: parameterCode,
             rule_version_id: draft.id,
             version: draft.version,
+            has_comparison: comparison !== null,
           },
         },
       });
@@ -167,6 +203,7 @@ export class MatrixAdminService {
         rule_version_id: rule.id,
         version: rule.version,
         plan,
+        comparison: null,
       }),
     }));
     return { schema_version: 1, rule_id: rule.id, results };
@@ -225,12 +262,7 @@ export class MatrixAdminService {
     const terms =
       input.terms?.filter((term) => typeof term === "string" && term.trim()) ??
       [row.name, row.unit ?? "", "показател"].filter(Boolean);
-    const windows = sources.flatMap((source) =>
-      contextWindows(source.artifact, terms).map((window) => ({
-        ...window,
-        file_id: source.file_id,
-      })),
-    );
+    const windows = draftWindows(sources, terms);
     if (!windows.length)
       throw new UnprocessableEntityException(
         "Поиск не нашёл фрагментов по терминам; уточните terms",
@@ -246,18 +278,34 @@ export class MatrixAdminService {
           source_id: row.sourceId,
           trigger: row.triggerText,
         },
-        windows: windows.slice(0, 16),
+        windows,
       },
       this.llm,
+    ).catch((error: unknown) => {
+      // Invalid model output is a domain failure (retryable drafts exist), not a
+      // server error; transient transport issues surface as 503.
+      if (error instanceof ClassificationError) {
+        if (error.code.startsWith("extraction_llm_invalid"))
+          throw new UnprocessableEntityException(
+            "LLM вернула невалидный план; повторите или уточните terms",
+          );
+        throw new ServiceUnavailableException(
+          `LLM-контур недоступен: ${error.code}`,
+        );
+      }
+      throw error;
+    });
+    const missing = missingAnchorsAcross(
+      plan,
+      sources.map((source) => source.artifact),
     );
-    const artifactForCheck = sources[0]!.artifact;
-    const missing = missingAnchors(plan, artifactForCheck);
     const total = planAnchorTerms(plan).length;
     if (total > 0 && missing.length === total)
       throw new UnprocessableEntityException(
         `Черновик отклонён: якоря не встречаются в документе (${missing.join(", ")})`,
       );
     return this.prisma.$transaction(async (tx) => {
+      await lockMatrixParameter(tx, parameterCode);
       const last = await tx.ruleVersion.findFirst({
         where: { parameterCode },
         orderBy: { version: "desc" },
@@ -280,7 +328,7 @@ export class MatrixAdminService {
           createdBy: context.userId,
         },
       });
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           action: "matrix.rule.llm_draft_created",
@@ -309,20 +357,28 @@ export class MatrixAdminService {
     ruleId: string,
   ) {
     return this.prisma.$transaction(async (tx) => {
-      const rule = await tx.ruleVersion.findUnique({ where: { id: ruleId } });
-      if (!rule) throw new NotFoundException("Версия правила не найдена");
+      const initial = await tx.ruleVersion.findUnique({
+        where: { id: ruleId },
+      });
+      if (!initial) throw new NotFoundException("Версия правила не найдена");
+      await lockMatrixParameter(tx, initial.parameterCode);
+      const rule = await tx.ruleVersion.findUniqueOrThrow({
+        where: { id: ruleId },
+      });
       if (rule.status !== "draft")
         throw new ConflictException("Утвердить можно только черновик");
       try {
         validateExtractionPlan(rule.plan);
+        if (rule.comparison !== null) validateComparisonSpec(rule.comparison);
       } catch {
         throw new UnprocessableEntityException(
           "Сохранённый план не проходит валидацию",
         );
       }
+      const review = await requireRuleRegression(tx, rule);
       await tx.ruleVersion.updateMany({
         where: { parameterCode: rule.parameterCode, status: "approved" },
-        data: { status: "deprecated", approvedBy: null, approvedAt: null },
+        data: { status: "deprecated" },
       });
       const approved = await tx.ruleVersion.update({
         where: { id: rule.id },
@@ -332,7 +388,7 @@ export class MatrixAdminService {
           approvedAt: new Date(),
         },
       });
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           action: "matrix.rule.approved",
@@ -341,6 +397,8 @@ export class MatrixAdminService {
             parameter_code: rule.parameterCode,
             rule_version_id: rule.id,
             version: rule.version,
+            has_comparison: rule.comparison !== null,
+            ...review,
           },
         },
       });
@@ -353,15 +411,21 @@ export class MatrixAdminService {
     ruleId: string,
   ) {
     return this.prisma.$transaction(async (tx) => {
-      const rule = await tx.ruleVersion.findUnique({ where: { id: ruleId } });
-      if (!rule) throw new NotFoundException("Версия правила не найдена");
+      const initial = await tx.ruleVersion.findUnique({
+        where: { id: ruleId },
+      });
+      if (!initial) throw new NotFoundException("Версия правила не найдена");
+      await lockMatrixParameter(tx, initial.parameterCode);
+      const rule = await tx.ruleVersion.findUniqueOrThrow({
+        where: { id: ruleId },
+      });
       if (rule.status !== "draft")
         throw new ConflictException("Отклонить можно только черновик");
       const rejected = await tx.ruleVersion.update({
         where: { id: rule.id },
         data: { status: "rejected" },
       });
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           action: "matrix.rule.rejected",
@@ -429,4 +493,46 @@ export class MatrixAdminService {
     }
     return sources;
   }
+}
+
+const MAX_DRAFT_WINDOWS = 16;
+
+/**
+ * Windows for LLM drafting: round-robin across artifacts so one "chatty"
+ * document cannot starve the rest, then ranked by term presence — windows
+ * matching the parameter name (terms[0]) first.
+ */
+export function draftWindows(
+  sources: { artifact: ParseArtifactData; file_id: string }[],
+  terms: string[],
+): (ContextWindow & { file_id: string })[] {
+  const buckets = sources.map((source) =>
+    contextWindows(source.artifact, terms).map((window) => ({
+      ...window,
+      file_id: source.file_id,
+    })),
+  );
+  const interleaved: (ContextWindow & { file_id: string })[] = [];
+  for (let depth = 0; ; depth += 1) {
+    let any = false;
+    for (const bucket of buckets) {
+      const window = bucket[depth];
+      if (window) {
+        interleaved.push(window);
+        any = true;
+      }
+    }
+    if (!any) break;
+  }
+  const norm = terms.map(normalizeTerm);
+  const ranked = interleaved.map((window, index) => {
+    const text = normalizeTerm(window.lines.map((line) => line.text).join(" "));
+    let score = 0;
+    for (const [i, term] of norm.entries()) {
+      if (term && text.includes(term)) score += i === 0 ? 8 : 1;
+    }
+    return { window, index, score };
+  });
+  ranked.sort((a, b) => b.score - a.score || a.index - b.index);
+  return ranked.slice(0, MAX_DRAFT_WINDOWS).map((entry) => entry.window);
 }

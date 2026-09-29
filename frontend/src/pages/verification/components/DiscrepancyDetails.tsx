@@ -9,19 +9,36 @@ import {
 } from "@heroui/react";
 import { useRef, useState } from "react";
 
+import type { ApiFindingDetail } from "@/api/types/verification";
 import { cn } from "@/lib/utils";
+import {
+  DECIDABLE_STATUSES,
+  REJECTION_REASONS,
+  labelForRejectionCode,
+} from "@/pages/verification/lib/object-findings";
 import {
   FindingStatus,
   type VerificationDocument,
   type VerificationFinding,
   type VerificationFindingDecision,
 } from "@/pages/verification/types";
+import type { SectionEvidenceTarget } from "../lib/evidence-navigation";
 
+import { SectionAnalysisDetails } from "./SectionAnalysisDetails";
 import { VerificationIcon } from "./VerificationIcon";
-import { markerPresentation, statusLabels } from "./verification-presentation";
+import {
+  findingMarkerPresentation,
+  statusLabels,
+} from "./verification-presentation";
 
-type DetailTab = "comparison" | "rationale" | "documents";
-type ReviewAction = Exclude<FindingStatus, typeof FindingStatus.CANDIDATE>;
+type DetailTab =
+  "comparison" | "section" | "rationale" | "documents" | "evidence" | "history";
+/** Действия инспектора — целевые статусы; CANDIDATE = вернуть в работу. */
+type ReviewAction =
+  | typeof FindingStatus.CONFIRMED_VIOLATION
+  | typeof FindingStatus.NEGATIVE_VERIFIED
+  | typeof FindingStatus.CLARIFICATION_REQUIRED
+  | typeof FindingStatus.CANDIDATE;
 
 interface ReviewDraft {
   action: ReviewAction;
@@ -31,34 +48,68 @@ interface ReviewDraft {
   reason: string;
 }
 
-const detailTabs: ReadonlyArray<{ id: DetailTab; label: string }> = [
+const baseDetailTabs: ReadonlyArray<{ id: DetailTab; label: string }> = [
   { id: "comparison", label: "Сравнение" },
   { id: "rationale", label: "Обоснование" },
   { id: "documents", label: "Связанные документы" },
 ];
 
-const rejectionReasons = [
-  "Актуальная редакция выбрана неверно",
-  "Есть согласованное изменение",
-  "Ошибка OCR",
-  "Ошибка привязки доказательства",
-  "Параметр неприменим",
-] as const;
+const apiDetailTabs: ReadonlyArray<{ id: DetailTab; label: string }> = [
+  { id: "evidence", label: "Доказательства" },
+  { id: "history", label: "История решений" },
+];
+
+const rejectionReasons = REJECTION_REASONS.map((reason) => reason.label);
+
+const decisionActionLabels: Record<string, string> = {
+  confirm: "Подтверждено нарушение",
+  reject: "Отклонено инспектором",
+  clarify: "Запрошено уточнение",
+  reopen: "Возвращено в работу",
+};
 
 const actionLabels: Record<ReviewAction, string> = {
   [FindingStatus.CONFIRMED_VIOLATION]: "Подтвердить нарушение",
   [FindingStatus.NEGATIVE_VERIFIED]: "Отклонить",
   [FindingStatus.CLARIFICATION_REQUIRED]: "Требует уточнения",
+  [FindingStatus.CANDIDATE]: "Вернуть в работу",
 };
 
+/** Действия, доступные для текущего статуса находки (таблица переходов API). */
+function availableActions(status: FindingStatus): ReviewAction[] {
+  if (status === FindingStatus.CANDIDATE) {
+    return [
+      FindingStatus.CONFIRMED_VIOLATION,
+      FindingStatus.NEGATIVE_VERIFIED,
+      FindingStatus.CLARIFICATION_REQUIRED,
+    ];
+  }
+  if (DECIDABLE_STATUSES.includes(status)) {
+    return [FindingStatus.CANDIDATE];
+  }
+  return [];
+}
+
 interface DiscrepancyDetailsProps {
-  actualDocument: VerificationDocument;
+  actualDocument?: VerificationDocument;
   currentIndex: number;
-  expectedDocument: VerificationDocument;
+  /** Карточка API-находки с членами группы и историей решений. */
+  detail?: ApiFindingDetail;
+  expectedDocument?: VerificationDocument;
+  /** Имя файла по file_id для списка доказательств. */
+  fileNames?: ReadonlyMap<string, string>;
   finding: VerificationFinding;
-  onDecision: (decision: VerificationFindingDecision) => void;
+  onDecision: (decision: VerificationFindingDecision) => void | Promise<void>;
+  onLocate?: (fileId: string, page: number) => void;
+  /** Рольная навигация по секционным цитатам (reference→лево, actual→право). */
+  onLocateSection?: (target: SectionEvidenceTarget) => void;
   onNext: () => void;
   onPrevious: () => void;
+  decisionPending?: boolean;
+  /** Финализированный протокол или недоступный процесс — скрыть кнопки. */
+  decisionsDisabled?: boolean;
+  /** Секционные цитаты, разрешённые в открываемые замороженные файлы. */
+  sectionTargets?: readonly SectionEvidenceTarget[];
   totalCount: number;
 }
 
@@ -74,7 +125,7 @@ function EvidenceValue({
   return (
     <div className="min-w-0">
       <p className="text-copy-muted text-xs">{label}</p>
-      <p className="text-danger mt-1 text-base font-semibold break-words">
+      <p className="text-foreground mt-1 text-base font-semibold break-words">
         {value}
       </p>
       <p className="text-copy-muted mt-1 text-xs break-words">{location}</p>
@@ -87,35 +138,45 @@ function DocumentEvidence({
   evidence,
   label,
 }: {
-  document: VerificationDocument;
+  document?: VerificationDocument;
   evidence: VerificationFinding["expectedEvidence"];
   label: string;
 }) {
+  const metaRows: ReadonlyArray<[string, string | undefined]> = [
+    ["Стадия", document?.stage],
+    ["Шифр", document?.cipher],
+    ["Редакция", document?.revision],
+    ["Изменение", document?.changeReference],
+    ["Статус", document?.approvalStatus],
+    [
+      "Источник",
+      evidence.page > 0
+        ? `${evidence.location}, стр. ${evidence.page}`
+        : evidence.location,
+    ],
+  ];
+
   return (
     <article className="border-border min-w-0 border-l pl-4 first:border-l-0 first:pl-0">
       <p className="text-copy-muted text-xs font-medium">{label}</p>
       <h4 className="mt-1 text-sm font-semibold break-words">
-        {document.title}
+        {document?.title ?? "Документ не привязан"}
       </h4>
       <dl className="text-copy-muted mt-3 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-xs">
-        <dt>Стадия</dt>
-        <dd className="text-foreground">{document.stage}</dd>
-        <dt>Шифр</dt>
-        <dd className="text-foreground break-all">{document.cipher}</dd>
-        <dt>Редакция</dt>
-        <dd className="text-foreground">{document.revision}</dd>
-        <dt>Изменение</dt>
-        <dd className="text-foreground">{document.changeReference}</dd>
-        <dt>Статус</dt>
-        <dd className="text-foreground">{document.approvalStatus}</dd>
-        <dt>Источник</dt>
-        <dd className="text-foreground">
-          {evidence.location}, стр. {evidence.page}
-        </dd>
+        {metaRows
+          .filter((entry): entry is [string, string] => Boolean(entry[1]))
+          .map(([name, value]) => (
+            <div className="contents" key={name}>
+              <dt>{name}</dt>
+              <dd className="text-foreground break-words">{value}</dd>
+            </div>
+          ))}
       </dl>
-      <blockquote className="bg-surface-high text-foreground mt-3 rounded-xl px-3 py-2 text-xs leading-5">
-        {evidence.excerpt}
-      </blockquote>
+      {evidence.excerpt ? (
+        <blockquote className="bg-surface-high text-foreground mt-3 rounded-xl px-3 py-2 text-xs leading-5">
+          {evidence.excerpt}
+        </blockquote>
+      ) : null}
     </article>
   );
 }
@@ -123,11 +184,18 @@ function DocumentEvidence({
 export function DiscrepancyDetails({
   actualDocument,
   currentIndex,
+  detail,
   expectedDocument,
+  fileNames,
   finding,
   onDecision,
+  onLocate,
+  onLocateSection,
   onNext,
   onPrevious,
+  decisionPending = false,
+  decisionsDisabled = false,
+  sectionTargets,
   totalCount,
 }: DiscrepancyDetailsProps) {
   const [tabState, setTabState] = useState<{
@@ -139,11 +207,25 @@ export function DiscrepancyDetails({
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const rejectButtonRef = useRef<HTMLButtonElement>(null);
   const clarifyButtonRef = useRef<HTMLButtonElement>(null);
+  const reopenButtonRef = useRef<HTMLButtonElement>(null);
   const activeTab =
     tabState.findingId === finding.id ? tabState.tab : "comparison";
   const currentDraft =
     reviewDraft?.findingId === finding.id ? reviewDraft : null;
-  const marker = markerPresentation[finding.uiMarker];
+  const marker = findingMarkerPresentation(finding);
+  const actions = decisionsDisabled
+    ? []
+    : availableActions(finding.findingStatus);
+  // «Анализ разделов» показывается и у исторической записи — включая
+  // находки времени, когда режим уже отключён.
+  const detailTabs = [
+    ...baseDetailTabs.slice(0, 1),
+    ...(detail?.section_analysis
+      ? [{ id: "section" as DetailTab, label: "Анализ разделов" }]
+      : []),
+    ...baseDetailTabs.slice(1),
+    ...(detail ? apiDetailTabs : []),
+  ];
 
   const startReview = (action: ReviewAction) => {
     setReviewDraft({
@@ -159,14 +241,34 @@ export function DiscrepancyDetails({
   };
 
   const focusActionButton = (action: ReviewAction) => {
-    const button =
+    const preferred =
       action === FindingStatus.CONFIRMED_VIOLATION
-        ? confirmButtonRef.current
+        ? confirmButtonRef
         : action === FindingStatus.NEGATIVE_VERIFIED
-          ? rejectButtonRef.current
-          : clarifyButtonRef.current;
+          ? rejectButtonRef
+          : action === FindingStatus.CLARIFICATION_REQUIRED
+            ? clarifyButtonRef
+            : reopenButtonRef;
 
-    queueMicrotask(() => button?.focus());
+    // После решения кнопка исходного действия может исчезнуть (смена статуса) —
+    // тогда фокус уходит на первое оставшееся доступное действие.
+    queueMicrotask(() => {
+      if (preferred.current?.isConnected) {
+        preferred.current.focus();
+        return;
+      }
+      for (const ref of [
+        confirmButtonRef,
+        rejectButtonRef,
+        clarifyButtonRef,
+        reopenButtonRef,
+      ]) {
+        if (ref.current?.isConnected) {
+          ref.current.focus();
+          return;
+        }
+      }
+    });
   };
 
   const closeReview = () => {
@@ -177,34 +279,50 @@ export function DiscrepancyDetails({
     focusActionButton(action);
   };
 
-  const submitReview = () => {
-    if (!currentDraft) return;
+  const failDraft = (message: string) => {
+    setReviewDraft((draft) =>
+      draft?.findingId === finding.id ? { ...draft, error: message } : draft,
+    );
+  };
+
+  const submitReview = async () => {
+    if (!currentDraft || decisionPending) return;
+
+    const comment = currentDraft.comment.trim();
+    const reason = currentDraft.reason.trim();
+
+    if (
+      (currentDraft.action === FindingStatus.NEGATIVE_VERIFIED ||
+        currentDraft.action === FindingStatus.CLARIFICATION_REQUIRED) &&
+      !comment
+    ) {
+      failDraft("Для решения нужен комментарий.");
+      return;
+    }
+    if (currentDraft.action === FindingStatus.NEGATIVE_VERIFIED && !reason) {
+      failDraft("Для отклонения необходимо указать причину.");
+      return;
+    }
 
     try {
       if (currentDraft.action === FindingStatus.NEGATIVE_VERIFIED) {
-        onDecision({
+        await onDecision({
           findingStatus: FindingStatus.NEGATIVE_VERIFIED,
-          reason: currentDraft.reason,
-          comment: currentDraft.comment,
+          reason,
+          comment,
         });
       } else {
-        onDecision({
+        await onDecision({
           findingStatus: currentDraft.action,
-          comment: currentDraft.comment,
+          comment,
         });
       }
       closeReview();
     } catch (caughtError) {
-      setReviewDraft((draft) =>
-        draft?.findingId === finding.id
-          ? {
-              ...draft,
-              error:
-                caughtError instanceof Error
-                  ? caughtError.message
-                  : "Не удалось применить демонстрационное решение.",
-            }
-          : draft,
+      failDraft(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Не удалось применить решение.",
       );
     }
   };
@@ -219,8 +337,8 @@ export function DiscrepancyDetails({
   };
 
   const handleTabChange = (key: Key) => {
-    if (key === "comparison" || key === "rationale" || key === "documents") {
-      setTabState({ findingId: finding.id, tab: key });
+    if (detailTabs.some((tab) => tab.id === key)) {
+      setTabState({ findingId: finding.id, tab: key as DetailTab });
     }
   };
 
@@ -268,7 +386,12 @@ export function DiscrepancyDetails({
                   marker.dotClassName,
                 )}
               >
-                {finding.uiMarker === "formality" ? "i" : "!"}
+                {(!finding.isSynthetic &&
+                  finding.findingStatus !==
+                    FindingStatus.CONFIRMED_VIOLATION) ||
+                finding.uiMarker === "formality"
+                  ? "i"
+                  : "!"}
               </span>
               <h2
                 className="text-lg leading-6 font-semibold"
@@ -276,6 +399,11 @@ export function DiscrepancyDetails({
               >
                 {finding.title}
               </h2>
+              {finding.contextLabel ? (
+                <p className="text-copy-muted mt-1 text-sm">
+                  {finding.contextLabel}
+                </p>
+              ) : null}
               <span
                 className={cn(
                   "rounded-full px-2.5 py-1 text-xs font-medium",
@@ -285,7 +413,7 @@ export function DiscrepancyDetails({
                 {marker.label}
               </span>
               <span className="bg-surface-high text-foreground rounded-full px-2.5 py-1 text-xs">
-                {statusLabels[finding.findingStatus]}
+                {finding.statusLabel ?? statusLabels[finding.findingStatus]}
               </span>
             </div>
             <p className="text-copy-muted mt-2 max-w-3xl text-sm leading-5">
@@ -293,34 +421,55 @@ export function DiscrepancyDetails({
             </p>
           </div>
 
-          <div className="flex shrink-0 flex-wrap gap-2">
-            <Button
-              className="rounded-xl"
-              onPress={() => startReview(FindingStatus.CONFIRMED_VIOLATION)}
-              ref={confirmButtonRef}
-              size="sm"
-            >
-              Подтвердить нарушение
-            </Button>
-            <Button
-              className="rounded-xl"
-              onPress={() => startReview(FindingStatus.NEGATIVE_VERIFIED)}
-              ref={rejectButtonRef}
-              size="sm"
-              variant="outline"
-            >
-              Отклонить
-            </Button>
-            <Button
-              className="rounded-xl"
-              onPress={() => startReview(FindingStatus.CLARIFICATION_REQUIRED)}
-              ref={clarifyButtonRef}
-              size="sm"
-              variant="outline"
-            >
-              Требует уточнения
-            </Button>
-          </div>
+          {actions.length > 0 ? (
+            <div className="flex shrink-0 flex-wrap gap-2">
+              {actions.includes(FindingStatus.CONFIRMED_VIOLATION) ? (
+                <Button
+                  className="rounded-xl"
+                  onPress={() => startReview(FindingStatus.CONFIRMED_VIOLATION)}
+                  ref={confirmButtonRef}
+                  size="sm"
+                >
+                  Подтвердить нарушение
+                </Button>
+              ) : null}
+              {actions.includes(FindingStatus.NEGATIVE_VERIFIED) ? (
+                <Button
+                  className="rounded-xl"
+                  onPress={() => startReview(FindingStatus.NEGATIVE_VERIFIED)}
+                  ref={rejectButtonRef}
+                  size="sm"
+                  variant="outline"
+                >
+                  Отклонить
+                </Button>
+              ) : null}
+              {actions.includes(FindingStatus.CLARIFICATION_REQUIRED) ? (
+                <Button
+                  className="rounded-xl"
+                  onPress={() =>
+                    startReview(FindingStatus.CLARIFICATION_REQUIRED)
+                  }
+                  ref={clarifyButtonRef}
+                  size="sm"
+                  variant="outline"
+                >
+                  Требует уточнения
+                </Button>
+              ) : null}
+              {actions.includes(FindingStatus.CANDIDATE) ? (
+                <Button
+                  className="rounded-xl"
+                  onPress={() => startReview(FindingStatus.CANDIDATE)}
+                  ref={reopenButtonRef}
+                  size="sm"
+                  variant="outline"
+                >
+                  Вернуть в работу
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         {currentDraft ? (
@@ -330,9 +479,11 @@ export function DiscrepancyDetails({
                 <h3 className="text-sm font-semibold">
                   {actionLabels[currentDraft.action]}
                 </h3>
-                <p className="text-copy-muted mt-1 text-xs">
-                  Это действие изменит только локальные синтетические данные.
-                </p>
+                {finding.isSynthetic ? (
+                  <p className="text-copy-muted mt-1 text-xs">
+                    Это действие изменит только локальные синтетические данные.
+                  </p>
+                ) : null}
               </div>
               <Button
                 aria-label="Закрыть форму решения"
@@ -405,8 +556,18 @@ export function DiscrepancyDetails({
               <Button onPress={closeReview} size="sm" variant="ghost">
                 Отмена
               </Button>
-              <Button onPress={submitReview} size="sm">
-                Сохранить демо-решение
+              <Button
+                isDisabled={decisionPending}
+                onPress={() => {
+                  void submitReview();
+                }}
+                size="sm"
+              >
+                {decisionPending
+                  ? "Сохраняем…"
+                  : finding.isSynthetic
+                    ? "Сохранить демо-решение"
+                    : "Сохранить решение"}
               </Button>
             </div>
           </div>
@@ -456,22 +617,37 @@ export function DiscrepancyDetails({
                   value={finding.actualEvidence.value}
                 />
               </div>
-              <div className="bg-surface-high min-w-0 rounded-[16px] p-4">
-                <h3 className="text-sm font-semibold">Последствия</h3>
-                <ul className="text-copy-muted mt-2 list-disc space-y-1 pl-4 text-xs leading-5">
-                  {finding.consequences.map((consequence) => (
-                    <li key={consequence}>{consequence}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="bg-surface-high min-w-0 rounded-[16px] p-4 min-[880px]:col-span-2 min-[1320px]:col-span-1">
-                <h3 className="text-sm font-semibold">Рекомендации</h3>
-                <p className="text-copy-muted mt-2 text-xs leading-5">
-                  {finding.recommendation}
-                </p>
-              </div>
+              {finding.consequences?.length ? (
+                <div className="bg-surface-high min-w-0 rounded-[16px] p-4">
+                  <h3 className="text-sm font-semibold">Последствия</h3>
+                  <ul className="text-copy-muted mt-2 list-disc space-y-1 pl-4 text-xs leading-5">
+                    {finding.consequences.map((consequence) => (
+                      <li key={consequence}>{consequence}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {finding.recommendation ? (
+                <div className="bg-surface-high min-w-0 rounded-[16px] p-4 min-[880px]:col-span-2 min-[1320px]:col-span-1">
+                  <h3 className="text-sm font-semibold">Рекомендации</h3>
+                  <p className="text-copy-muted mt-2 text-xs leading-5">
+                    {finding.recommendation}
+                  </p>
+                </div>
+              ) : null}
             </div>
           </Tabs.Panel>
+
+          {detail?.section_analysis ? (
+            <Tabs.Panel className="pt-4" id="section">
+              <SectionAnalysisDetails
+                fileNames={fileNames}
+                onLocate={onLocateSection}
+                section={detail.section_analysis}
+                targets={sectionTargets}
+              />
+            </Tabs.Panel>
+          ) : null}
 
           <Tabs.Panel className="pt-4" id="rationale">
             <div className="grid gap-4 min-[900px]:grid-cols-2">
@@ -490,7 +666,7 @@ export function DiscrepancyDetails({
               <div className="bg-surface-high rounded-[16px] p-4">
                 <h3 className="text-sm font-semibold">Текущее решение</h3>
                 <p className="text-copy-muted mt-2 text-sm">
-                  {statusLabels[finding.findingStatus]}
+                  {finding.statusLabel ?? statusLabels[finding.findingStatus]}
                 </p>
                 {finding.decisionReason ? (
                   <p className="text-copy-muted mt-3 text-xs leading-5">
@@ -520,6 +696,113 @@ export function DiscrepancyDetails({
               />
             </div>
           </Tabs.Panel>
+
+          {detail ? (
+            <Tabs.Panel className="pt-4" id="evidence">
+              <ul className="grid gap-3">
+                {detail.members.map((member) => (
+                  <li
+                    className="bg-surface-low rounded-[16px] p-4"
+                    key={member.extraction_id}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-semibold">
+                        {member.role === "expected"
+                          ? "Ожидаемая стадия"
+                          : member.role === "actual"
+                            ? "Проверяемая стадия"
+                            : "Стадия не определена"}
+                        {member.stage ? ` · ${member.stage}` : ""}
+                      </p>
+                      <span className="text-foreground text-sm font-semibold">
+                        {member.value_raw ??
+                          member.value?.toString() ??
+                          "Значение не извлечено"}
+                        {member.unit ? ` ${member.unit}` : ""}
+                      </span>
+                    </div>
+                    <p className="text-copy-muted mt-1 text-xs break-all">
+                      {fileNames?.get(member.file_id) ?? member.file_id}
+                    </p>
+                    <ul className="mt-2 space-y-2">
+                      {member.evidence.map((fragment, index) => (
+                        <li
+                          className="bg-surface-high rounded-xl px-3 py-2 text-xs leading-5"
+                          key={`${fragment.blockId ?? fragment.pageNumber}:${index}`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <span className="text-copy-muted shrink-0">
+                              стр. {fragment.pageNumber}
+                              {fragment.blockId ? ` · ${fragment.blockId}` : ""}
+                            </span>
+                            {onLocate ? (
+                              <Button
+                                className="shrink-0 rounded-lg"
+                                onPress={() =>
+                                  onLocate(fragment.fileId, fragment.pageNumber)
+                                }
+                                size="sm"
+                                variant="ghost"
+                              >
+                                Показать в документе
+                              </Button>
+                            ) : null}
+                          </div>
+                          <span className="text-foreground mt-1 block break-words">
+                            {fragment.quote}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            </Tabs.Panel>
+          ) : null}
+
+          {detail ? (
+            <Tabs.Panel className="pt-4" id="history">
+              {detail.decisions.length === 0 ? (
+                <p className="text-copy-muted text-sm">
+                  Решений по находке ещё не принималось.
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {detail.decisions.map((decision) => (
+                    <li
+                      className="bg-surface-low rounded-[16px] p-4"
+                      key={decision.id}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-semibold">
+                          {decisionActionLabels[decision.action]}
+                        </p>
+                        <span className="text-copy-muted text-xs">
+                          {statusLabels[decision.from_status]} →{" "}
+                          {statusLabels[decision.to_status]}
+                        </span>
+                      </div>
+                      {decision.reason_code ? (
+                        <p className="text-copy-muted mt-2 text-xs">
+                          Причина:{" "}
+                          {labelForRejectionCode(decision.reason_code) ??
+                            decision.reason_code}
+                        </p>
+                      ) : null}
+                      {decision.comment ? (
+                        <p className="text-copy-muted mt-1 text-xs leading-5">
+                          {decision.comment}
+                        </p>
+                      ) : null}
+                      <p className="text-copy-muted mt-2 text-[11px]">
+                        {new Date(decision.created_at).toLocaleString("ru-RU")}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Tabs.Panel>
+          ) : null}
         </Tabs>
       </div>
     </section>

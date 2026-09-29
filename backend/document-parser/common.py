@@ -69,6 +69,7 @@ def save_page(image, directory):
 
 def finalize_page(page):
     tables = {}
+    source_cells = {}
     for index, item in enumerate(page["blocks"]):
         item["order"] = index
         item["id"] = f'p{page["page_number"]}-b{index + 1}'
@@ -77,6 +78,7 @@ def finalize_page(page):
             # Rendered fragments remain independently addressable without
             # overlapping logical grid positions inside a displayed table.
             source_id = item["table_id"]
+            source_cells.setdefault(source_id, []).append(item)
             if source_id not in tables:
                 tables[source_id] = (len(tables) + 1, [])
             table_number, groups = tables[source_id]
@@ -89,5 +91,32 @@ def finalize_page(page):
                 groups.append([])
             groups[group_number].append(rect)
             item["table_id"] = f'p{page["page_number"]}-t{table_number}-part{group_number + 1}'
+    # A text fragment may span logical columns without being a table cell.
+    # Resolve its link only after the actual displayed table parts are known.
+    # Overlapping source grids can create multiple parts; never pick one by order.
+    for item in page["blocks"]:
+        link = item.get("table_link")
+        if not link or link.get("table_id") is None:
+            continue
+        requested = {(row, column) for row in link["rows"] for column in link["columns"]}
+        covered = set()
+        destinations = set()
+        for cell in source_cells.get(link["table_id"], []):
+            matches = {(row, column) for row, column in requested
+                       if cell["row"] <= row < cell["row"] + cell["row_span"]
+                       and cell["column"] <= column < cell["column"] + cell["column_span"]}
+            if matches:
+                covered.update(matches)
+                destinations.add(cell["table_id"])
+        if requested and covered == requested and len(destinations) == 1:
+            link["table_id"] = next(iter(destinations))
+        else:
+            link["status"] = "ambiguous"
+            link["table_id"] = None
+            reason = "TABLE_LINK_MULTIPLE_PARTS" if len(destinations) > 1 else "TABLE_LINK_TARGET_UNRESOLVED"
+            link["reasons"] = sorted(set(link["reasons"] + [reason]))
+            page["reasons"].append(reason)
+            if page.get("quality") == "OK":
+                page["quality"] = "LOW_QUALITY"
     page["reasons"] = sorted(set(page["reasons"]))
     return page

@@ -23,10 +23,10 @@ export function useObject(id: string) {
     retry: false,
   });
 }
-export function useFiles(id: string, page: number) {
+export function useFiles(id: string, page: number, limit = 20) {
   return useQuery({
-    queryKey: queryKeys.objects.files(id, page),
-    queryFn: ({ signal }) => listFiles(id, page, signal),
+    queryKey: queryKeys.objects.files(id, page, limit),
+    queryFn: ({ signal }) => listFiles(id, page, limit, signal),
     retry: false,
   });
 }

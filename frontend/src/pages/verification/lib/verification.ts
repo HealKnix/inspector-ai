@@ -21,6 +21,9 @@ const statusOrder: Record<FindingStatus, number> = {
   [FindingStatus.CLARIFICATION_REQUIRED]: 1,
   [FindingStatus.CONFIRMED_VIOLATION]: 2,
   [FindingStatus.NEGATIVE_VERIFIED]: 3,
+  [FindingStatus.MISSING_EVIDENCE]: 4,
+  [FindingStatus.NOT_COMPARABLE]: 5,
+  [FindingStatus.NOT_APPLICABLE]: 6,
 };
 
 const markerOrder: Record<VerificationUiMarker, number> = {
@@ -65,6 +68,7 @@ export function searchVerificationFindings(
       finding.id,
       finding.title,
       finding.description,
+      finding.contextLabel,
       finding.expectedEvidence.location,
       finding.expectedEvidence.excerpt,
       finding.expectedEvidence.value,
@@ -149,6 +153,9 @@ export function getVerificationSummary(
       [FindingStatus.CONFIRMED_VIOLATION]: 0,
       [FindingStatus.NEGATIVE_VERIFIED]: 0,
       [FindingStatus.CLARIFICATION_REQUIRED]: 0,
+      [FindingStatus.MISSING_EVIDENCE]: 0,
+      [FindingStatus.NOT_COMPARABLE]: 0,
+      [FindingStatus.NOT_APPLICABLE]: 0,
     },
     priorityCounts: {
       [ReviewPriority.HIGH]: 0,
@@ -215,7 +222,14 @@ export function applyLocalFindingDecision(
       ? {
           ...finding,
           findingStatus: decision.findingStatus,
-          decisionReason: reason,
+          // reopen сохраняет прошлую причину — она подставится при повторном
+          // отклонении; confirm очищает её как не относящуюся к решению.
+          decisionReason:
+            decision.findingStatus === FindingStatus.NEGATIVE_VERIFIED
+              ? reason
+              : decision.findingStatus === FindingStatus.CANDIDATE
+                ? finding.decisionReason
+                : null,
           reviewComment: comment,
         }
       : finding,

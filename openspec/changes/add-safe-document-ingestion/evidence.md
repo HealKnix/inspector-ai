@@ -66,7 +66,7 @@ node openspec/verify-planning.mjs
 Основные доказательства находятся в [интеграционных тестах](../../../backend/test/ingestion.test.ts),
 [потоковых тестах](../../../backend/src/modules/documents/upload-stream.test.ts),
 [замере памяти](../../../backend/test/limits.test.ts),
-[тестах интерфейса](../../../frontend/src/pages/object-details/DocumentUploader.test.tsx).
+[тестах интерфейса](../../../frontend/src/pages/document-upload/DocumentUploadPage.test.tsx).
 
 - Пустой реестр, автор из сессии, самоназначение через DTO запрещено, role=null,
   администратор и чужой инспектор не получают документы. Назначение/отзыв с аудитом,

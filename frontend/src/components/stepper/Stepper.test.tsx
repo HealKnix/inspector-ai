@@ -12,9 +12,7 @@ const steps = [
 
 describe("Stepper", () => {
   it("renders all steps and marks the current one", () => {
-    render(
-      <Stepper aria-label="Этапы" currentStep={2} steps={steps} />,
-    );
+    render(<Stepper aria-label="Этапы" currentStep={2} steps={steps} />);
 
     const items = screen.getAllByRole("listitem");
     expect(items).toHaveLength(3);
@@ -34,13 +32,9 @@ describe("Stepper", () => {
   it("calls onStepClick with the step number", async () => {
     const onStepClick = vi.fn();
     const user = userEvent.setup();
-    render(
-      <Stepper currentStep={1} onStepClick={onStepClick} steps={steps} />,
-    );
+    render(<Stepper currentStep={1} onStepClick={onStepClick} steps={steps} />);
 
-    await user.click(
-      screen.getByRole("button", { name: "Шаг 3: Запуск" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Шаг 3: Запуск" }));
     expect(onStepClick).toHaveBeenCalledWith(3);
   });
 

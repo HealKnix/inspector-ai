@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { identificationFieldSchema } from "./identification";
 
 const stageSchema = z.enum(["PD", "RD", "ID"]);
 const coordinate = z.number().min(0).max(1);
@@ -27,7 +28,8 @@ export const classificationResultSchema = z.object({
   schema_version: z.literal(1),
   stage: stageSchema.nullable(),
   document_kind: z.string().nullable(),
-  method: z.enum(["rules", "llm", "none"]),
+  kind_code: z.string().nullable().optional(),
+  method: z.enum(["rules", "llm", "none", "manual"]),
   needs_review: z.boolean(),
   reasons: z.array(z.string()),
   evidence: z.array(classificationEvidenceSchema),
@@ -52,11 +54,26 @@ export const classificationFileSchema = z.object({
   can_retry: z.boolean(),
   error_code: z.string().nullable(),
   result: classificationResultSchema.nullable(),
+  review: z
+    .object({
+      document_id: z.uuid(),
+      revision_id: z.uuid(),
+      card_version: z.number().int().positive(),
+      resolved_input_hash: z.string(),
+      fields: z.partialRecord(identificationFieldSchema, z.string()),
+      confirmed_fields: z.array(z.string()),
+      needs_review: z.boolean(),
+      reasons: z.array(z.string()),
+      source_issues: z.array(z.string()),
+    })
+    .nullable()
+    .optional(),
 });
 
 export const classificationStatusSchema = z.object({
   schema_version: z.literal(1),
   active: z.boolean(),
+  review_active: z.boolean().optional(),
   poll_after_ms: z.number().int().positive(),
   items: z.array(classificationFileSchema),
 });
@@ -66,9 +83,30 @@ export const classificationRetrySchema = z.object({
   task_id: z.uuid(),
 });
 
+const kindOptionSchema = z.object({
+  code: z.string().min(1),
+  title: z.string().min(1),
+});
+
+export const kindOptionsSchema = z.object({
+  schema_version: z.literal(1),
+  options: z.object({
+    PD: z.array(kindOptionSchema),
+    RD: z.array(kindOptionSchema),
+    ID: z.array(kindOptionSchema),
+  }),
+});
+
+export const classificationResolveSchema = z.object({
+  task_id: z.uuid(),
+  unchanged: z.boolean(),
+});
+
 export type ClassificationEvidence = z.infer<
   typeof classificationEvidenceSchema
 >;
 export type ClassificationResult = z.infer<typeof classificationResultSchema>;
 export type ClassificationFile = z.infer<typeof classificationFileSchema>;
 export type ClassificationStatus = z.infer<typeof classificationStatusSchema>;
+export type KindOption = z.infer<typeof kindOptionSchema>;
+export type KindOptions = z.infer<typeof kindOptionsSchema>["options"];

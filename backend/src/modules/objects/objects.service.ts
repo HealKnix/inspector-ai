@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import type { ConstructionObject } from "../../generated/prisma/client.js";
+import { writeAuditEvent } from "../../infrastructure/audit/audit-envelope.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import {
   ObjectAccessService,
@@ -37,7 +38,7 @@ export class ObjectsService {
           },
         },
       });
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           objectId: object.id,
@@ -71,6 +72,14 @@ export class ObjectsService {
       },
       { isolationLevel: "RepeatableRead" },
     );
+  }
+
+  async listAll() {
+    const items = await this.prisma.constructionObject.findMany({
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: { id: true, name: true },
+    });
+    return { items };
   }
 
   get(userId: string, objectId: string) {

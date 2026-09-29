@@ -52,13 +52,131 @@ describe("parsing progress compatibility", () => {
 });
 
 describe("versioned page regions", () => {
+  function modern() {
+    const result = createRegionalParseResult();
+    result.artifact.text_provenance_schema_version = 1;
+    result.artifact.versions = {
+      ...result.artifact.versions,
+      pdf_region_profile: "paddle-regions-v2",
+      text_provenance: "par-text-provenance-v1",
+    };
+    for (const block of result.artifact.pages[0]!.blocks) {
+      block.native_valid = true;
+      if (block.raw_text.length)
+        block.provenance = {
+          schema_version: 1,
+          status: "selected",
+          method: "native",
+          fragments: [
+            {
+              source: "native",
+              raw_text: block.raw_text,
+              bbox: [...block.bbox],
+              native_valid: true,
+              role: "selected",
+            },
+          ],
+          reasons: [],
+        };
+    }
+    const block = result.artifact.pages[0]!.blocks[0]!;
+    block.provenance = {
+      schema_version: 1,
+      status: "selected",
+      method: "native",
+      fragments: [
+        {
+          source: "native",
+          raw_text: block.raw_text,
+          bbox: [...block.bbox],
+          native_valid: true,
+          role: "selected",
+        },
+      ],
+      reasons: [],
+    };
+    block.table_link = {
+      schema_version: 1,
+      status: "associated",
+      table_id: "table-1",
+      rows: [0],
+      columns: [0],
+      reasons: [],
+    };
+    return result;
+  }
+  it("retains provenance, native validity and table associations through Zod", () => {
+    const result = modern();
+    expect(parseResultSchema.parse(result)).toEqual(result);
+    const block = result.artifact.pages[0]!.blocks[0]!;
+    block.include_in_main = false;
+    block.provenance!.status = "ambiguous";
+    block.provenance!.reasons = ["TEXT_CONFLICT"];
+    block.provenance!.method = "hybrid";
+    block.provenance!.fragments.push({
+      source: "ocr",
+      raw_text: "Иной текст",
+      bbox: [...block.bbox],
+      native_valid: null,
+      role: "alternative",
+    });
+    block.table_link = {
+      ...block.table_link!,
+      status: "ambiguous",
+      table_id: null,
+      reasons: ["TABLE_LINK_TARGET_UNRESOLVED"],
+    };
+    expect(parseResultSchema.parse(result)).toEqual(result);
+    expect(
+      parseResultSchema.parse(createRegionalParseResult()).artifact.pages[0]!
+        .blocks[0]!.native_valid,
+    ).toBeUndefined();
+  });
+  it.each([
+    "marker",
+    "native-valid",
+    "wrong-fragment-validity",
+    "unhidden-ambiguity",
+    "bad-table",
+    "bad-row",
+    "duplicate-columns",
+    "empty-columns",
+    "associated-null",
+    "unknown-field",
+    "missing-provenance",
+    "wrong-method",
+  ])("rejects malformed provenance %s", (invalid) => {
+    const result = modern();
+    const block = result.artifact.pages[0]!.blocks[0]!;
+    if (invalid === "marker")
+      delete result.artifact.text_provenance_schema_version;
+    if (invalid === "missing-provenance") delete block.provenance;
+    if (invalid === "wrong-method") block.provenance!.method = "hybrid";
+    if (invalid === "native-valid") delete block.native_valid;
+    if (invalid === "wrong-fragment-validity")
+      block.provenance!.fragments[0]!.native_valid = null;
+    if (invalid === "unhidden-ambiguity") {
+      block.provenance!.status = "ambiguous";
+      block.provenance!.reasons = ["TEXT_CONFLICT"];
+    }
+    if (invalid === "bad-table")
+      block.table_link!.table_id = "another-page-table";
+    if (invalid === "bad-row") block.table_link!.rows = [9];
+    if (invalid === "duplicate-columns") block.table_link!.columns = [0, 0];
+    if (invalid === "empty-columns") block.table_link!.columns = [];
+    if (invalid === "associated-null") block.table_link!.table_id = null;
+    if (invalid === "unknown-field")
+      Object.assign(block.provenance!, { guessed: true });
+    expect(parseResultSchema.safeParse(result).success).toBe(false);
+  });
   it.each(["DOCX", "XML"])(
     "accepts newly processed %s with global PDF profile but no region marker",
     (format) => {
       const result = structuredClone(parseResult);
       result.artifact.versions = {
-        parser: "synthetic-v1",
-        pdf_region_profile: "paddle-regions-v1",
+        parser: "par-local-2",
+        pdf_region_profile: "paddle-regions-v2",
+        text_provenance: "par-text-provenance-v1",
       };
       const page = result.artifact.pages[0]!;
       page.transform = {

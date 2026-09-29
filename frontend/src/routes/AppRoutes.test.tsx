@@ -1,4 +1,10 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { useParams } from "react-router-dom";
 
 import { Role, type UserDto } from "@/api/types/auth";
@@ -24,7 +30,6 @@ const lazyImports = vi.hoisted(() => {
   };
 
   return {
-    dashboard: deferred(),
     documentUpload: deferred(),
   };
 });
@@ -33,14 +38,6 @@ vi.mock("@/api/hooks/use-auth", () => ({
   useCurrentUser: () => ({ isError: false, isPending: false }),
   useLogout: () => ({ error: null, isPending: false, mutate: vi.fn() }),
 }));
-
-vi.mock("@/pages/dashboard/DashboardPage", async () => {
-  await lazyImports.dashboard.promise;
-
-  return {
-    DashboardPage: () => <p>Дашборд</p>,
-  };
-});
 
 vi.mock("@/pages/auth/AuthPage", () => ({
   AuthPage: () => <p>Страница входа</p>,
@@ -57,12 +54,21 @@ vi.mock("@/pages/document-upload/DocumentUploadPage", async () => {
     DocumentUploadPage: () => <p>Загрузка документов</p>,
   };
 });
-vi.mock("@/pages/objects/ObjectsPage", () => ({
-  ObjectsPage: () => <p>Список объектов</p>,
-}));
-vi.mock("@/pages/object-details/ObjectDetailsPage", () => ({
-  ObjectDetailsPage: () => <p>Карточка объекта {useParams().objectId}</p>,
-}));
+vi.mock("@/pages/objects/ObjectsPage", async () => {
+  const { Link } = await import("react-router-dom");
+  const { default: routeNames } = await import("@/routes/routeNames");
+
+  return {
+    ObjectsPage: () => (
+      <>
+        <p>Список объектов</p>
+        <Link to={routeNames.OBJECT_UPLOAD("synthetic-id")}>
+          Загрузить комплект
+        </Link>
+      </>
+    ),
+  };
+});
 vi.mock("@/pages/protocols/ProtocolsPage", () => ({
   ProtocolsPage: () => <p>Список протоколов</p>,
 }));
@@ -73,6 +79,8 @@ vi.mock("@/pages/protocols/ProtocolDetailsPage", () => ({
 const user: UserDto = {
   id: "27b43d75-2f24-4ff0-8bd8-d4758cfbd3cb",
   login: "inspector",
+  lastName: "Иванов",
+  firstName: "Иван",
   role: Role.INSPECTOR,
   createdAt: "2026-09-16T08:00:00.000Z",
 };
@@ -89,39 +97,43 @@ describe("AppRoutes", () => {
     window.localStorage.clear();
   });
 
-  it.each([
-    [routeNames.OBJECTS, "Список объектов"],
-    [
-      routeNames.OBJECT_DETAILS("synthetic-id"),
-      "Карточка объекта synthetic-id",
-    ],
-  ])(
-    "открывает маршрут объектов %s без подмены dashboard",
-    async (path, label) => {
-      window.history.replaceState({}, "", path);
-      useAuthSessionStore.setState({
-        accessToken: "access-token",
-        initialized: true,
-        user,
-      });
-      render(
-        <AppProviders>
-          <AppRoutes />
-        </AppProviders>,
-      );
-      expect(await screen.findByText(label)).toBeInTheDocument();
-      expect(
-        screen.queryByText("Проверка комплекта документов"),
-      ).not.toBeInTheDocument();
-    },
-  );
+  it("открывает маршрут объектов без подмены dashboard", async () => {
+    window.history.replaceState({}, "", routeNames.OBJECTS);
+    useAuthSessionStore.setState({
+      accessToken: "access-token",
+      initialized: true,
+      user,
+    });
+    render(
+      <AppProviders>
+        <AppRoutes />
+      </AppProviders>,
+    );
+    expect(await screen.findByText("Список объектов")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Проверка комплекта документов"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("перенаправляет карточку объекта на страницу загрузки", async () => {
+    window.history.replaceState({}, "", "/objects/synthetic-id");
+    useAuthSessionStore.setState({
+      accessToken: "access-token",
+      initialized: true,
+      user,
+    });
+    render(
+      <AppProviders>
+        <AppRoutes />
+      </AppProviders>,
+    );
+    await waitFor(() =>
+      expect(window.location.pathname).toBe("/objects/synthetic-id/upload"),
+    );
+  });
 
   it("закрывает прямую ссылку на объект для гостя", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      routeNames.OBJECT_DETAILS("synthetic-id"),
-    );
+    window.history.replaceState({}, "", "/objects/synthetic-id");
     useAuthSessionStore.setState({
       accessToken: null,
       initialized: true,
@@ -133,9 +145,7 @@ describe("AppRoutes", () => {
       </AppProviders>,
     );
     expect(await screen.findByText("Страница входа")).toBeInTheDocument();
-    expect(
-      screen.queryByText("Карточка объекта synthetic-id"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Загрузка документов")).not.toBeInTheDocument();
   });
 
   it("не предоставляет раздел верификации роли без подтверждённого права", async () => {
@@ -227,6 +237,9 @@ describe("AppRoutes", () => {
     expect(sidebar).toHaveAttribute("data-collapsed", "true");
 
     fireEvent.click(screen.getByRole("button", { name: "Загрузка комплекта" }));
+    expect(await screen.findByText("Список объектов")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("link", { name: "Загрузить комплект" }));
 
     const fallback = await screen.findByText("Загружаем интерфейс…");
     expect(fallback.closest("main")).toBeInTheDocument();
@@ -260,17 +273,16 @@ describe("AppRoutes", () => {
       useAuthSessionStore.getState().setSession("access-token", user);
     });
 
-    const fallback = await screen.findByText("Загружаем интерфейс…");
-    expect(fallback.closest("main")).toBeInTheDocument();
+    expect(await screen.findByText("Список объектов")).toBeInTheDocument();
     expect(screen.getByLabelText("Боковая панель")).toBeInTheDocument();
-
-    lazyImports.dashboard.resolve();
-
-    expect(await screen.findByText("Дашборд")).toBeInTheDocument();
   });
 
   it("открывает защищённую страницу загрузки по прямой ссылке", async () => {
-    window.history.replaceState({}, "", routeNames.DOCUMENT_UPLOAD);
+    window.history.replaceState(
+      {},
+      "",
+      routeNames.OBJECT_UPLOAD("synthetic-id"),
+    );
     useAuthSessionStore.setState({
       accessToken: "access-token",
       initialized: true,

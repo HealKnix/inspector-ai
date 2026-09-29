@@ -8,7 +8,6 @@ import {
   Post,
   Req,
   Res,
-  UseGuards,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
@@ -16,14 +15,20 @@ import {
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
-import { IsUUID } from "class-validator";
+import {
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  IsUUID,
+  MaxLength,
+  Min,
+} from "class-validator";
 import type { Response } from "express";
 import { randomUUID } from "node:crypto";
-import {
-  JwtAuthGuard,
-  type AuthenticatedRequest,
-} from "../auth/jwt-auth.guard.js";
+import { type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { apiErrorSchema } from "../documents/upload-contract.js";
+import type { ClassificationStage } from "./classification-contract.js";
 import { classificationListSchema } from "./classification-openapi.js";
 import { ClassificationService } from "./classification.service.js";
 
@@ -36,12 +41,48 @@ export class ClassificationRetryDto {
   request_id!: string;
 }
 
+export class ClassificationResolveDto {
+  @ApiProperty({ format: "uuid" })
+  @IsUUID()
+  request_id!: string;
+
+  @ApiProperty({ format: "uuid" })
+  @IsUUID()
+  expected_run_id!: string;
+
+  @ApiProperty({ minimum: 1 })
+  @IsInt()
+  @Min(1)
+  expected_version!: number;
+
+  @ApiProperty({ maxLength: 4000 })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(4000)
+  basis!: string;
+  @ApiProperty({
+    description: "Код вида документа из словаря утверждённого каркаса",
+    example: "AOSR",
+  })
+  @IsString()
+  @IsNotEmpty()
+  kind_code!: string;
+
+  @ApiProperty({
+    enum: ["PD", "RD", "ID"],
+    required: true,
+    description:
+      "Стадия; обязательна, когда код встречается в словарях нескольких стадий",
+  })
+  @IsIn(["PD", "RD", "ID"])
+  stage!: ClassificationStage;
+}
+
 @ApiTags("classification")
 @ApiBearerAuth("access-token")
 @ApiResponse({ status: 401, schema: apiErrorSchema })
 @ApiResponse({ status: 403, schema: apiErrorSchema })
 @ApiResponse({ status: 409, schema: apiErrorSchema })
-@UseGuards(JwtAuthGuard)
 @Controller("v1/objects/:objectId")
 export class ClassificationController {
   constructor(private readonly classification: ClassificationService) {}
@@ -60,6 +101,73 @@ export class ClassificationController {
   ) {
     response.setHeader("Cache-Control", "private, no-store");
     return this.classification.list(request.user.id, objectId);
+  }
+
+  @Get("classification/kind-options")
+  @ApiResponse({
+    status: 200,
+    description:
+      "Виды документов утверждённого каркаса для ручного разрешения, по стадиям",
+    schema: {
+      type: "object",
+      required: ["schema_version", "options"],
+      properties: {
+        schema_version: { type: "integer", enum: [1] },
+        options: {
+          type: "object",
+          required: ["PD", "RD", "ID"],
+          additionalProperties: {
+            type: "array",
+            items: {
+              type: "object",
+              required: ["code", "title"],
+              properties: {
+                code: { type: "string" },
+                title: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  kindOptions(
+    @Req() request: AuthenticatedRequest,
+    @Param("objectId", ParseUUIDPipe) objectId: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    response.setHeader("Cache-Control", "private, no-store");
+    return this.classification.kindOptions(request.user.id, objectId);
+  }
+
+  @Post("files/:fileId/classification/resolve")
+  @HttpCode(202)
+  @ApiResponse({
+    status: 202,
+    description:
+      "Совместимый маршрут versioned уточнения документа: обязательны версия, Run, основание и идемпотентный ключ; создаётся новый Run",
+    schema: {
+      type: "object",
+      required: ["run_id", "previous_run_id", "replayed"],
+      properties: {
+        run_id: { type: "string", format: "uuid" },
+        previous_run_id: { type: "string", format: "uuid" },
+        replayed: { type: "boolean" },
+      },
+    },
+  })
+  resolve(
+    @Req() request: AuthenticatedRequest,
+    @Param("objectId", ParseUUIDPipe) objectId: string,
+    @Param("fileId", ParseUUIDPipe) fileId: string,
+    @Body() body: ClassificationResolveDto,
+  ) {
+    return this.classification.resolve(
+      { userId: request.user.id, requestId: randomUUID(), ip: request.ip },
+      objectId,
+      fileId,
+      body,
+    );
   }
 
   @Post("files/:fileId/classification/retry")

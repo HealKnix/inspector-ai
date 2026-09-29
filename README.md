@@ -25,8 +25,11 @@ Bun-workspace с React-приложением, NestJS API и контейнер�
 описаны в [инструкции парсинга](docs/document-parsing.md).
 Классификация ПД/РД/ИД по правилам и через OpenRouter/Ollama описана в
 [инструкции классификации](docs/document-classification.md).
+Секционный анализ контекстов Матрицы: [инструкция](docs/section-context-analysis.md).
 
 ## Планирование и выполнение OpenSpec
+
+Реализованный первый этап документов и редакций, порядок применения уточнений и обновления: [инструкция](docs/identification-first-stage.md).
 
 Рабочие changes находятся в этом репозитории: [указатель OpenSpec](openspec/README.md).
 Исходный большой change разделён на семь: приём, парсинг/OCR, идентификация,
@@ -162,6 +165,41 @@ worker, RabbitMQ, Redis, ClamAV, валидатор и парсер.
 5. запускает frontend после healthcheck API.
 
 Первичная загрузка сигнатур ClamAV и моделей парсера может занять несколько минут.
+
+### LLM-контур: Ollama в Docker или внешний endpoint
+
+LLM-контур (классификация документов и секционный анализ) включён по
+умолчанию — это основной сценарий проверки, модель `qwen3.8:27b`.
+Есть два варианта запуска.
+
+**Вариант А — Ollama внутри Compose (рекомендуемый для демонстрации).**
+Оверлей `compose.ollama.yaml` поднимает Ollama 0.32.12 и одноразовый сервис
+`ollama-pull`, который скачивает модель (~18 ГБ при первом запуске) и
+блокирует старт backend и LLM-worker'ов до её готовности:
+
+```bash
+docker compose -f compose.yaml -f compose.ollama.yaml --env-file .env \
+  up --detach --build --wait --wait-timeout 1800
+```
+
+Модель для загрузки задаётся переменной `OLLAMA_MODEL` в `.env`
+(по умолчанию `qwen3.8:27b`). Для CPU-инференса нужно ~20+ ГБ свободной
+памяти; с NVIDIA Container Toolkit раскомментируйте блок `deploy` в
+`compose.ollama.yaml`.
+
+**Вариант Б — без контейнера Ollama, но с включённым LLM-контуром.**
+Обычная команда `docker compose up` читает endpoint из `.env`: задайте
+`CLASSIFICATION_LLM_BASE_URL` и `CLASSIFICATION_LLM_MODEL` — например
+OpenRouter (`https://openrouter.ai/api/v1`, модель `qwen/qwen3.8-27b`,
+плюс `CLASSIFICATION_LLM_API_KEY`) или Ollama на хосте
+(`http://host.docker.internal:11434/v1`). Если endpoint не задан и оверлей
+не подключён, контур указывает на отсутствующий сервис `ollama` —
+провайдерные вызовы завершатся технической ошибкой.
+
+Пустые `SECTION_LLM_*` в `.env` наследуют настройки `CLASSIFICATION_LLM_*`;
+для отдельного endpoint секционного анализа заполните их явно. Чтобы
+полностью выключить LLM-контур, поставьте `CLASSIFICATION_LLM_ENABLED=false`
+и `SECTION_LLM_ENABLED=false` — классификация продолжит работать на правилах.
 
 ### 5. Проверьте запуск
 

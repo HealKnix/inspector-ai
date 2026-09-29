@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { traceHeaders } from "../../infrastructure/observability/trace-context.js";
+import { postParser } from "./parser-post.js";
 import {
   HASH,
   MAX_ARTIFACT_BYTES,
@@ -33,7 +35,7 @@ export class ParserClientService {
     if (
       !Number.isInteger(seconds) ||
       seconds < 1 ||
-      seconds > 3600 ||
+      seconds > 86_400 ||
       !Number.isInteger(readySeconds) ||
       readySeconds < 30 ||
       readySeconds > 1800 ||
@@ -47,6 +49,7 @@ export class ParserClientService {
     return {
       Authorization: `Bearer ${this.token}`,
       "Content-Type": "application/json",
+      ...traceHeaders(),
     };
   }
   async fingerprint() {
@@ -93,19 +96,12 @@ export class ParserClientService {
       if (!this.token)
         throw new ParsingError("parser_configuration_missing", false);
       requestStarted = true;
-      // Bun's socket idle timer is separate from the bounded whole-file deadline.
-      // OCR sends no response bytes until completion, so only the caller's signal
-      // should time it out: https://bun.com/reference/globals/BunFetchRequestInit/timeout
-      const options: NonNullable<Parameters<typeof fetch>[1]> & {
-        timeout: false;
-      } = {
-        method: "POST",
-        headers: this.headers(),
-        body: JSON.stringify({ schema_version: 1, ...input }),
+      const response = await postParser(
+        `${this.url}/parse`,
+        this.headers(),
+        JSON.stringify({ schema_version: 1, ...input }),
         signal,
-        timeout: false,
-      };
-      const response = await fetch(`${this.url}/parse`, options);
+      );
       if (!response.ok) {
         const error: unknown = await response.json();
         if (

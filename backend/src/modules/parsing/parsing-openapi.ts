@@ -94,6 +94,156 @@ const transform: Schema = {
     },
   ],
 };
+const provenance: Schema = {
+  type: "object",
+  additionalProperties: false,
+  allOf: [
+    {
+      oneOf: [
+        {
+          properties: {
+            method: { enum: ["native"] },
+            fragments: {
+              type: "array",
+              items: { properties: { source: { enum: ["native"] } } },
+            },
+          },
+        },
+        {
+          properties: {
+            method: { enum: ["ocr"] },
+            fragments: {
+              type: "array",
+              items: { properties: { source: { enum: ["ocr"] } } },
+            },
+          },
+        },
+        {
+          properties: {
+            method: { enum: ["hybrid"] },
+            fragments: {
+              type: "array",
+              allOf: [
+                {
+                  not: {
+                    items: { properties: { source: { enum: ["native"] } } },
+                  },
+                },
+                {
+                  not: { items: { properties: { source: { enum: ["ocr"] } } } },
+                },
+              ],
+            },
+          },
+        },
+      ],
+    },
+    {
+      oneOf: [
+        {
+          properties: {
+            status: { enum: ["ambiguous"] },
+            reasons: { ...reasons, minItems: 1 },
+          },
+        },
+        {
+          properties: {
+            status: { enum: ["selected"] },
+            fragments: {
+              type: "array",
+              not: {
+                items: { properties: { role: { enum: ["alternative"] } } },
+              },
+            },
+          },
+        },
+      ],
+    },
+  ],
+  required: ["schema_version", "status", "method", "fragments", "reasons"],
+  properties: {
+    schema_version: { type: "integer", enum: [1] },
+    status: { type: "string", enum: ["selected", "ambiguous"] },
+    method: { type: "string", enum: ["native", "ocr", "hybrid"] },
+    reasons,
+    fragments: {
+      type: "array",
+      minItems: 1,
+      maxItems: 10_000,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["source", "raw_text", "bbox", "native_valid", "role"],
+        properties: {
+          source: { type: "string", enum: ["native", "ocr"] },
+          raw_text: { type: "string" },
+          bbox,
+          native_valid: { type: "boolean", nullable: true },
+          role: { type: "string", enum: ["selected", "alternative"] },
+        },
+        oneOf: [
+          {
+            properties: {
+              source: { enum: ["native"] },
+              native_valid: { type: "boolean" },
+            },
+          },
+          {
+            properties: {
+              source: { enum: ["ocr"] },
+              native_valid: { enum: [null] },
+            },
+          },
+        ],
+      },
+    },
+  },
+  description:
+    "Исходные кандидаты с собственной геометрией; ambiguous не допускается к автоматическому извлечению. Не оценка точности.",
+};
+const linkedIndices: Schema = {
+  type: "array",
+  minItems: 1,
+  maxItems: 10_000,
+  uniqueItems: true,
+  items: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+};
+const tableLink: Schema = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "schema_version",
+    "status",
+    "table_id",
+    "rows",
+    "columns",
+    "reasons",
+  ],
+  properties: {
+    schema_version: { type: "integer", enum: [1] },
+    status: { type: "string", enum: ["associated", "ambiguous"] },
+    table_id: { type: "string", minLength: 1, maxLength: 256, nullable: true },
+    rows: linkedIndices,
+    columns: linkedIndices,
+    reasons,
+  },
+  oneOf: [
+    {
+      properties: {
+        status: { enum: ["associated"] },
+        table_id: { type: "string", minLength: 1 },
+      },
+    },
+    {
+      properties: {
+        status: { enum: ["ambiguous"] },
+        reasons: { ...reasons, minItems: 1 },
+      },
+    },
+  ],
+  description:
+    "Связь с опубликованной таблицей этой страницы и реальными ячейками. При ambiguous связь не утверждается; null означает неразрешённую таблицу.",
+};
 const block: Schema = {
   type: "object",
   required: [
@@ -159,6 +309,13 @@ const block: Schema = {
       description:
         "Включение в основное представление, не признание доказательством; false сохраняет фрагмент в полном тексте",
     },
+    native_valid: {
+      type: "boolean",
+      description:
+        "Проверка пригодности native текста; обязательна для source=native нового PDF. Отсутствие у legacy не означает true.",
+    },
+    provenance,
+    table_link: tableLink,
   },
 };
 const region: Schema = {
@@ -232,9 +389,95 @@ const region: Schema = {
     },
   ],
 };
+const provenanceProfile: Schema = {
+  required: ["region_schema_version"],
+  properties: {
+    versions: {
+      type: "object",
+      required: ["text_provenance"],
+      properties: { text_provenance: { enum: ["par-text-provenance-v1"] } },
+    },
+  },
+};
 export const parseArtifactSchema: Schema = {
   type: "object",
   additionalProperties: false,
+  allOf: [
+    {
+      oneOf: [
+        {
+          allOf: [
+            { not: provenanceProfile },
+            { not: { required: ["text_provenance_schema_version"] } },
+          ],
+          properties: {
+            pages: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  blocks: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      not: {
+                        anyOf: [
+                          { required: ["native_valid"] },
+                          { required: ["provenance"] },
+                          { required: ["table_link"] },
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        {
+          ...provenanceProfile,
+          required: ["region_schema_version", "text_provenance_schema_version"],
+          properties: {
+            ...("properties" in provenanceProfile
+              ? provenanceProfile.properties
+              : {}),
+            pages: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  blocks: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      anyOf: [
+                        {
+                          properties: {
+                            raw_text: { type: "string", maxLength: 0 },
+                          },
+                        },
+                        { required: ["provenance"] },
+                      ],
+                      oneOf: [
+                        {
+                          required: ["native_valid"],
+                          properties: { source: { enum: ["native"] } },
+                        },
+                        {
+                          properties: { source: { enum: ["ocr"] } },
+                          not: { required: ["native_valid"] },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
+    },
+  ],
   required: [
     "schema_version",
     "source_sha256",
@@ -248,6 +491,12 @@ export const parseArtifactSchema: Schema = {
     "pages",
   ],
   properties: {
+    text_provenance_schema_version: {
+      type: "integer",
+      enum: [1],
+      description:
+        "Обязателен для регионального PDF с versions.text_provenance=par-text-provenance-v1; отсутствует у legacy и структурных DOCX/XML.",
+    },
     schema_version: { type: "integer", enum: [1] },
     region_schema_version: {
       type: "integer",
@@ -369,7 +618,10 @@ export const parseArtifactSchema: Schema = {
           type: "object",
           required: ["pdf_region_profile"],
           properties: {
-            pdf_region_profile: { type: "string", enum: ["paddle-regions-v1"] },
+            pdf_region_profile: {
+              type: "string",
+              enum: ["paddle-regions-v1", "paddle-regions-v2"],
+            },
           },
         },
         pages: {

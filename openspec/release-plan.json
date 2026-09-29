@@ -1,0 +1,933 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-09-26",
+  "title": "Поэтапный план полного объёма Инспектор ИИ",
+  "path_base": "repository",
+  "historical_delivery_map": "openspec/delivery-map.json",
+  "companion_document": "openspec/RELEASE_PLAN.md",
+  "scope": {
+    "all_roadmap_directions_required": true,
+    "all_changes_remain_full_tz_obligations": true,
+    "acceptance_scopes": {
+      "H": "Объём приёмки обязательного High/MVP-сценария, включая обратную связь, свободный поиск, ошибки и офлайн-воспроизводимость. Это не дата и не разрешение исключать High-функции.",
+      "F": "Объём приёмки полного ТЗ и всех C01–C24. Это не дата; требования, не закрытые в H, сохраняются как обязательства F."
+    },
+    "source_policy": "Действующее ТЗ и приложения, подтверждённые уточнения и спецификации changes определяют поведение; прежняя карта C01–C24 сохраняется как распределение полного объёма.",
+    "completion_policy": "Готовность planning artifacts и наличие gate не означают выполнения. Прогресс читается из tasks.md и evidence; статические числа checkbox в карту не включаются. final_gate каждого change подтверждает его полный объём F, включая совместные проверки; core/H-gates подтверждают только явно указанный срез."
+  },
+  "execution_policy": {
+    "stages_are_result_order_not_dates": true,
+    "parallel_early_work_allowed": true,
+    "parallel_rule": "Контракты, fixtures, интерфейсы, импорт и независимые ветви можно готовить заранее. depends_on задаёт основания для подтверждения конкретного результата, а не общую границу стадии. ACC-H допускается до завершения F-only gates предыдущих стадий.",
+    "blocking_rule": "Неизвестное предметное основание блокирует только зависимую ветвь и её приёмку; независимые задачи продолжаются.",
+    "dependency_level": "stage_gate",
+    "preserve_implemented_work": true,
+    "dag_scope": "Полная ветвь F завершается ACC-final. ACC-H — самостоятельная приёмка обязательного High-объёма по собственному ledger задач; F-блокер не задерживает H, если не затрагивает обязательное требование H.",
+    "stage_barrier": false
+  },
+  "changes": [
+    {
+      "id": "ING",
+      "name": "add-safe-document-ingestion",
+      "capabilities": ["document-ingestion"],
+      "roadmap_ids": ["C01", "C02"],
+      "tasks": "openspec/changes/add-safe-document-ingestion/tasks.md",
+      "final_gate": "ING-baseline"
+    },
+    {
+      "id": "PAR",
+      "name": "add-document-parsing",
+      "capabilities": ["document-parsing"],
+      "roadmap_ids": ["C03"],
+      "tasks": "openspec/changes/add-document-parsing/tasks.md",
+      "final_gate": "PAR-core"
+    },
+    {
+      "id": "ID",
+      "name": "add-document-identification",
+      "capabilities": ["document-identification"],
+      "roadmap_ids": ["C02", "C04"],
+      "tasks": "openspec/changes/add-document-identification/tasks.md",
+      "final_gate": "ID-core"
+    },
+    {
+      "id": "EXT",
+      "name": "add-document-evidence-extraction",
+      "capabilities": ["document-evidence-extraction"],
+      "roadmap_ids": ["C04"],
+      "tasks": "openspec/changes/add-document-evidence-extraction/tasks.md",
+      "final_gate": "EXT-core"
+    },
+    {
+      "id": "GEO",
+      "name": "add-drawing-geometry-analysis",
+      "capabilities": ["drawing-geometry-analysis"],
+      "roadmap_ids": ["C08"],
+      "tasks": "openspec/changes/add-drawing-geometry-analysis/tasks.md",
+      "final_gate": "GEO-ready"
+    },
+    {
+      "id": "COM",
+      "name": "add-document-completeness",
+      "capabilities": ["document-completeness"],
+      "roadmap_ids": ["C02"],
+      "tasks": "openspec/changes/add-document-completeness/tasks.md",
+      "final_gate": "COM-ready"
+    },
+    {
+      "id": "INC",
+      "name": "add-incremental-document-processing",
+      "capabilities": ["document-processing-lifecycle"],
+      "roadmap_ids": ["C13"],
+      "tasks": "openspec/changes/add-incremental-document-processing/tasks.md",
+      "final_gate": "INC-ready"
+    },
+    {
+      "id": "CMP",
+      "name": "add-evidence-comparison",
+      "capabilities": ["document-evidence-comparison"],
+      "roadmap_ids": ["C06"],
+      "tasks": "openspec/changes/add-evidence-comparison/tasks.md",
+      "final_gate": "CMP-core"
+    },
+    {
+      "id": "VER",
+      "name": "add-inspector-verification",
+      "capabilities": ["inspector-verification"],
+      "roadmap_ids": ["C11", "C12"],
+      "tasks": "openspec/changes/add-inspector-verification/tasks.md",
+      "final_gate": "VER-final"
+    },
+    {
+      "id": "MAT",
+      "name": "add-reviewed-matrix-release",
+      "capabilities": ["reviewed-matrix-release"],
+      "roadmap_ids": ["C05", "C18"],
+      "tasks": "openspec/changes/add-reviewed-matrix-release/tasks.md",
+      "final_gate": "MAT-F"
+    },
+    {
+      "id": "COMP",
+      "name": "add-composite-presence-rules",
+      "capabilities": ["composite-presence-rules"],
+      "roadmap_ids": ["C07"],
+      "tasks": "openspec/changes/add-composite-presence-rules/tasks.md",
+      "final_gate": "COMP-final"
+    },
+    {
+      "id": "EVT",
+      "name": "add-event-evidence-rules",
+      "capabilities": ["event-evidence-rules"],
+      "roadmap_ids": ["C09"],
+      "tasks": "openspec/changes/add-event-evidence-rules/tasks.md",
+      "final_gate": "EVT-ready"
+    },
+    {
+      "id": "EXPORT",
+      "name": "add-protocol-exports",
+      "capabilities": ["protocol-exports"],
+      "roadmap_ids": ["C10"],
+      "tasks": "openspec/changes/add-protocol-exports/tasks.md",
+      "final_gate": "EXPORT-final"
+    },
+    {
+      "id": "DASH",
+      "name": "add-inspector-dashboard",
+      "capabilities": ["inspector-dashboard"],
+      "roadmap_ids": ["C17"],
+      "tasks": "openspec/changes/add-inspector-dashboard/tasks.md",
+      "final_gate": "DASH-final"
+    },
+    {
+      "id": "AUD",
+      "name": "add-audit-history",
+      "capabilities": ["audit-history"],
+      "roadmap_ids": ["C21"],
+      "tasks": "openspec/changes/add-audit-history/tasks.md",
+      "final_gate": "AUD-final"
+    },
+    {
+      "id": "EXCH",
+      "name": "add-external-inspection-exchange",
+      "capabilities": ["external-inspection-exchange"],
+      "roadmap_ids": ["C19", "C20"],
+      "tasks": "openspec/changes/add-external-inspection-exchange/tasks.md",
+      "final_gate": "EXCH-F"
+    },
+    {
+      "id": "HYP",
+      "name": "add-cross-stage-hypotheses",
+      "capabilities": ["cross-stage-hypotheses"],
+      "roadmap_ids": ["C14"],
+      "tasks": "openspec/changes/add-cross-stage-hypotheses/tasks.md",
+      "final_gate": "HYP-ready"
+    },
+    {
+      "id": "GOLD",
+      "name": "add-curated-gold-datasets",
+      "capabilities": ["curated-gold-datasets"],
+      "roadmap_ids": ["C15"],
+      "tasks": "openspec/changes/add-curated-gold-datasets/tasks.md",
+      "final_gate": "GOLD-final"
+    },
+    {
+      "id": "ML",
+      "name": "add-model-training-release",
+      "capabilities": ["model-training-release"],
+      "roadmap_ids": ["C16"],
+      "tasks": "openspec/changes/add-model-training-release/tasks.md",
+      "final_gate": "ML-ready"
+    },
+    {
+      "id": "REP",
+      "name": "add-weekly-ml-report",
+      "capabilities": ["weekly-ml-report"],
+      "roadmap_ids": ["C22"],
+      "tasks": "openspec/changes/add-weekly-ml-report/tasks.md",
+      "final_gate": "REP-ready"
+    },
+    {
+      "id": "OFF",
+      "name": "add-offline-release-bundle",
+      "capabilities": ["offline-release-bundle"],
+      "roadmap_ids": ["C24"],
+      "tasks": "openspec/changes/add-offline-release-bundle/tasks.md",
+      "final_gate": "OFF-final"
+    },
+    {
+      "id": "HARD",
+      "name": "add-platform-hardening",
+      "capabilities": ["platform-hardening"],
+      "roadmap_ids": ["C01", "C24"],
+      "tasks": "openspec/changes/add-platform-hardening/tasks.md",
+      "final_gate": "HARD-final"
+    },
+    {
+      "id": "OBS",
+      "name": "add-observability",
+      "capabilities": ["observability"],
+      "roadmap_ids": ["C23"],
+      "tasks": "openspec/changes/add-observability/tasks.md",
+      "final_gate": "OBS-final"
+    },
+    {
+      "id": "ACC",
+      "name": "add-release-acceptance",
+      "capabilities": ["release-acceptance"],
+      "roadmap_ids": ["C24"],
+      "tasks": "openspec/changes/add-release-acceptance/tasks.md",
+      "final_gate": "ACC-final"
+    }
+  ],
+  "roadmap_coverage": {
+    "C01": ["ING", "HARD"],
+    "C02": ["ING", "ID", "COM"],
+    "C03": ["PAR"],
+    "C04": ["ID", "EXT"],
+    "C05": ["MAT"],
+    "C06": ["CMP"],
+    "C07": ["COMP"],
+    "C08": ["GEO"],
+    "C09": ["EVT"],
+    "C10": ["EXPORT"],
+    "C11": ["VER"],
+    "C12": ["VER"],
+    "C13": ["INC"],
+    "C14": ["HYP"],
+    "C15": ["GOLD"],
+    "C16": ["ML"],
+    "C17": ["DASH"],
+    "C18": ["MAT"],
+    "C19": ["EXCH"],
+    "C20": ["EXCH"],
+    "C21": ["AUD"],
+    "C22": ["REP"],
+    "C23": ["OBS"],
+    "C24": ["OFF", "HARD", "ACC"]
+  },
+  "stages": [
+    {
+      "id": 1,
+      "key": "foundations",
+      "name": "Основания, контракты и ранняя автономная поставка",
+      "gates": [
+        "ACC-method",
+        "HARD-decisions",
+        "MAT-A",
+        "OFF-initial",
+        "OBS-initial",
+        "AUD-initial"
+      ]
+    },
+    {
+      "id": 2,
+      "key": "reliable-core",
+      "name": "Надёжное рабочее ядро",
+      "gates": [
+        "ING-baseline",
+        "PAR-core",
+        "ID-core",
+        "EXT-core",
+        "CMP-core",
+        "VER-baseline"
+      ]
+    },
+    {
+      "id": 3,
+      "key": "full-coverage",
+      "name": "Полное предметное покрытие и пересчёт",
+      "gates": [
+        "GEO-ready",
+        "COMP-core",
+        "COMP-final",
+        "EVT-ready",
+        "COM-ready",
+        "INC-ready",
+        "MAT-F"
+      ]
+    },
+    {
+      "id": 4,
+      "key": "expert-ml",
+      "name": "Рабочее место инспектора и ML-контур",
+      "gates": [
+        "VER-core",
+        "EXPORT-core",
+        "HYP-ready",
+        "GOLD-baseline",
+        "GOLD-final",
+        "ML-ready",
+        "EXPORT-final",
+        "DASH-core"
+      ]
+    },
+    {
+      "id": 5,
+      "key": "integration-operations",
+      "name": "Интеграция, эксплуатация и полная поставка",
+      "gates": [
+        "EXCH-H",
+        "OFF-H",
+        "EXCH-F",
+        "REP-ready",
+        "HARD-core",
+        "AUD-final",
+        "VER-final",
+        "DASH-final",
+        "OBS-final",
+        "HARD-final",
+        "OFF-final"
+      ]
+    },
+    {
+      "id": 6,
+      "key": "acceptance",
+      "name": "Итоговая приёмка",
+      "gates": ["ACC-H", "ACC-final"]
+    }
+  ],
+  "gates": [
+    {
+      "id": "ACC-method",
+      "change": "ACC",
+      "stage": 1,
+      "depends_on": [],
+      "result": "Версионированная методика и разрешённый корпус: matching контрольных точек, abstention, метрики, режимы H/F и критерии офлайн-приёмки определены до измерений."
+    },
+    {
+      "id": "HARD-decisions",
+      "change": "HARD",
+      "stage": 1,
+      "depends_on": [],
+      "result": "Подтверждённые решения по правам, данным, целевой среде и восстановлению отделены от неизвестных; локальные блокеры привязаны к конкретным операциям."
+    },
+    {
+      "id": "MAT-A",
+      "change": "MAT",
+      "stage": 1,
+      "depends_on": ["ACC-method", "HARD-decisions"],
+      "result": "Ранний паспорт правила, основания, контракт операторов и обязательный regression-gate готовы; выпуск всех 132 правил не требуется."
+    },
+    {
+      "id": "OFF-initial",
+      "change": "OFF",
+      "stage": 1,
+      "depends_on": ["HARD-decisions"],
+      "result": "Базовая автономная упаковка существующего приложения, зависимостей и локальных моделей проверена на чистом стенде; определён контракт подключения следующих модулей."
+    },
+    {
+      "id": "OBS-initial",
+      "change": "OBS",
+      "stage": 1,
+      "depends_on": ["HARD-decisions"],
+      "result": "Базовые безопасные события, корреляция, технические метрики и интерфейс уведомлений доступны остальным модулям без ожидания полного мониторинга."
+    },
+    {
+      "id": "AUD-initial",
+      "change": "AUD",
+      "stage": 1,
+      "depends_on": ["HARD-decisions"],
+      "result": "Подтверждён формат и чтение существующих audit events, история решений и контракт подключения новых producers; внешняя интеграция ещё не требуется."
+    },
+    {
+      "id": "ING-baseline",
+      "change": "ING",
+      "stage": 2,
+      "depends_on": [
+        "HARD-decisions",
+        "AUD-initial",
+        "OBS-initial",
+        "OFF-initial"
+      ],
+      "result": "Существующий безопасный приём и объектный доступ подтверждены как совместимая основа следующих этапов; прошлое выполнение не сбрасывается."
+    },
+    {
+      "id": "PAR-core",
+      "change": "PAR",
+      "stage": 2,
+      "depends_on": ["ING-baseline", "ACC-method"],
+      "result": "Надёжный PAR/OCR сохраняет числа, единицы, таблицы, страницы и provenance; дефекты диагностического корпуса проверены, измерения качества воспроизводимы."
+    },
+    {
+      "id": "ID-core",
+      "change": "ID",
+      "stage": 2,
+      "depends_on": ["PAR-core", "MAT-A"],
+      "result": "Подтверждённые документы, представления, области, периоды и редакции выбираются с локаторами; конфликт и неизвестность требуют точечного уточнения."
+    },
+    {
+      "id": "EXT-core",
+      "change": "EXT",
+      "stage": 2,
+      "depends_on": ["ID-core", "MAT-A"],
+      "result": "Типизированные факты и альтернативы извлекаются по утверждённым правилам с единицами, областью, locator и версиями; неполнота не выдаётся за отрицательный вывод."
+    },
+    {
+      "id": "CMP-core",
+      "change": "CMP",
+      "stage": 2,
+      "depends_on": ["EXT-core", "MAT-A"],
+      "result": "Скалярное сравнение сохраняет единицы, явную конверсию, допуски, неопределённость и отдельные контексты; новая политика не переписывает историю."
+    },
+    {
+      "id": "VER-baseline",
+      "change": "VER",
+      "stage": 2,
+      "depends_on": ["ING-baseline", "AUD-initial", "ACC-method"],
+      "result": "Существующий контракт решения инспектора, автора, основания, версии доказательств и аудита принят как вход для базового GOLD; полный HYP и финальный VER не требуются."
+    },
+    {
+      "id": "GEO-ready",
+      "change": "GEO",
+      "stage": 3,
+      "depends_on": ["PAR-core", "EXT-core", "CMP-core", "MAT-A"],
+      "result": "Геометрические результаты PDF имеют проверяемую опору, единицы, область, overlay и оценку погрешности; неизвестный масштаб не создаёт достоверное число."
+    },
+    {
+      "id": "COMP-core",
+      "change": "COMP",
+      "stage": 3,
+      "depends_on": ["CMP-core", "MAT-A"],
+      "result": "Текстовые AND/OR и presence-операторы с неизвестностью, полнотой источников и трассой ветвей готовы независимо от пространственных ветвей."
+    },
+    {
+      "id": "COMP-final",
+      "change": "COMP",
+      "stage": 3,
+      "depends_on": ["COMP-core", "GEO-ready"],
+      "result": "Пространственные ветви подключены через GeometryResult; составные/presence примеры приняты и переданы выпуску правил."
+    },
+    {
+      "id": "EVT-ready",
+      "change": "EVT",
+      "stage": 3,
+      "depends_on": ["ID-core", "CMP-core", "MAT-A", "AUD-initial"],
+      "result": "P098–P101 проверяются по разрешённым датированным snapshots с подтверждёнными идентификаторами, полнотой и временными условиями; синтетика отделена от предметной приёмки."
+    },
+    {
+      "id": "COM-ready",
+      "change": "COM",
+      "stage": 3,
+      "depends_on": ["ID-core", "EXT-core", "GEO-ready", "MAT-A"],
+      "result": "Комплектность и достаточность оснований рассчитаны по подтверждённому составу и применимости логических документов; неизвестный состав не становится полным."
+    },
+    {
+      "id": "INC-ready",
+      "change": "INC",
+      "stage": 3,
+      "depends_on": [
+        "COM-ready",
+        "CMP-core",
+        "COMP-final",
+        "GEO-ready",
+        "EVT-ready",
+        "VER-baseline"
+      ],
+      "result": "Зависимости и безопасный пересчёт охватывают изменённые документы/редакции/правила/события, сохраняют историю и защищают протокол от поздней публикации."
+    },
+    {
+      "id": "MAT-F",
+      "change": "MAT",
+      "stage": 3,
+      "depends_on": [
+        "MAT-A",
+        "CMP-core",
+        "COMP-final",
+        "GEO-ready",
+        "EVT-ready",
+        "EXT-core"
+      ],
+      "result": "Все 132 строки имеют принятые паспорта, исполнимые обязательные ветви и regression-отчёты; опубликован переносимый manifest, отдельно измерено реальное покрытие корпуса."
+    },
+    {
+      "id": "VER-core",
+      "change": "VER",
+      "stage": 4,
+      "depends_on": [
+        "VER-baseline",
+        "CMP-core",
+        "INC-ready",
+        "MAT-F",
+        "COM-ready"
+      ],
+      "result": "Функции рабочего места, версии evidence/split/решений, финализация и согласованные переходы готовы для потребителей и самостоятельной H-проверки. Полная совместная регрессия EXPORT/AUD ещё не подтверждена; она закрывает VER-final."
+    },
+    {
+      "id": "EXPORT-core",
+      "change": "EXPORT",
+      "stage": 4,
+      "depends_on": ["VER-core", "MAT-F", "COM-ready", "ACC-method"],
+      "result": "Базовая экспортная проекция, реальные JSON/PDF и адаптер оценщика работают с закреплённой версией; контракты HYP/model/dataset готовы для подключения. До H-приёмки отдельно проверяются реальные поставщики и совместная H-регрессия; core не закрывает дополнительные F-форматы."
+    },
+    {
+      "id": "HYP-ready",
+      "change": "HYP",
+      "stage": 4,
+      "depends_on": [
+        "ID-core",
+        "EXT-core",
+        "CMP-core",
+        "OFF-initial",
+        "ACC-method",
+        "VER-baseline"
+      ],
+      "result": "Все четыре локальных метода дают проверяемые SUSPICION; согласованный с VER-baseline promotion-порт переводит доказанную вне-матричную гипотезу в атомарный CANDIDATE с собственной идентичностью. Реальное решение VER, запреты/версии и передача обратной связи проверены."
+    },
+    {
+      "id": "GOLD-baseline",
+      "change": "GOLD",
+      "stage": 4,
+      "depends_on": ["VER-baseline", "ACC-method", "HARD-decisions"],
+      "result": "Базовый датасет формируется из разрешённых версионированных решений инспектора, с provenance и разделением объектов; ожидание HYP не требуется."
+    },
+    {
+      "id": "GOLD-final",
+      "change": "GOLD",
+      "stage": 4,
+      "depends_on": ["GOLD-baseline", "HYP-ready", "VER-core"],
+      "result": "В датасет включён подтверждённый путь обратной связи по гипотезам и полным решениям; неодобренные машинные выводы не стали GOLD."
+    },
+    {
+      "id": "ML-ready",
+      "change": "ML",
+      "stage": 4,
+      "depends_on": [
+        "GOLD-baseline",
+        "ACC-method",
+        "OFF-initial",
+        "OBS-initial",
+        "AUD-initial"
+      ],
+      "result": "Воспроизводимая локальная train/eval итерация, метрики, управляемые approve/reject и rollback проверены; финальная ACC и GOLD-final не являются предпосылками обучения."
+    },
+    {
+      "id": "EXPORT-final",
+      "change": "EXPORT",
+      "stage": 4,
+      "depends_on": ["EXPORT-core", "HYP-ready", "GOLD-final", "ML-ready"],
+      "result": "Полный экспорт C10 принят: JSON/PDF/DOCX/XML, схема оценщика, реальные HYP и использованные версии модели/dataset/матрицы, исторические snapshots, права и совместные регрессии. Отсутствие обязательного поставщика не маскируется фиктивным manifest."
+    },
+    {
+      "id": "DASH-core",
+      "change": "DASH",
+      "stage": 4,
+      "depends_on": ["VER-core", "EXPORT-core", "COM-ready"],
+      "result": "Основной путь по реальным объектам/проверкам, честное покрытие, loading/error/empty/forbidden и объектный доступ проверены. Полная сводка гипотез/обмена/истории ещё не закрыта."
+    },
+    {
+      "id": "EXCH-H",
+      "change": "EXCH",
+      "stage": 5,
+      "depends_on": [
+        "EXPORT-core",
+        "VER-core",
+        "INC-ready",
+        "AUD-initial",
+        "OBS-initial",
+        "OFF-initial"
+      ],
+      "result": "H/C19: фактически работающий локальный mock и допустимая mock-подпись, API-ready контракт, закреплённый финализированный payload, квитанции, идемпотентность, повторы, ошибки и поступление документов проверены офлайн. Это не доказательство промышленного C20."
+    },
+    {
+      "id": "OFF-H",
+      "change": "OFF",
+      "stage": 5,
+      "depends_on": [
+        "OFF-initial",
+        "ACC-method",
+        "ING-baseline",
+        "PAR-core",
+        "ID-core",
+        "EXT-core",
+        "CMP-core",
+        "GEO-ready",
+        "COMP-final",
+        "EVT-ready",
+        "COM-ready",
+        "INC-ready",
+        "MAT-F",
+        "VER-core",
+        "EXPORT-core",
+        "HYP-ready",
+        "GOLD-final",
+        "DASH-core",
+        "EXCH-H",
+        "AUD-initial",
+        "OBS-initial"
+      ],
+      "result": "Неизменяемый H-комплект установлен на пустых volumes без DNS/egress; фактически воспроизведены все обязательные High и task_checks ветви H, включая SUSPICION/feedback, реальные manifest, права, H-аудит, ошибки/уведомления, JSON/PDF и локальный mock. Отсутствие F-only функций перечислено и не выдаётся за полный выпуск."
+    },
+    {
+      "id": "EXCH-F",
+      "change": "EXCH",
+      "stage": 5,
+      "depends_on": ["EXCH-H", "EXPORT-final"],
+      "requires_inputs": ["EXCH-operator-contract"],
+      "result": "Промышленный C20 реализован и совместно принят на разрешённом стенде оператора: реальный защищённый transport/подпись, receipt/status/idempotency, предусмотренный забор файлов, новые документы после final, сбои и откат. Отчёт оператора и локальные hashes согласованы; mock не закрывает этот gate."
+    },
+    {
+      "id": "REP-ready",
+      "change": "REP",
+      "stage": 5,
+      "depends_on": ["ML-ready", "GOLD-final", "VER-core"],
+      "result": "Еженедельный отчёт воспроизводится по зафиксированным данным/моделям/метрикам и периоду, отделяет отсутствие данных от измеренного нуля."
+    },
+    {
+      "id": "HARD-core",
+      "change": "HARD",
+      "stage": 5,
+      "depends_on": [
+        "HARD-decisions",
+        "ING-baseline",
+        "VER-core",
+        "EXPORT-final",
+        "ML-ready",
+        "AUD-initial",
+        "OBS-initial"
+      ],
+      "result": "Физическое резервирование/restore и согласованная защищённая инфраструктура контрольных точек готовы для совместной проверки AUD/OBS: версии/ключи/файлы восстанавливаются, доступ отделён от прикладной роли, сигналы отказа доступны. Прикладной ProtocolDiff/AuditExport/IntegrityCheckpoint и отдельная RetentionPolicy принадлежат AUD; полная эксплуатационная приёмка остаётся в HARD-final."
+    },
+    {
+      "id": "AUD-final",
+      "change": "AUD",
+      "stage": 5,
+      "depends_on": [
+        "AUD-initial",
+        "VER-core",
+        "EXPORT-final",
+        "INC-ready",
+        "MAT-F",
+        "EXCH-F",
+        "HYP-ready",
+        "GOLD-final",
+        "ML-ready",
+        "REP-ready",
+        "HARD-core"
+      ],
+      "result": "Полный C21 принят: новые producers, ProtocolDiff, AuditExport, независимый IntegrityCheckpoint и отдельная RetentionPolicy/предметный архив. Совместное восстановление через HARD-core сохраняет ID, hashes, авторство, frozen evidence и checkpoint; OBS получает инциденты без смешения предметного и технического retention. H-история проверяется раньше на своём ledger."
+    },
+    {
+      "id": "VER-final",
+      "change": "VER",
+      "stage": 5,
+      "depends_on": ["VER-core", "EXPORT-final", "AUD-final"],
+      "result": "Полный C11/C12 закрыт, включая согласованные F-переходы/права и task 7.5: совместная регрессия exports/history на реальных версиях, сохранность решений, доступ и результаты UX. Готовность core сама по себе не закрывает полный change."
+    },
+    {
+      "id": "DASH-final",
+      "change": "DASH",
+      "stage": 5,
+      "depends_on": [
+        "DASH-core",
+        "HYP-ready",
+        "EXCH-F",
+        "AUD-final",
+        "EXPORT-final"
+      ],
+      "result": "Полный C17/Medium-dashboard принят: реальные фильтры/пагинация, версия exports/history, SUSPICION и промышленная синхронизация, права, доступность и измерение запросов; полный результат не объявлен по одному базовому экрану."
+    },
+    {
+      "id": "OBS-final",
+      "change": "OBS",
+      "stage": 5,
+      "depends_on": [
+        "OBS-initial",
+        "PAR-core",
+        "CMP-core",
+        "COMP-final",
+        "EVT-ready",
+        "INC-ready",
+        "HYP-ready",
+        "ML-ready",
+        "EXCH-F",
+        "REP-ready",
+        "AUD-final",
+        "HARD-core"
+      ],
+      "result": "Полные метрики, безопасные логи, уведомления и контроль доставки подключены к включённым сервисам, включая промышленный обмен; отсутствие события и отказ канала наблюдаемы. H-ошибки/уведомления проверяются отдельно до F."
+    },
+    {
+      "id": "HARD-final",
+      "change": "HARD",
+      "stage": 5,
+      "depends_on": [
+        "HARD-core",
+        "HARD-decisions",
+        "ING-baseline",
+        "VER-final",
+        "EXCH-F",
+        "ML-ready",
+        "AUD-final",
+        "OBS-final"
+      ],
+      "result": "Полный защищённый профиль C01/C24, разграничение доступа, ресурсные ограничения, восстановление, сохранность данных и эксплуатационные меры испытаны на полном составе; промышленные показатели имеют фактические измерения. Этот F-gate не является предпосылкой самостоятельного H-прогона."
+    },
+    {
+      "id": "OFF-final",
+      "change": "OFF",
+      "stage": 5,
+      "depends_on": [
+        "OFF-initial",
+        "ING-baseline",
+        "PAR-core",
+        "ID-core",
+        "EXT-core",
+        "CMP-core",
+        "GEO-ready",
+        "COMP-final",
+        "EVT-ready",
+        "COM-ready",
+        "INC-ready",
+        "MAT-F",
+        "VER-final",
+        "EXPORT-final",
+        "HYP-ready",
+        "GOLD-final",
+        "ML-ready",
+        "DASH-final",
+        "EXCH-F",
+        "REP-ready",
+        "AUD-final",
+        "OBS-final",
+        "HARD-final"
+      ],
+      "result": "Полный F-комплект со всеми модулями, approved rules, weights, версиями и инструкциями воспроизведён на чистом стенде без внешней сети для локального сценария; промышленный transport входит с подтверждённой EXCH-F совместимостью и проверяется на разрешённом внешнем стенде отдельно. Офлайн не подменяет свидетельство оператора."
+    },
+    {
+      "id": "ACC-H",
+      "change": "ACC",
+      "stage": 6,
+      "depends_on": ["ACC-method", "OFF-H"],
+      "result": "Независимая H-приёмка на закреплённом digest выполнила весь ledger обязательных High, task_checks и применимые пороги/UX/качество; выпущен отдельный H-реестр. Непройденный High остаётся открытым. EXCH-F, HARD-final и ACC-final не требуются для начала и завершения этого прогона."
+    },
+    {
+      "id": "ACC-final",
+      "change": "ACC",
+      "stage": 6,
+      "depends_on": [
+        "ACC-method",
+        "ING-baseline",
+        "PAR-core",
+        "ID-core",
+        "EXT-core",
+        "GEO-ready",
+        "COM-ready",
+        "INC-ready",
+        "CMP-core",
+        "VER-final",
+        "MAT-F",
+        "COMP-final",
+        "EVT-ready",
+        "EXPORT-final",
+        "DASH-final",
+        "AUD-final",
+        "EXCH-F",
+        "HYP-ready",
+        "GOLD-final",
+        "ML-ready",
+        "REP-ready",
+        "OFF-final",
+        "HARD-final",
+        "OBS-final"
+      ],
+      "result": "Независимая приёмка полного F завершена только после всех change.final_gate и подтверждения полного ledger C01–C24. Для каждого требования есть фактическое доказательство прохождения; открытый пункт сохраняет F незавершённым. Отчёт H самостоятельный и не ждёт этого gate."
+    }
+  ],
+  "acceptance_tracks": {
+    "H": {
+      "gate": "ACC-H",
+      "bundle_gate": "OFF-H",
+      "scope_source": "ACC-method: полный реестр обязательных High из действующего ТЗ и подтверждённых разъяснений; список ниже не разрешает исключать иные выявленные High.",
+      "required_gates": [
+        "ING-baseline",
+        "PAR-core",
+        "ID-core",
+        "EXT-core",
+        "CMP-core",
+        "GEO-ready",
+        "COMP-final",
+        "EVT-ready",
+        "COM-ready",
+        "INC-ready",
+        "MAT-F",
+        "VER-core",
+        "EXPORT-core",
+        "HYP-ready",
+        "GOLD-final",
+        "DASH-core",
+        "EXCH-H"
+      ],
+      "required_high_results": [
+        {
+          "changes": ["ING", "PAR", "ID", "EXT"],
+          "result": "Безопасный приём, действительные документы/редакции/источники, OCR/извлечение и проверяемые локаторы."
+        },
+        {
+          "changes": ["MAT", "CMP", "COMP", "GEO", "EVT", "COM", "INC"],
+          "result": "132/132, все обязательные семейства правил, комплектность и корректная дозагрузка с сохранением истории; покрытие отделено от качества."
+        },
+        {
+          "changes": ["VER"],
+          "result": "Реальная проверка ПД/РД/ИД, уточнение evidence, split, обоснованные решения/финализация, права, история, гонки и UX; совместная H-проверка с экспортом и журналом."
+        },
+        {
+          "changes": ["EXPORT"],
+          "result": "Реальные JSON/PDF и выход оценщика, версии/локаторы/пять категорий, реальные HYP и использованные model/dataset manifests; отсутствие F-форматов не маскирует пробел обязательного поля H."
+        },
+        {
+          "changes": ["HYP", "GOLD"],
+          "result": "Все четыре метода свободного поиска, очередь SUSPICION, доказанный переход к VER и курация обратной связи/dataset; отсутствие метода или feedback не считается допустимым сокращением High."
+        },
+        {
+          "changes": ["EXCH"],
+          "result": "Полный H/C19, фактически работающий локальный mock и допустимая mock-подпись, повторы/квитанции/ошибки/новые документы; C20 остаётся отдельным обязательством F."
+        },
+        {
+          "changes": ["DASH", "AUD", "OBS", "HARD"],
+          "result": "Реальный путь к проверке, история обязательных H-операций, наблюдаемые ошибки/уведомления и серверный доступ H-контура; успешный baseline не заменяет проверку новых операций."
+        },
+        {
+          "changes": ["OFF", "ACC"],
+          "result": "Холодная офлайн-установка того же H-digest, обязательные функциональные/качественные/скоростные/UX-пороги и независимый отчёт; H не требует завершения ACC-final."
+        }
+      ],
+      "task_checks": [
+        {
+          "change": "VER",
+          "task_ids": [
+            "5.1",
+            "5.2",
+            "5.3",
+            "5.4",
+            "5.5",
+            "5.6",
+            "5.7",
+            "5.8",
+            "5.9",
+            "7.1",
+            "7.2",
+            "7.3",
+            "7.4",
+            "7.5"
+          ],
+          "scope": "Совместная проверка 7.5 выполняется на H-export/history; проверка F-интеграции остаётся в VER-final."
+        },
+        {
+          "change": "EXPORT",
+          "sections": ["1", "2", "4"],
+          "task_ids": ["3.3"],
+          "scope": "Обязательные JSON/PDF/submission и использованные HYP/model/dataset snapshots проверяются в H независимо от DOCX/XML; выбранные веса могут быть закреплённым baseline, необязательный training не объявляется выполненным."
+        },
+        {
+          "change": "HYP",
+          "sections": ["1", "2", "3", "4", "5"],
+          "scope": "Ни один из четырёх методов и путь SUSPICION→VER не исключаются из H."
+        },
+        {
+          "change": "GOLD",
+          "scope": "Все применимые High-пункты feedback/dataset из ACC-method; GOLD-final подтверждает также реальную обратную связь HYP."
+        },
+        {
+          "change": "EXCH",
+          "sections": ["1", "2"],
+          "scope": "H/C19 и локальный mock; промышленный C20 оценивается только в EXCH-F."
+        },
+        {
+          "change": "DASH",
+          "sections": ["1"],
+          "scope": "Живой путь к проверке, честные категории/ошибки/права; полный Medium-dashboard остаётся в DASH-final."
+        },
+        {
+          "change": "AUD",
+          "sections": ["1", "2"],
+          "task_ids": ["4.1", "4.3"],
+          "scope": "История и совместная цепочка всех H-операций, включая evidence/split/export/mock-exchange; F-журнал/промышленные producers не являются предпосылкой этой проверки."
+        },
+        {
+          "change": "OBS",
+          "scope": "Ошибки и доставка обязательных H-уведомлений по ledger ACC-method; OBS-initial сам по себе не доказывает полноту H."
+        },
+        {
+          "change": "HARD",
+          "task_ids": ["2.4"],
+          "scope": "Права всех H-операций и требуемые для H runtime/защита/восстановление по ledger ACC-method; HARD-final не является общим блокером H."
+        },
+        {
+          "change": "OFF",
+          "sections": ["1", "2", "3", "4"],
+          "scope": "Manifest, bootstrap, закрытый контур и независимая установка всех обязательных H-модулей; результат проверяется отдельно от полного F-комплекта."
+        },
+        {
+          "change": "ACC",
+          "sections": ["1", "2", "3", "4", "5"],
+          "scope": "Только подтверждённый H-объём каждого пункта, все обязательные High и его пороги; отсутствие F-only результата не объявляет этот пункт целиком выполненным."
+        }
+      ],
+      "blocking_policy": "Каждый обязательный H-пункт и совместная H-проверка должны иметь собственное evidence. Блокеры EXCH-F, HARD-final, полного AUD/OBS и прочих F-only частей не требуют ждать F, но не отменяют применимые требования H."
+    },
+    "F": {
+      "gate": "ACC-final",
+      "bundle_gate": "OFF-final",
+      "required_change_final_gates": true,
+      "scope": "Все 24 changes и C01–C24, включая промышленный C20, полные форматы/журнал/dashboard/защиту и совместную приёмку. Непройденный F-gate оставляет F открытым, даже если H принят."
+    }
+  },
+  "external_inputs": [
+    {
+      "id": "EXCH-operator-contract",
+      "required_for": ["EXCH-F"],
+      "change": "EXCH",
+      "tasks": "openspec/changes/add-external-inspection-exchange/tasks.md",
+      "task_ids": ["3.1"],
+      "provider": "Владелец внешней ИС и согласующий заказчик",
+      "required_evidence": [
+        "Версия договора/технического контракта и wire-schema",
+        "Разрешённый endpoint/стенд и модель авторизации",
+        "Сертификаты, требования к реальной подписи и защищённый доступ к ключам",
+        "Правила receipt/status/idempotency и автоматического получения файлов",
+        "Окно совместной приёмки и полномочия участников"
+      ],
+      "blocking_policy": "Отсутствие входа блокирует только зависимую промышленную ветвь F; разрешённый локальный mock/H не ждёт оператора. Значения и нормы не выдумываются."
+    }
+  ]
+}

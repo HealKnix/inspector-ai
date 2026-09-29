@@ -1,0 +1,468 @@
+{
+  "schema_version": 1,
+  "manifest_sha256": "b899ad410f1307ffe767d07c4ec2711750506534e66c912a2a29ef41db0e7692",
+  "test_script_sha256": "e2582d209aac30cb4b4c2bbc6cf2f789e3fd9d98e32f1bba3afef669c0702fca",
+  "project": "inspector-foundations-r8",
+  "finished_at": "2026-09-27T07:35:55.647Z",
+  "scope": "synthetic runtime/transport/ACL/idempotency/antivirus smoke; not quality acceptance",
+  "object_id": "88a967f8-60ae-4149-bef0-956b7a8a8d81",
+  "file_id": "143f67c6-5a0e-4b6b-ace4-5b9c78ffc325",
+  "process_id": "900ae1d7-f5da-456d-a59d-625f5fa60291",
+  "run_id": "b74bab11-dbfb-422e-841c-76c16b625dc9",
+  "parser": {
+    "file_id": "143f67c6-5a0e-4b6b-ace4-5b9c78ffc325",
+    "process_id": "900ae1d7-f5da-456d-a59d-625f5fa60291",
+    "run_id": "b74bab11-dbfb-422e-841c-76c16b625dc9",
+    "original_name": "synthetic-offline.docx",
+    "state": "succeeded",
+    "attempt": 1,
+    "pages_completed": 1,
+    "pages_total": 1,
+    "quality": "OK",
+    "reasons": ["DOCX_SEMANTIC_RENDER"],
+    "error_code": null,
+    "phase": null,
+    "progress_updated_at": "2026-09-27T07:35:40.225Z",
+    "waiting_reason": null,
+    "checkpoint_validated": true,
+    "checkpoint_pages": null,
+    "current_page": null,
+    "previous_attempt_error": null,
+    "progress_reset_reason": null,
+    "retry_at": null,
+    "can_retry": true,
+    "artifact_id": "570dfab3-5abc-4364-bc67-57920ec4170a"
+  },
+  "runtime": {
+    "node": "v24.16.0",
+    "metrics": true,
+    "metric_sources": {
+      "database": 1,
+      "storage": 1,
+      "rabbitmq": 1
+    },
+    "egress_blocked": true,
+    "external_dns_blocked": true
+  },
+  "frontend_assets": [
+    {
+      "path": "/assets/index-CTyn654W.js",
+      "content_type": "application/javascript",
+      "bytes": 561665,
+      "sha256": "a39660d547e2a3fe21855346a27dd3dc656245cc38d3aceb5a1508f6f55aebb8"
+    },
+    {
+      "path": "/assets/rolldown-runtime-hePW80VL.js",
+      "content_type": "application/javascript",
+      "bytes": 716,
+      "sha256": "580ad8c58061a4dde99bde0a56905e382f0568516ee2f5b84dbfb52085709021"
+    },
+    {
+      "path": "/assets/button-DJydZrr3.js",
+      "content_type": "application/javascript",
+      "bytes": 100635,
+      "sha256": "f4cf7be725c3fce4e8106506e375913e4819e4cdf61f04d0ec4194fa86e3d05a"
+    },
+    {
+      "path": "/assets/routeNames-BFdM3guF.js",
+      "content_type": "application/javascript",
+      "bytes": 49868,
+      "sha256": "2a640ca89c4dc4204fc404c74b76908cf03a39295a1b82ba963704befb8a7fe2"
+    },
+    {
+      "path": "/assets/useToggleState-DlbJ5NYI.js",
+      "content_type": "application/javascript",
+      "bytes": 67640,
+      "sha256": "d65d2ed9901b6290f8800531721b7fc68a16e6717587538fe51e998101a7f44f"
+    },
+    {
+      "path": "/assets/index-CB-GcDN8.css",
+      "content_type": "text/css",
+      "bytes": 505006,
+      "sha256": "a44a62ed1a08c2d466f0e4467d876da3ac664fc40e34807b6f14443e1169bfb6"
+    }
+  ],
+  "frontend_firewall": {
+    "image_id": "sha256:526ba5aa34e64dc983e75fd5520c0a9f23057a240c2fa89edff316d2e0d701ff",
+    "backend_ip": "172.31.0.10",
+    "rules": {
+      "IPv4": [
+        "-P OUTPUT DROP",
+        "-A OUTPUT -o lo -j ACCEPT",
+        "-A OUTPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT",
+        "-A OUTPUT -d 172.31.0.10/32 -p tcp -m tcp --dport 3000 -j ACCEPT"
+      ],
+      "IPv6": [
+        "-P OUTPUT DROP",
+        "-A OUTPUT -o lo -j ACCEPT",
+        "-A OUTPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT"
+      ]
+    }
+  },
+  "checks": [
+    {
+      "name": "login release.admin",
+      "passed": true
+    },
+    {
+      "name": "create test owner",
+      "passed": true
+    },
+    {
+      "name": "login offline.owner.bace91e8",
+      "passed": true
+    },
+    {
+      "name": "create test unassigned",
+      "passed": true
+    },
+    {
+      "name": "login offline.unassigned.bace91e8",
+      "passed": true
+    },
+    {
+      "name": "create object",
+      "passed": true
+    },
+    {
+      "name": "object without assignment denied",
+      "passed": true
+    },
+    {
+      "name": "audit without assignment denied",
+      "passed": true
+    },
+    {
+      "name": "admin has no implicit object history right",
+      "passed": true
+    },
+    {
+      "name": "upload accepted HTTP",
+      "passed": true
+    },
+    {
+      "name": "document accepted",
+      "passed": true
+    },
+    {
+      "name": "upload replay process",
+      "passed": true
+    },
+    {
+      "name": "upload replay file",
+      "passed": true
+    },
+    {
+      "name": "real queued parser completed",
+      "passed": true
+    },
+    {
+      "name": "parser artifact exists",
+      "passed": true
+    },
+    {
+      "name": "read own parse",
+      "passed": true
+    },
+    {
+      "name": "read foreign parse denied",
+      "passed": true
+    },
+    {
+      "name": "read own audit",
+      "passed": true
+    },
+    {
+      "name": "audit has events",
+      "passed": true
+    },
+    {
+      "name": "infected document rejected",
+      "passed": true
+    },
+    {
+      "name": "actual antivirus detected signature",
+      "passed": true
+    },
+    {
+      "name": "metrics excluded from public ingress",
+      "passed": true
+    },
+    {
+      "name": "frontend serves offline",
+      "passed": true
+    },
+    {
+      "name": "frontend references entry JavaScript",
+      "passed": true
+    },
+    {
+      "name": "frontend references stylesheet",
+      "passed": true
+    },
+    {
+      "name": "local asset origin /assets/index-CTyn654W.js",
+      "passed": true
+    },
+    {
+      "name": "asset HTTP /assets/index-CTyn654W.js",
+      "passed": true
+    },
+    {
+      "name": "asset MIME /assets/index-CTyn654W.js",
+      "passed": true
+    },
+    {
+      "name": "asset is nonempty and not SPA HTML /assets/index-CTyn654W.js",
+      "passed": true
+    },
+    {
+      "name": "local asset origin /assets/rolldown-runtime-hePW80VL.js",
+      "passed": true
+    },
+    {
+      "name": "asset HTTP /assets/rolldown-runtime-hePW80VL.js",
+      "passed": true
+    },
+    {
+      "name": "asset MIME /assets/rolldown-runtime-hePW80VL.js",
+      "passed": true
+    },
+    {
+      "name": "asset is nonempty and not SPA HTML /assets/rolldown-runtime-hePW80VL.js",
+      "passed": true
+    },
+    {
+      "name": "local asset origin /assets/button-DJydZrr3.js",
+      "passed": true
+    },
+    {
+      "name": "asset HTTP /assets/button-DJydZrr3.js",
+      "passed": true
+    },
+    {
+      "name": "asset MIME /assets/button-DJydZrr3.js",
+      "passed": true
+    },
+    {
+      "name": "asset is nonempty and not SPA HTML /assets/button-DJydZrr3.js",
+      "passed": true
+    },
+    {
+      "name": "local asset origin /assets/routeNames-BFdM3guF.js",
+      "passed": true
+    },
+    {
+      "name": "asset HTTP /assets/routeNames-BFdM3guF.js",
+      "passed": true
+    },
+    {
+      "name": "asset MIME /assets/routeNames-BFdM3guF.js",
+      "passed": true
+    },
+    {
+      "name": "asset is nonempty and not SPA HTML /assets/routeNames-BFdM3guF.js",
+      "passed": true
+    },
+    {
+      "name": "local asset origin /assets/useToggleState-DlbJ5NYI.js",
+      "passed": true
+    },
+    {
+      "name": "asset HTTP /assets/useToggleState-DlbJ5NYI.js",
+      "passed": true
+    },
+    {
+      "name": "asset MIME /assets/useToggleState-DlbJ5NYI.js",
+      "passed": true
+    },
+    {
+      "name": "asset is nonempty and not SPA HTML /assets/useToggleState-DlbJ5NYI.js",
+      "passed": true
+    },
+    {
+      "name": "local asset origin /assets/index-CB-GcDN8.css",
+      "passed": true
+    },
+    {
+      "name": "asset HTTP /assets/index-CB-GcDN8.css",
+      "passed": true
+    },
+    {
+      "name": "asset MIME /assets/index-CB-GcDN8.css",
+      "passed": true
+    },
+    {
+      "name": "asset is nonempty and not SPA HTML /assets/index-CB-GcDN8.css",
+      "passed": true
+    },
+    {
+      "name": "backend has exactly one container",
+      "passed": true
+    },
+    {
+      "name": "worker has exactly one container",
+      "passed": true
+    },
+    {
+      "name": "parsing-worker has exactly one container",
+      "passed": true
+    },
+    {
+      "name": "classification-worker has exactly one container",
+      "passed": true
+    },
+    {
+      "name": "extraction-worker has exactly one container",
+      "passed": true
+    },
+    {
+      "name": "network inspector-foundations-r8_ingress has expected isolation for frontend",
+      "passed": true
+    },
+    {
+      "name": "network inspector-foundations-r8_offline has expected isolation for frontend",
+      "passed": true
+    },
+    {
+      "name": "parsing-worker executes Node",
+      "passed": true
+    },
+    {
+      "name": "parsing-worker healthy",
+      "passed": true
+    },
+    {
+      "name": "network inspector-foundations-r8_offline has expected isolation for parsing-worker",
+      "passed": true
+    },
+    {
+      "name": "worker executes Node",
+      "passed": true
+    },
+    {
+      "name": "worker healthy",
+      "passed": true
+    },
+    {
+      "name": "network inspector-foundations-r8_offline has expected isolation for worker",
+      "passed": true
+    },
+    {
+      "name": "extraction-worker executes Node",
+      "passed": true
+    },
+    {
+      "name": "extraction-worker healthy",
+      "passed": true
+    },
+    {
+      "name": "network inspector-foundations-r8_offline has expected isolation for extraction-worker",
+      "passed": true
+    },
+    {
+      "name": "classification-worker executes Node",
+      "passed": true
+    },
+    {
+      "name": "classification-worker healthy",
+      "passed": true
+    },
+    {
+      "name": "network inspector-foundations-r8_offline has expected isolation for classification-worker",
+      "passed": true
+    },
+    {
+      "name": "backend executes Node",
+      "passed": true
+    },
+    {
+      "name": "backend healthy",
+      "passed": true
+    },
+    {
+      "name": "network inspector-foundations-r8_offline has expected isolation for backend",
+      "passed": true
+    },
+    {
+      "name": "network inspector-foundations-r8_offline has expected isolation for migrate",
+      "passed": true
+    },
+    {
+      "name": "network inspector-foundations-r8_offline has expected isolation for clamav",
+      "passed": true
+    },
+    {
+      "name": "network inspector-foundations-r8_offline has expected isolation for parser",
+      "passed": true
+    },
+    {
+      "name": "network inspector-foundations-r8_offline has expected isolation for postgres",
+      "passed": true
+    },
+    {
+      "name": "network inspector-foundations-r8_offline has expected isolation for rabbitmq",
+      "passed": true
+    },
+    {
+      "name": "network inspector-foundations-r8_offline has expected isolation for redis",
+      "passed": true
+    },
+    {
+      "name": "network inspector-foundations-r8_offline has expected isolation for asset-restore",
+      "passed": true
+    },
+    {
+      "name": "network inspector-foundations-r8_offline has expected isolation for validator",
+      "passed": true
+    },
+    {
+      "name": "frontend DNS has no external resolver",
+      "passed": true
+    },
+    {
+      "name": "frontend drops raw socket capability",
+      "passed": true
+    },
+    {
+      "name": "frontend IPv4 exact OUTPUT allowlist",
+      "passed": true
+    },
+    {
+      "name": "frontend IPv6 exact OUTPUT allowlist",
+      "passed": true
+    },
+    {
+      "name": "nginx cannot alter firewall",
+      "passed": true
+    },
+    {
+      "name": "nginx cannot bypass firewall with raw socket",
+      "passed": true
+    },
+    {
+      "name": "nginx cannot gain new privileges",
+      "passed": true
+    },
+    {
+      "name": "frontend external HTTP and DNS blocked",
+      "passed": true
+    },
+    {
+      "name": "Node runtime",
+      "passed": true
+    },
+    {
+      "name": "all real metric sources available",
+      "passed": true
+    },
+    {
+      "name": "external egress blocked",
+      "passed": true
+    },
+    {
+      "name": "external DNS blocked",
+      "passed": true
+    }
+  ]
+}

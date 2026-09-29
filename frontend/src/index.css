@@ -40,6 +40,30 @@
   --color-syntax-comment: var(--syntax-comment);
   --font-sans: "Placebo Fiera", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-chart-scale-pattern-color: var(--chart-scale-pattern-color);
+  --color-chart-scale-05: var(--chart-scale-05);
+  --color-chart-scale-04: var(--chart-scale-04);
+  --color-chart-scale-03: var(--chart-scale-03);
+  --color-chart-scale-02: var(--chart-scale-02);
+  --color-chart-scale-01: var(--chart-scale-01);
+  --color-chart-label: var(--chart-label);
+  --color-chart-marker-foreground: var(--chart-marker-foreground);
+  --color-chart-marker-border: var(--chart-marker-border);
+  --color-chart-marker-background: var(--chart-marker-background);
+  --color-chart-tooltip-muted: var(--chart-tooltip-muted);
+  --color-chart-tooltip-foreground: var(--chart-tooltip-foreground);
+  --color-chart-tooltip-background: var(--chart-tooltip-background);
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-crosshair: var(--chart-crosshair);
+  --color-chart-foreground-muted: var(--chart-foreground-muted);
+  --color-chart-foreground: var(--chart-foreground);
+  --color-chart-background: var(--chart-background);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
 }
 
 :root,
@@ -161,6 +185,40 @@
   --topbar-height: 64px;
   --tooltip-delay: 250ms;
   --tooltip-close-delay: 0ms;
+
+  /* Bklit/shadcn chart tokens linked to the app theme (flip with light/dark). */
+  --chart-1: var(--accent);
+  --chart-2: hsl(var(--primary) / 0.55);
+  --chart-3: hsl(var(--primary) / 0.35);
+  --chart-4: var(--copy-muted);
+  --chart-5: var(--line);
+  --chart-background: var(--card);
+  --chart-foreground: var(--foreground);
+  --chart-foreground-muted: var(--copy-muted);
+  --chart-line-primary: var(--chart-1);
+  --chart-line-secondary: var(--chart-2);
+  --chart-indicator-color: var(--accent);
+  --chart-indicator-secondary-color: var(--chart-2);
+  --chart-crosshair: var(--accent);
+  --chart-grid: var(--line);
+  --chart-brush-border: var(--chart-grid);
+  --chart-tooltip-background: var(--popover);
+  --chart-tooltip-foreground: var(--popover-foreground);
+  --chart-tooltip-muted: var(--copy-muted);
+  --chart-marker-background: var(--surface-high);
+  --chart-marker-border: var(--border);
+  --chart-marker-foreground: var(--foreground);
+  --chart-marker-badge-background: var(--accent);
+  --chart-marker-badge-foreground: var(--accent-foreground);
+  --chart-segment-background: hsl(var(--primary) / 0.12);
+  --chart-segment-line: var(--accent);
+  --chart-label: var(--copy-muted);
+  --chart-scale-01: color-mix(in oklab, var(--accent) 12%, var(--card));
+  --chart-scale-02: color-mix(in oklab, var(--accent) 28%, var(--card));
+  --chart-scale-03: color-mix(in oklab, var(--accent) 48%, var(--card));
+  --chart-scale-04: color-mix(in oklab, var(--accent) 70%, var(--card));
+  --chart-scale-05: var(--accent);
+  --chart-scale-pattern-color: var(--card);
 }
 
 @layer base {

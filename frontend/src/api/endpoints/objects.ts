@@ -26,12 +26,13 @@ export async function getObject(id: string, signal?: AbortSignal) {
 export async function listFiles(
   id: string,
   page: number,
+  limit: number,
   signal?: AbortSignal,
 ) {
   return fileListSchema.parse(
     (
       await apiClient.get<unknown>("/v1/objects/" + id + "/files", {
-        params: { page },
+        params: { page, limit },
         signal,
       })
     ).data,

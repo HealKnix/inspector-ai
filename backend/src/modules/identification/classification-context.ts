@@ -1,3 +1,4 @@
+import { analysisBlocks } from "../parsing/analysis-blocks.js";
 import type {
   ParseArtifactData,
   ParseBlock,
@@ -49,9 +50,8 @@ export function buildClassificationContext(
 ): ClassificationContext {
   const pages = artifact.pages.map((page) => ({
     number: page.page_number,
-    items: page.blocks.filter(
+    items: analysisBlocks(page).filter(
       (block) =>
-        block.include_in_main !== false &&
         blockText(block) &&
         !/xmldsig|Signature|X509|SignatureValue/.test(
           block.structural_path ?? "",

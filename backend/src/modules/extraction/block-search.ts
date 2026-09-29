@@ -1,3 +1,4 @@
+import { analysisBlocks } from "../parsing/analysis-blocks.js";
 import type {
   ParseArtifactData,
   ParseBlock,
@@ -31,21 +32,7 @@ export function findAnchorHits(
 ): AnchorHit[] {
   const hits: AnchorHit[] = [];
   for (const page of artifact.pages) {
-    const regions = new Map(
-      (page.regions ?? []).map((region) => [region.id, region] as const),
-    );
-    for (const block of page.blocks) {
-      // include_in_main === false marks two cases: native audit copies
-      // superseded by OCR replacements (skip — counting them would duplicate
-      // every hit) and skipped-region text with no replacement — the only
-      // available evidence, which must stay searchable.
-      if (block.include_in_main === false) {
-        const method = block.region_id
-          ? regions.get(block.region_id)?.method
-          : undefined;
-        if (method === "ocr" || method === "table_ocr" || method === "hybrid")
-          continue;
-      }
+    for (const block of analysisBlocks(page)) {
       const text = blockText(block);
       if (!text) continue;
       for (const term of terms) {
@@ -66,6 +53,8 @@ export interface TableGrid {
     "not_applicable" | "structured" | "unconfirmed" | "unreadable" | null;
   cells: ParseBlock[];
   rows: Map<number, ParseBlock[]>;
+  /** Associated native labels keep their original text locator, never a fake cell. */
+  rowLabels: Map<number, ParseBlock[]>;
   /** Concatenated normalized text of all cells, for signature matching. */
   text: string;
   top: number;
@@ -73,8 +62,14 @@ export interface TableGrid {
 
 export function pageTables(page: ParsePage): TableGrid[] {
   const byTable = new Map<string, ParseBlock[]>();
-  for (const block of page.blocks) {
-    if (block.kind !== "table_cell" || !block.table_id) continue;
+  const eligible = analysisBlocks(page);
+  for (const block of eligible) {
+    if (
+      block.kind !== "table_cell" ||
+      !block.table_id ||
+      block.table_link?.status === "ambiguous"
+    )
+      continue;
     const cells = byTable.get(block.table_id) ?? [];
     cells.push(block);
     byTable.set(block.table_id, cells);
@@ -94,6 +89,19 @@ export function pageTables(page: ParsePage): TableGrid[] {
     for (const list of rows.values())
       list.sort((a, b) => (a.column ?? 0) - (b.column ?? 0));
     const sample = cells[0]!;
+    const labels = eligible.filter(
+      (block) =>
+        block.kind === "text" &&
+        block.table_link?.status === "associated" &&
+        block.table_link.table_id === tableId,
+    );
+    const rowLabels = new Map<number, ParseBlock[]>();
+    for (const label of labels)
+      for (const row of label.table_link!.rows) {
+        const list = rowLabels.get(row) ?? [];
+        list.push(label);
+        rowLabels.set(row, list);
+      }
     const region = sample.region_id ? regions.get(sample.region_id) : null;
     grids.push({
       tableId,
@@ -101,7 +109,10 @@ export function pageTables(page: ParsePage): TableGrid[] {
       tableStatus: region?.kind === "table" ? region.table_status : null,
       cells,
       rows,
-      text: cells.map((cell) => normalizeTerm(blockText(cell))).join(" "),
+      rowLabels,
+      text: [...cells, ...labels]
+        .map((cell) => normalizeTerm(blockText(cell)))
+        .join(" "),
       top: Math.min(...cells.map((cell) => cell.bbox[1])),
     });
   }
@@ -110,10 +121,12 @@ export function pageTables(page: ParsePage): TableGrid[] {
 
 /** Text blocks just above the table top on the same page — caption candidates. */
 function captionText(grid: TableGrid): string {
-  const captions = grid.page.blocks
+  const captions = analysisBlocks(grid.page)
     .filter(
       (block) =>
         block.kind === "text" &&
+        block.table_link?.status !== "ambiguous" &&
+        (!block.table_link || block.table_link.table_id === grid.tableId) &&
         blockText(block).length > 0 &&
         block.bbox[3] <= grid.top + 0.01 &&
         grid.top - block.bbox[3] <= 0.12,
@@ -168,9 +181,16 @@ export function locatorFor(
     page_number: page.page_number,
     sheet_label: page.sheet_label,
     block_id: block?.id ?? null,
-    table_id: block?.table_id ?? null,
-    table_row: block?.row ?? null,
-    table_column: block?.column ?? null,
+    table_id:
+      block?.table_link?.status === "ambiguous"
+        ? null
+        : (block?.table_id ?? null),
+    table_row:
+      block?.table_link?.status === "ambiguous" ? null : (block?.row ?? null),
+    table_column:
+      block?.table_link?.status === "ambiguous"
+        ? null
+        : (block?.column ?? null),
     quote: (quote ?? (block ? blockText(block) : "")).slice(0, 900),
     bbox: block ? [...block.bbox] : null,
     structural_path: block?.structural_path ?? null,
@@ -201,14 +221,18 @@ export function contextWindows(
   const windows: ContextWindow[] = [];
   const seenPages = new Set<string>();
   for (const hit of hits) {
-    const key = hit.block.table_id
-      ? `${hit.page.page_number}:${hit.block.table_id}`
+    const tableId =
+      hit.block.table_link?.status === "ambiguous"
+        ? null
+        : (hit.block.table_id ?? hit.block.table_link?.table_id ?? null);
+    const key = tableId
+      ? `${hit.page.page_number}:${tableId}`
       : `${hit.page.page_number}:${Math.round(hit.block.bbox[1] * 10)}`;
     if (seenPages.has(key) || windows.length >= MAX_WINDOWS) continue;
     seenPages.add(key);
-    if (hit.block.table_id) {
+    if (tableId) {
       const grid = pageTables(hit.page).find(
-        (table) => table.tableId === hit.block.table_id,
+        (table) => table.tableId === tableId,
       );
       if (!grid) continue;
       const lines: ContextWindow["lines"] = [];
@@ -222,6 +246,13 @@ export function contextWindows(
             .map((cell) => blockText(cell).slice(0, MAX_LINE_CHARACTERS))
             .join(" | ")}`,
         });
+        for (const label of grid.rowLabels.get(row) ?? []) {
+          if (lines.length >= MAX_WINDOW_LINES) break;
+          lines.push({
+            block_id: label.id,
+            text: `r${row}: ${blockText(label).slice(0, MAX_LINE_CHARACTERS)}`,
+          });
+        }
       }
       windows.push({
         page_number: hit.page.page_number,
@@ -230,9 +261,13 @@ export function contextWindows(
         lines,
       });
     } else {
-      const index = hit.page.blocks.indexOf(hit.block);
-      const lines = hit.page.blocks
-        .slice(Math.max(0, index - 3), index + 4)
+      const blocks = analysisBlocks(hit.page);
+      const index = blocks.indexOf(hit.block);
+      const scope =
+        hit.block.table_link?.status === "ambiguous"
+          ? [hit.block]
+          : blocks.slice(Math.max(0, index - 3), index + 4);
+      const lines = scope
         .filter((block) => blockText(block).length > 0)
         .map((block) => ({
           block_id: block.id,

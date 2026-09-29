@@ -1,0 +1,72 @@
+# Локальный LLM-контур: Ollama внутри Compose + автоматическая загрузка
+# модели. Вариант запуска «всё в Docker, включая модель»:
+#
+#   docker compose -f compose.yaml -f compose.ollama.yaml \
+#     --env-file .env up --detach --build --wait --wait-timeout 1800
+#
+# Первый запуск скачивает ~18 ГБ весов qwen3.8:27b в volume ollama-models.
+# Одноразовый сервис ollama-pull блокирует старт backend и LLM-worker'ов,
+# пока модель не загружена: после --wait весь контур уже готов к работе.
+#
+# Требования: Ollama 0.32.12+ (поддержка qwen3.8), ~20+ ГБ свободной памяти
+# для CPU-инференса. С NVIDIA Container Toolkit раскомментируйте блок deploy
+# ниже для GPU-ускорения.
+
+services:
+  ollama:
+    image: ollama/ollama:0.32.12
+    restart: unless-stopped
+    networks: [default]
+    volumes: ["ollama-models:/root/.ollama"]
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 15s
+      retries: 30
+    # GPU-ускорение (требуется NVIDIA Container Toolkit на хосте):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+    # Для отладки модели с хоста можно открыть порт:
+    # ports: ["127.0.0.1:11434:11434"]
+
+  ollama-pull:
+    image: ollama/ollama:0.32.12
+    restart: "no"
+    networks: [default]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    command: ["pull", "${OLLAMA_MODEL:-qwen3.8:27b}"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  # Потребители LLM-контура стартуют только после загрузки модели.
+  backend:
+    depends_on:
+      ollama-pull:
+        condition: service_completed_successfully
+    environment:
+      # CPU-инференс 27B медленный: дефолтный наследуемый таймаут 240 с
+      # недостаточен для секционного анализа.
+      SECTION_LLM_TIMEOUT_MS: ${SECTION_LLM_TIMEOUT_MS:-1800000}
+
+  classification-worker:
+    depends_on:
+      ollama-pull:
+        condition: service_completed_successfully
+
+  extraction-worker:
+    depends_on:
+      ollama-pull:
+        condition: service_completed_successfully
+    environment:
+      SECTION_LLM_TIMEOUT_MS: ${SECTION_LLM_TIMEOUT_MS:-1800000}
+
+volumes:
+  ollama-models:

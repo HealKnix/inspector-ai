@@ -3,13 +3,25 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
+import type { Prisma } from "../../generated/prisma/client.js";
+import { writeAuditEvent } from "../../infrastructure/audit/audit-envelope.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import {
   ObjectAccessService,
   type AuditContext,
 } from "../objects/object-access.service.js";
-import type { ClassificationResult } from "./classification-contract.js";
+import type {
+  ClassificationResult,
+  ClassificationStage,
+} from "./classification-contract.js";
 import { ClassificationJobsService } from "./classification-jobs.service.js";
+import {
+  classificationReview,
+  type ClassificationReview,
+  type ClassificationReviewSnapshot,
+} from "./classification-review.js";
+import { identificationSources } from "./identification-state.js";
+import { IdentificationService } from "./identification.service.js";
 
 export interface ClassificationRow {
   file_id: string;
@@ -22,6 +34,7 @@ export interface ClassificationRow {
   can_retry: boolean;
   error_code: string | null;
   result: ClassificationResult | null;
+  review?: ClassificationReview | null;
 }
 
 @Injectable()
@@ -30,6 +43,7 @@ export class ClassificationService {
     private readonly prisma: PrismaService,
     private readonly access: ObjectAccessService,
     private readonly jobs: ClassificationJobsService,
+    private readonly identification: IdentificationService,
   ) {}
 
   async list(userId: string, objectId: string) {
@@ -49,8 +63,54 @@ export class ClassificationService {
         WHERE p.object_id=${objectId}::uuid AND f.corrupted_at IS NULL
           AND (c.id IS NOT NULL OR p.status IN ('PENDING','PARSING'))
         ORDER BY p.created_at DESC,f.created_at,f.id`;
+      let identificationActive = false;
+      for (const runId of new Set(items.map((item) => item.run_id))) {
+        const selection = await IdentificationService.readSnapshot(tx, runId);
+        const sources = await identificationSources(tx, runId);
+        const current = Boolean(
+          selection &&
+          sources?.ready &&
+          sources.run.version === sources.run.process.version &&
+          selection.inputManifestHash === sources.run.inputManifestHash &&
+          selection.sourceFingerprint === sources.fingerprint,
+        );
+        if (!current) {
+          const task = await tx.identificationTask.findUnique({
+            where: {
+              runId_fingerprint: { runId, fingerprint: sources.fingerprint },
+            },
+          });
+          const sourceWorkActive =
+            sources.sources.some((source) =>
+              ["queued", "processing"].includes(source.parsing?.state ?? ""),
+            ) ||
+            items.some(
+              (item) =>
+                item.run_id === runId &&
+                ["queued", "processing"].includes(item.state) &&
+                item.error_code !== "classification_configuration_changed",
+            );
+          identificationActive ||=
+            sources.run.process.status !== "FINALIZED" &&
+            task?.state !== "failed" &&
+            (sources.ready || sourceWorkActive);
+        }
+        for (const item of items.filter((row) => row.run_id === runId))
+          item.review =
+            current && selection && sources
+              ? classificationReview(
+                  selection.snapshot as unknown as ClassificationReviewSnapshot,
+                  selection.resolvedInputHash,
+                  item.file_id,
+                  item.artifact_id,
+                  item.result,
+                  sources.decisions,
+                )
+              : null;
+      }
       return {
         schema_version: 1,
+        review_active: identificationActive,
         active: items.some(
           (item) =>
             ["queued", "processing"].includes(item.state) &&
@@ -60,6 +120,75 @@ export class ClassificationService {
         items,
       };
     });
+  }
+
+  // Виды словаря каркаса, которым соответствует стадия документа. SET —
+  // шаблон генератора марок РД, а не вид документа, в выбор и валидацию
+  // не входит.
+  private static readonly VOCAB_STAGE: Record<string, ClassificationStage> = {
+    pd_section: "PD",
+    rd_mark: "RD",
+    rd_component: "RD",
+    id_kind: "ID",
+  };
+
+  private async kindVocabulary(tx: Prisma.TransactionClient) {
+    const set = await tx.frameworkSet.findFirst({
+      where: { status: "approved" },
+      orderBy: { version: "desc" },
+      include: { vocabularies: true },
+    });
+    const byCode = new Map<
+      string,
+      { title: string; stages: Set<ClassificationStage> }
+    >();
+    for (const entry of set?.vocabularies ?? []) {
+      const stage = ClassificationService.VOCAB_STAGE[entry.kind];
+      if (!stage || entry.code === "SET") continue;
+      const current = byCode.get(entry.code) ?? {
+        title: entry.title,
+        stages: new Set<ClassificationStage>(),
+      };
+      current.stages.add(stage);
+      byCode.set(entry.code, current);
+    }
+    return byCode;
+  }
+
+  async kindOptions(userId: string, objectId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      await this.access.lock(tx, objectId);
+      await this.access.requireAccess(tx, userId, objectId);
+      const byCode = await this.kindVocabulary(tx);
+      const options: Record<
+        ClassificationStage,
+        { code: string; title: string }[]
+      > = { PD: [], RD: [], ID: [] };
+      for (const [code, entry] of byCode)
+        for (const stage of entry.stages)
+          options[stage].push({ code, title: entry.title });
+      for (const list of Object.values(options))
+        list.sort((a, b) => a.title.localeCompare(b.title, "ru-RU"));
+      return { schema_version: 1, options };
+    });
+  }
+
+  // Legacy URL is a bridge to the versioned document-resolution workflow.
+  // It cannot overwrite a classifier result or bypass the new-Run boundary.
+  async resolve(
+    context: AuditContext,
+    objectId: string,
+    fileId: string,
+    input: {
+      request_id: string;
+      expected_run_id: string;
+      expected_version: number;
+      basis: string;
+      kind_code: string;
+      stage: ClassificationStage;
+    },
+  ) {
+    return this.identification.resolveKind(context, objectId, fileId, input);
   }
 
   async retry(
@@ -138,7 +267,7 @@ export class ClassificationService {
       await tx.classificationRetryReceipt.create({
         data: { userId: context.userId, objectId, requestId, taskId: next.id },
       });
-      await tx.auditEvent.create({
+      await writeAuditEvent(tx, {
         data: {
           ...context,
           objectId,

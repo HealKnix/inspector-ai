@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
+import { writeOutboxEvent } from "../../infrastructure/observability/trace-context.js";
 import { PrismaService } from "../../infrastructure/prisma/prisma.service.js";
 import { PrivateStorageService } from "../../infrastructure/storage/private-storage.service.js";
 
@@ -43,7 +44,7 @@ export class IntegrityService {
         });
         if (changed.count) {
           const eventId = randomUUID();
-          await tx.outbox.create({
+          await writeOutboxEvent(tx, {
             data: {
               id: eventId,
               eventType: "file.integrity-failed",

@@ -3,14 +3,25 @@ export const queryKeys = {
     all: ["objects"] as const,
     list: (page: number) => ["objects", "list", page] as const,
     detail: (id: string) => ["objects", id] as const,
-    files: (id: string, page: number) =>
-      ["objects", id, "files", page] as const,
+    files: (id: string, page: number, limit: number) =>
+      ["objects", id, "files", page, limit] as const,
     receipt: (id: string, uploadId: string) =>
       ["objects", id, "receipt", uploadId] as const,
     parsing: (id: string) => ["objects", id, "parsing"] as const,
     classification: (id: string) => ["objects", id, "classification"] as const,
+    identification: (id: string) => ["objects", id, "identification"] as const,
+    completenessPackage: (id: string) =>
+      ["objects", id, "completeness", "package"] as const,
+    completenessResult: (id: string, runId?: string) =>
+      ["objects", id, "completeness", "result", runId ?? "latest"] as const,
     extractions: (id: string) => ["objects", id, "extractions"] as const,
     evidenceGroups: (id: string) => ["objects", id, "evidence-groups"] as const,
+    sectionAnalysis: (id: string, runId?: string) =>
+      ["objects", id, "section-analysis", runId ?? "latest"] as const,
+    protocol: (id: string) => ["objects", id, "protocol"] as const,
+    findings: (id: string) => ["objects", id, "findings"] as const,
+    finding: (id: string, findingId: string) =>
+      ["objects", id, "findings", findingId] as const,
     parse: (id: string, fileId: string, runId: string, artifactId: string) =>
       ["objects", id, "parse", fileId, runId, artifactId] as const,
     renderedPage: (
@@ -37,7 +48,35 @@ export const queryKeys = {
   matrix: {
     all: ["admin", "matrix"] as const,
     rows: ["admin", "matrix", "rows"] as const,
+    reviewContract: ["admin", "matrix", "review-contract"] as const,
+    review: (ruleId: string) => ["admin", "matrix", "review", ruleId] as const,
     rules: (parameterCode: string) =>
       ["admin", "matrix", "rules", parameterCode] as const,
+  },
+  users: {
+    all: ["admin", "users"] as const,
+  },
+  admin: {
+    objects: ["admin", "objects"] as const,
+    documents: (filters: {
+      objectId?: string;
+      page?: number;
+      q?: string;
+      userId?: string;
+    }) => ["admin", "documents", filters] as const,
+    documentStats: (range: string) =>
+      ["admin", "documents", "stats", range] as const,
+    parse: (fileId: string, artifactId: string) =>
+      ["admin", "documents", "parse", fileId, artifactId] as const,
+    renderedPage: (fileId: string, artifactId: string, page: number) =>
+      [
+        "admin",
+        "documents",
+        "parse",
+        fileId,
+        artifactId,
+        "page",
+        page,
+      ] as const,
   },
 } as const;

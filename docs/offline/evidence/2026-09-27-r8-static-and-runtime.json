@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-09-27T07:33:07.238Z",
+  "project": "inspector-foundations-r8",
+  "manifest_sha256": "b899ad410f1307ffe767d07c4ec2711750506534e66c912a2a29ef41db0e7692",
+  "verified_files": 15,
+  "images": 9,
+  "image_archive_bytes": 1566343168,
+  "bundle_file_bytes": 2533297202,
+  "runtime_build": false,
+  "runtime_pull": false,
+  "validated_guarded_compose": true,
+  "services": [
+    "backend",
+    "clamav",
+    "classification-worker",
+    "extraction-worker",
+    "frontend",
+    "migrate",
+    "parser",
+    "parsing-worker",
+    "postgres",
+    "rabbitmq",
+    "redis",
+    "validator",
+    "worker",
+    "asset-restore"
+  ],
+  "networks": [
+    {
+      "name": "inspector-foundations-r8_offline",
+      "internal": true,
+      "driver": "bridge"
+    },
+    {
+      "name": "inspector-foundations-r8_ingress",
+      "internal": false,
+      "driver": "bridge"
+    }
+  ],
+  "volumes": [
+    {
+      "name": "inspector-foundations-r8_document-originals",
+      "created_at": "2026-09-27T07:23:00Z",
+      "created_after_manifest_and_before_first_install": true
+    },
+    {
+      "name": "inspector-foundations-r8_document-derived",
+      "created_at": "2026-09-27T07:23:01Z",
+      "created_after_manifest_and_before_first_install": true
+    },
+    {
+      "name": "inspector-foundations-r8_document-quarantine",
+      "created_at": "2026-09-27T07:23:00Z",
+      "created_after_manifest_and_before_first_install": true
+    },
+    {
+      "name": "inspector-foundations-r8_clamav-data",
+      "created_at": "2026-09-27T07:23:00Z",
+      "created_after_manifest_and_before_first_install": true
+    },
+    {
+      "name": "inspector-foundations-r8_parser-models",
+      "created_at": "2026-09-27T07:23:01Z",
+      "created_after_manifest_and_before_first_install": true
+    },
+    {
+      "name": "inspector-foundations-r8_postgres-data",
+      "created_at": "2026-09-27T07:23:01Z",
+      "created_after_manifest_and_before_first_install": true
+    },
+    {
+      "name": "inspector-foundations-r8_rabbitmq-data",
+      "created_at": "2026-09-27T07:23:01Z",
+      "created_after_manifest_and_before_first_install": true
+    },
+    {
+      "name": "4e1d2b1be72a74cbcf744bf125089c932229662d38e429976202a4fe7651e2e7",
+      "created_at": "2026-09-27T07:23:02Z",
+      "created_after_manifest_and_before_first_install": true
+    }
+  ],
+  "containers": [
+    {
+      "name": "inspector-foundations-r8-frontend-1",
+      "service": "frontend",
+      "created_at": "2026-09-27T07:23:12.082255116Z",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "image_id": "sha256:526ba5aa34e64dc983e75fd5520c0a9f23057a240c2fa89edff316d2e0d701ff"
+    },
+    {
+      "name": "inspector-foundations-r8-parsing-worker-1",
+      "service": "parsing-worker",
+      "created_at": "2026-09-27T07:23:06.570068622Z",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "image_id": "sha256:a05c5b8aa461433c524ef19f44bed2985d2c5cdd5ad9c3953d7d7f110de64979"
+    },
+    {
+      "name": "inspector-foundations-r8-worker-1",
+      "service": "worker",
+      "created_at": "2026-09-27T07:23:06.569972841Z",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "image_id": "sha256:a05c5b8aa461433c524ef19f44bed2985d2c5cdd5ad9c3953d7d7f110de64979"
+    },
+    {
+      "name": "inspector-foundations-r8-extraction-worker-1",
+      "service": "extraction-worker",
+      "created_at": "2026-09-27T07:23:06.56158546Z",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "image_id": "sha256:a05c5b8aa461433c524ef19f44bed2985d2c5cdd5ad9c3953d7d7f110de64979"
+    },
+    {
+      "name": "inspector-foundations-r8-classification-worker-1",
+      "service": "classification-worker",
+      "created_at": "2026-09-27T07:23:06.552701755Z",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "image_id": "sha256:a05c5b8aa461433c524ef19f44bed2985d2c5cdd5ad9c3953d7d7f110de64979"
+    },
+    {
+      "name": "inspector-foundations-r8-backend-1",
+      "service": "backend",
+      "created_at": "2026-09-27T07:23:06.544841465Z",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "image_id": "sha256:a05c5b8aa461433c524ef19f44bed2985d2c5cdd5ad9c3953d7d7f110de64979"
+    },
+    {
+      "name": "inspector-foundations-r8-migrate-1",
+      "service": "migrate",
+      "created_at": "2026-09-27T07:23:03.595573579Z",
+      "state": "exited",
+      "health": null,
+      "exit_code": 0,
+      "image_id": "sha256:e792bb6b5430e88cf68375b8dce3a86ae91a898bfcfabcd0adb6e70bb68ef569"
+    },
+    {
+      "name": "inspector-foundations-r8-clamav-1",
+      "service": "clamav",
+      "created_at": "2026-09-27T07:23:03.247459251Z",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "image_id": "sha256:ba5ddf001919c71f3879246cf96d2dab51db7d9d13e213b4e9e982a9207fe459"
+    },
+    {
+      "name": "inspector-foundations-r8-parser-1",
+      "service": "parser",
+      "created_at": "2026-09-27T07:23:03.245056407Z",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "image_id": "sha256:fa74c76be25c80d0976803146cdae0315b6b3d1ec4e6ba97e877a57a39487d3e"
+    },
+    {
+      "name": "inspector-foundations-r8-postgres-1",
+      "service": "postgres",
+      "created_at": "2026-09-27T07:23:01.323989964Z",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "image_id": "sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94"
+    },
+    {
+      "name": "inspector-foundations-r8-rabbitmq-1",
+      "service": "rabbitmq",
+      "created_at": "2026-09-27T07:23:01.318522011Z",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "image_id": "sha256:6fb3095d1d579e11639d9033c9ded1287ca085664c97e9305ffc2a26cee433f5"
+    },
+    {
+      "name": "inspector-foundations-r8-redis-1",
+      "service": "redis",
+      "created_at": "2026-09-27T07:23:01.317834173Z",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "image_id": "sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952"
+    },
+    {
+      "name": "inspector-foundations-r8-asset-restore-1",
+      "service": "asset-restore",
+      "created_at": "2026-09-27T07:23:01.262588978Z",
+      "state": "exited",
+      "health": null,
+      "exit_code": 0,
+      "image_id": "sha256:fa74c76be25c80d0976803146cdae0315b6b3d1ec4e6ba97e877a57a39487d3e"
+    },
+    {
+      "name": "inspector-foundations-r8-validator-1",
+      "service": "validator",
+      "created_at": "2026-09-27T07:23:01.260857139Z",
+      "state": "running",
+      "health": null,
+      "exit_code": 0,
+      "image_id": "sha256:24d3f03db1797aedbd78d2501f032a5f897e42f834dd3e58772f479cf41c73f6"
+    }
+  ],
+  "fresh_install_evidence": "Bootstrap reported newly created volumes; Docker CreatedAt independently places every runtime volume after the sealed manifest and before the first successful installation. Catalog restore additionally requires an empty initial object/catalog state.",
+  "boundary": "Image archive restoration is tested separately on an empty Docker daemon with network none. Application installation and functional smoke use this host daemon and newly created volumes with the exact manifest image IDs."
+}

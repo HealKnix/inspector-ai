@@ -92,6 +92,7 @@ def parse(request, settings, versions, ocr, progress):
         "pages": pages}
     if request["format"] == "pdf":
         artifact["region_schema_version"] = 1
+        artifact["text_provenance_schema_version"] = 1
     if len(json.dumps(artifact, ensure_ascii=False).encode()) > settings.max_output_bytes:
         raise ParseError("OUTPUT_SIZE_LIMIT")
     progress(len(pages), len(pages), "complete", {"current_page": None})

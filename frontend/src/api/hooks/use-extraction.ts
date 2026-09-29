@@ -42,6 +42,7 @@ export function useExtractions(
   objectId: string,
   parsingActive: boolean,
   enabled = true,
+  resolvedInputHash?: string | null,
 ) {
   const available = useSyncExternalStore(
     subscribeAvailability,
@@ -49,7 +50,10 @@ export function useExtractions(
     () => true,
   );
   return useQuery({
-    queryKey: queryKeys.objects.extractions(objectId),
+    queryKey: [
+      ...queryKeys.objects.extractions(objectId),
+      resolvedInputHash ?? "latest",
+    ],
     queryFn: ({ signal }) => getExtractions(objectId, signal),
     enabled: (query) =>
       enabled &&
@@ -74,11 +78,17 @@ export function useExtractions(
   });
 }
 
-export function useEvidenceGroups(objectId: string, enabled = true) {
+export function useEvidenceGroups(
+  objectId: string,
+  enabled = true,
+  polling = false,
+) {
   return useQuery({
     queryKey: queryKeys.objects.evidenceGroups(objectId),
     queryFn: ({ signal }) => getEvidenceGroups(objectId, signal),
     enabled: enabled && Boolean(objectId),
     staleTime: 5_000,
+    refetchInterval: polling ? 2_000 : false,
+    refetchIntervalInBackground: false,
   });
 }

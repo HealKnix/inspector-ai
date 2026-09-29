@@ -244,8 +244,9 @@ def native_table_cells(page, owner, native, number):
                 if endcol <= col or endrow <= row:
                     continue
                 visible = bbox_pixels(pymupdf.Rect(box) * rotation_matrix, width, height)
-                texts = [item for item in native if overlap(item["bbox"], visible) >= .5]
-                candidates.append(block("\n".join(item["raw_text"] for item in texts), visible, "native",
+                # Text is associated after the complete grid is known. A line
+                # crossing two columns must not be copied into one of them.
+                candidates.append(block("", visible, "native",
                     f"region[{owner['id']}]/native-table[{table_index}]", table_id=f"p{number}-r{owner['id']}-t{table_index}",
                     row=row, column=col, row_span=endrow - row, column_span=endcol - col))
             if candidates and valid_geometry(candidates, [item["bbox"] for item in candidates], 1, 1):

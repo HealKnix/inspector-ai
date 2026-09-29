@@ -42,6 +42,8 @@ export const ruleVersionSchema = z.object({
   version: z.number().int(),
   status: z.enum(["draft", "approved", "rejected", "deprecated"]),
   plan: z.unknown(),
+  comparison: z.unknown().nullable().optional(),
+  applicability: z.unknown().nullable().optional(),
   note: z.string().nullable(),
   createdBy: z.string().nullable(),
   createdAt: z.string(),

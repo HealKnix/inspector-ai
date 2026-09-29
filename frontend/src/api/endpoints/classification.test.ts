@@ -11,6 +11,30 @@ vi.mock("@/api/client", () => ({ apiClient: { get, post } }));
 beforeEach(() => vi.resetAllMocks());
 
 describe("classification boundary", () => {
+  it("preserves the current review projection without replacing the machine result", async () => {
+    const response = {
+      ...classificationStatus,
+      review_active: false,
+      items: [
+        {
+          ...classifiedFile,
+          review: {
+            document_id: classifiedFile.file_id,
+            revision_id: classifiedFile.artifact_id,
+            card_version: 2,
+            resolved_input_hash: "a".repeat(64),
+            fields: { stage: "RD", code: "Синтетический шифр" },
+            confirmed_fields: ["stage"],
+            needs_review: false,
+            reasons: [],
+            source_issues: ["partial_parse_requires_review"],
+          },
+        },
+      ],
+    };
+    get.mockResolvedValue({ data: response });
+    expect(await getClassificationStatus(parsingObjectId)).toEqual(response);
+  });
   it("передаёт сигнал отмены и сохраняет неизвестную принадлежность", async () => {
     const signal = new AbortController().signal;
     const response = {

@@ -62,9 +62,12 @@ let parserMode:
 let holdResponse: (() => Promise<void>) | undefined;
 
 async function account(role: "INSPECTOR" | "ADMINISTRATOR") {
-  const session = await app
-    .get(AuthService)
-    .register("par-" + randomUUID().slice(0, 8), "Synthetic-password-123!");
+  const session = await app.get(AuthService).register({
+    login: "par-" + randomUUID().slice(0, 8),
+    password: "Synthetic-password-123!",
+    lastName: "Тестов",
+    firstName: "Инспектор",
+  });
   await prisma.user.update({ where: { id: session.user.id }, data: { role } });
   return { id: session.user.id, token: session.accessToken };
 }
@@ -449,6 +452,47 @@ afterAll(async () => {
 });
 
 describe("PAR durable execution and access (real PG/broker/storage, parser fault fixture)", () => {
+  it("serves exact historical evidence after a new Run without weakening the current artifact fence", async () => {
+    const item = await seed();
+    await run(item);
+    const oldArtifact = (await get(prefix(item)).expect(200)).body as {
+      artifact_id: string;
+    };
+    await prisma.$transaction(async (tx) => {
+      await tx.process.update({
+        where: { id: item.processId },
+        data: { version: 2, status: "PENDING" },
+      });
+      await tx.run.create({
+        data: {
+          objectId: item.objectId,
+          processId: item.processId,
+          version: 2,
+          inputManifest: {},
+          inputManifestHash: digest("new-run"),
+        },
+      });
+    });
+    await get(prefix(item)).expect(409);
+    await get(`${prefix(item)}?artifact_id=${oldArtifact.artifact_id}`).expect(
+      409,
+    );
+    await get(`${prefix(item)}?run_id=${item.runId}`).expect(409);
+    const historical = await get(
+      `${prefix(item)}?run_id=${item.runId}&artifact_id=${oldArtifact.artifact_id}`,
+    ).expect(200);
+    expect((historical.body as { run_id: string }).run_id).toBe(item.runId);
+    await get(
+      `${prefix(item)}/pages/1?run_id=${item.runId}&artifact_id=${oldArtifact.artifact_id}`,
+    ).expect(200);
+    await get(
+      `${prefix(item)}?run_id=${randomUUID()}&artifact_id=${oldArtifact.artifact_id}`,
+    ).expect(404);
+    await get(
+      `${prefix(item)}?run_id=${item.runId}&artifact_id=${oldArtifact.artifact_id}`,
+      outsider,
+    ).expect(403);
+  });
   it("publishes regional PDF data unchanged, retains excluded native text and rejects OCR in skipped regions", async () => {
     // Synthetic transport fixture only: actual Paddle quality is tested locally
     // against the control corpus, not inferred from this queue/API regression.

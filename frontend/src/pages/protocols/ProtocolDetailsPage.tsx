@@ -56,8 +56,7 @@ function ProtocolNotFound() {
         </span>
         <h1 className="mt-4 text-2xl font-semibold">Протокол не найден</h1>
         <p className="text-copy-muted mt-2 text-sm leading-6">
-          Он отсутствует в текущем демонстрационном наборе или был создан в
-          другой сессии приложения.
+          Протокол отсутствует или недоступен в этой сессии приложения.
         </p>
         <Button
           className="mt-5 rounded-xl"
@@ -93,9 +92,7 @@ export function ProtocolDetailsPage() {
         backLabel="Все протоколы"
         badge="Сформирован"
         badgeIcon="check"
-        description="Сводный демонстрационный протокол по результатам проверки комплекта документов."
-        notice={protocol.fixtureNotice}
-        noticeLabel="ДЕМО"
+        description="Сводный протокол по результатам проверки комплекта документов."
         title="Протокол"
       />
 
@@ -185,25 +182,24 @@ export function ProtocolDetailsPage() {
               </h2>
             </div>
             <p className="text-copy-muted mt-3 text-sm leading-6">
-              Интеграция и выгрузка файлов не подключены к демонстрационному
-              интерфейсу.
+              Интеграция и выгрузка файлов пока не подключены.
             </p>
             <Button
               className="mt-5 w-full rounded-xl"
               onPress={() => {
                 setActionMessage(
-                  "Демо-режим: данные не передавались в ИАИС РиН.",
+                  "Интеграция не подключена: данные не передавались в ИАИС РиН.",
                 );
               }}
             >
-              <UploadIcon className="size-4.5" name="upload" />
+              <UploadIcon className="size-4.5" name="share" />
               Передать в РиН
             </Button>
             <Button
               className="mt-3 w-full rounded-xl"
               onPress={() => {
                 setActionMessage(
-                  "Демо-режим: PDF-файл не формировался и не скачивался.",
+                  "Экспорт не подключён: PDF-файл не формировался и не скачивался.",
                 );
               }}
               variant="outline"
@@ -217,24 +213,10 @@ export function ProtocolDetailsPage() {
               role="status"
             >
               {actionMessage ||
-                "Действия показывают только предполагаемую структуру будущей интеграции."}
+                "Передача и экспорт станут доступны после подключения интеграции."}
             </p>
           </section>
         </aside>
-      </div>
-
-      <div
-        className="bg-accent/10 text-accent mt-4 flex items-start gap-3 rounded-2xl px-4 py-3 text-xs leading-5"
-        role="note"
-      >
-        <UploadIcon
-          className="text-accent mt-0.5 size-4 shrink-0"
-          name="info"
-        />
-        <p>
-          Демонстрационный протокол сформирован из синтетического снимка
-          обработанных нарушений и не является юридически значимым документом.
-        </p>
       </div>
     </ConstrainedLayout>
   );

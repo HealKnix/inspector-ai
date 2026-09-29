@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "project": "inspector-foundations-r8",
+  "port": 18080,
+  "manifest_sha256": "b899ad410f1307ffe767d07c4ec2711750506534e66c912a2a29ef41db0e7692",
+  "catalog_sha256": "69a576ed1a0ef7ed91076ebc26a4ebba746072abbd7692c0f7f1d6a1fd6f9cf1",
+  "installed_at": "2026-09-27T07:24:44.868Z",
+  "matrix_rows": 132,
+  "approved_versions": 13,
+  "approved_parameters": 12,
+  "core_networks_internal": true,
+  "frontend_ingress": "loopback; fail-closed OUTPUT guard; no external DNS",
+  "runtime": {
+    "backend": "node-24.16.0",
+    "package_manager": "bun-1.4.2",
+    "parser": "existing-cpu-profile",
+    "gpu_acceptance": false
+  },
+  "image_restore": "already_present_exact_ids",
+  "scope": "OFF-initial; cold startup and exact catalog restore, functional smoke recorded separately"
+}

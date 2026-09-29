@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-09-27T00:26:25.771Z",
+  "engine_version": "29.1.2",
+  "container": "inspector-foundations-clean-engine-r3",
+  "network_mode": "none",
+  "starting_images": 0,
+  "starting_containers": 0,
+  "registry_access": false,
+  "archive_sha256": "fb775b07e022ffd2bb03cb1d787d2dc48007f25783f988b680f196b1568fdd7b",
+  "images": [
+    {
+      "reference": "inspector-release-backend:foundations-20260927-r3",
+      "expected_id": "sha256:48b2afb711699166183a1bef17f1bea5ddc8009da8170783c28efe27831f78d8",
+      "actual_id": "sha256:48b2afb711699166183a1bef17f1bea5ddc8009da8170783c28efe27831f78d8",
+      "matched": true
+    },
+    {
+      "reference": "inspector-release-clamav:foundations-20260927-r3",
+      "expected_id": "sha256:767ded278f1eccf09ced0d8e79c58d05868da73f80a26f24e59041a769cdbc5f",
+      "actual_id": "sha256:767ded278f1eccf09ced0d8e79c58d05868da73f80a26f24e59041a769cdbc5f",
+      "matched": true
+    },
+    {
+      "reference": "inspector-release-frontend:foundations-20260927-r3",
+      "expected_id": "sha256:539ad0d5ae4e8200338b8575e401fe89574aa07d8b4ef8761f5c1e48c229dc92",
+      "actual_id": "sha256:539ad0d5ae4e8200338b8575e401fe89574aa07d8b4ef8761f5c1e48c229dc92",
+      "matched": true
+    },
+    {
+      "reference": "inspector-release-migrate:foundations-20260927-r3",
+      "expected_id": "sha256:4c09d42a49d5237f195a09748d80a63ea970036d0a817bcba6f32c51b926266f",
+      "actual_id": "sha256:4c09d42a49d5237f195a09748d80a63ea970036d0a817bcba6f32c51b926266f",
+      "matched": true
+    },
+    {
+      "reference": "inspector-release-parser:foundations-20260927-r3",
+      "expected_id": "sha256:651681f2a9def073bcb45513c310800c44bc3924dd0a3364eca81c161d9b3bf5",
+      "actual_id": "sha256:651681f2a9def073bcb45513c310800c44bc3924dd0a3364eca81c161d9b3bf5",
+      "matched": true
+    },
+    {
+      "reference": "postgres:17.6-alpine",
+      "expected_id": "sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+      "actual_id": "sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+      "matched": true
+    },
+    {
+      "reference": "rabbitmq:4.1-management-alpine",
+      "expected_id": "sha256:6fb3095d1d579e11639d9033c9ded1287ca085664c97e9305ffc2a26cee433f5",
+      "actual_id": "sha256:6fb3095d1d579e11639d9033c9ded1287ca085664c97e9305ffc2a26cee433f5",
+      "matched": true
+    },
+    {
+      "reference": "redis:7.4.2-alpine",
+      "expected_id": "sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952",
+      "actual_id": "sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952",
+      "matched": true
+    },
+    {
+      "reference": "inspector-release-validator:foundations-20260927-r3",
+      "expected_id": "sha256:2f3ef6aaeb0d0f983add8f0c0e3da6c09b215a0ff929d9d7cfb653f3c44d7bd8",
+      "actual_id": "sha256:2f3ef6aaeb0d0f983add8f0c0e3da6c09b215a0ff929d9d7cfb653f3c44d7bd8",
+      "matched": true
+    }
+  ]
+}

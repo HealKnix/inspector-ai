@@ -19,6 +19,7 @@ export default tseslint.config(
       ".playwright-cli/**",
       "output/**",
       "backend/src/generated/**",
+      "frontend/src/components/charts/**",
     ],
   },
   eslint.configs.recommended,
@@ -54,7 +55,11 @@ export default tseslint.config(
     },
   },
   {
-    files: ["backend/**/*.{ts,mjs}", "*.config.{js,mjs,ts}"],
+    files: [
+      "backend/**/*.{ts,mjs}",
+      "scripts/**/*.mjs",
+      "*.config.{js,mjs,ts}",
+    ],
     languageOptions: {
       globals: globals.node,
     },

@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "versions": {
+    "parser": "par-local-2",
+    "normalization": "nfc-horizontal-space-v1",
+    "renderer": "pymupdf-pillow-semantic-v1",
+    "table_detector": "pp-structure-v3-guarded-v2",
+    "ocr_engine": "PP-StructureV3",
+    "pdf_region_profile": "paddle-regions-v2",
+    "text_provenance": "par-text-provenance-v1",
+    "pdf_region_config": "dfd931d29b7f0fa64b174957016874c6a1a3e2149542873845ef1108601a1676",
+    "ocr_profile": "mobile1536-eslav-cpu-mkldnn-off-v1",
+    "ocr_config": "b99b89b95960b9fe776f034404a21bf6458d723a1117a58a08a7bb9ce7b7a998",
+    "python": "3.11.14",
+    "pymupdf": "1.27.2.3",
+    "paddleocr": "3.7.0",
+    "paddlepaddle": "3.3.1",
+    "paddlex": "3.7.2",
+    "pillow": "12.3.0",
+    "numpy": "2.3.5",
+    "opencv-contrib-python": "4.10.0.84",
+    "models_sha256": "14111ff2d643666ea81b21e5940a176d7fd7c2e5690aeb0e8b559a8a77a07ef9",
+    "font_sha256": "abdc775b21b1bc470d50c97e790d276f2054b7504e56e5bd3e64f48d68582322",
+    "source_sha256": "fcb8be6925e1525480688d3dcbe6a570af4e9f7014a49a89acfccf471cc9eddc",
+    "dependency_lock_sha256": "43e4c1d7faad908d98cba3f175cbf3286df9ba357eb897f34a597a9873592600",
+    "config": "{\"cpu_threads\":2,\"max_blocks\":100000,\"max_bytes\":104857600,\"max_output_bytes\":52428800,\"max_pages\":500,\"max_pixels\":20000000,\"max_xml_bytes\":52428800,\"render_dpi\":200,\"timeout\":600}"
+  },
+  "device": "cpu",
+  "cpu_threads": 2,
+  "max_rss_kib": 2119768,
+  "scope": "Actual local model and parser execution on declared diagnostic pages; not hidden acceptance or a corpus accuracy score",
+  "completed_cases": 3,
+  "expected_cases": 3,
+  "cases": [
+    {
+      "id": "gi-base-p1",
+      "suite": "authorized-diagnostic",
+      "source_sha256": "04dcef6bbc217d7e0dad28097dc11e885022a169c7c2f037efa8968474f3aacb",
+      "original_page_numbers": [1],
+      "selected_pdf_sha256": "892e71fdec8205539b0ffa27e7ddf37ffe97b7248df9fb3e19863d276ce7d420",
+      "selection": "Original PDF pages copied without rasterization; artifact page N maps to original_page_numbers[N-1]",
+      "artifact_sha256": "ac255ff1e7df0c6bd8bad212b6eeef22918295d3a506b0ed7995988353db636a",
+      "pipeline_fingerprint": "7b8b1aa6cecb4c3b1605cdcbb02e6305d497de86dce5130a173226b20b0760d3",
+      "seconds": 115.2,
+      "calls": {
+        "layout": 1,
+        "line_detection": 31,
+        "line_recognition": 2,
+        "recognized_line_crops": 6,
+        "table_structure": 2
+      },
+      "source_native_lines": 352,
+      "missing_native_lines": 0,
+      "native_valid_blocks": 467,
+      "provenance_blocks": 468,
+      "table_links": {
+        "associated": 1
+      },
+      "region_methods": {
+        "skipped": 147,
+        "hybrid": 2,
+        "native_table": 2,
+        "native": 27
+      },
+      "excluded_regions_not_recognized": true,
+      "original_unchanged": true,
+      "quality": "LOW_QUALITY",
+      "reasons": [
+        "LAYOUT_REGIONS_UNCERTAIN",
+        "OCR_LINE_CROSSES_EXCLUDED_REGION",
+        "OCR_LOW_CONFIDENCE",
+        "OCR_UNVERIFIED",
+        "TABLE_STRUCTURE_UNVERIFIED",
+        "TEXT_READING_AMBIGUOUS"
+      ]
+    },
+    {
+      "id": "gi-rev3-p1",
+      "suite": "authorized-diagnostic",
+      "source_sha256": "b8b03fee48855b066fd27eb0c46c832cf2755870857208213eaebb5c33fc709f",
+      "original_page_numbers": [1],
+      "selected_pdf_sha256": "777ff0d07b12cacc100e5bc661890c9909855c991314d014c8b0f876739ef602",
+      "selection": "Original PDF pages copied without rasterization; artifact page N maps to original_page_numbers[N-1]",
+      "artifact_sha256": "1e39624b7a321d5e9943c9cbfd996fb17ec2222b65d3f9cbb262540ea9c4e2a4",
+      "pipeline_fingerprint": "7b8b1aa6cecb4c3b1605cdcbb02e6305d497de86dce5130a173226b20b0760d3",
+      "seconds": 15.17,
+      "calls": {
+        "layout": 1,
+        "line_detection": 0,
+        "line_recognition": 0,
+        "recognized_line_crops": 0,
+        "table_structure": 0
+      },
+      "source_native_lines": 46,
+      "missing_native_lines": 0,
+      "native_valid_blocks": 46,
+      "provenance_blocks": 46,
+      "table_links": {},
+      "region_methods": {
+        "skipped": 10
+      },
+      "excluded_regions_not_recognized": true,
+      "original_unchanged": true,
+      "quality": "LOW_QUALITY",
+      "reasons": ["LAYOUT_REGIONS_UNCERTAIN"]
+    },
+    {
+      "id": "public-f0152-p8-p9",
+      "suite": "TRAIN_PUBLIC_PROBE",
+      "source_sha256": "99ec972d7dfe5039fca922e3120bd5e486f2a26518f78044d0850992c028e7af",
+      "original_page_numbers": [8, 9],
+      "selected_pdf_sha256": "a42b487b3905578792c91a09a66984932c809ca96213199fbc336b509f41ac71",
+      "selection": "Original PDF pages copied without rasterization; artifact page N maps to original_page_numbers[N-1]",
+      "artifact_sha256": "353b28f924f1d315a8fb59d400ce405d48ca3213c4850fed4235649bfdc7ff9a",
+      "pipeline_fingerprint": "7b8b1aa6cecb4c3b1605cdcbb02e6305d497de86dce5130a173226b20b0760d3",
+      "seconds": 67.575,
+      "calls": {
+        "layout": 2,
+        "line_detection": 19,
+        "line_recognition": 19,
+        "recognized_line_crops": 43,
+        "table_structure": 0
+      },
+      "source_native_lines": 0,
+      "missing_native_lines": 0,
+      "native_valid_blocks": 0,
+      "provenance_blocks": 43,
+      "table_links": {},
+      "region_methods": {
+        "ocr": 19,
+        "skipped": 73
+      },
+      "excluded_regions_not_recognized": true,
+      "original_unchanged": true,
+      "quality": "LOW_QUALITY",
+      "reasons": [
+        "LAYOUT_REGIONS_UNCERTAIN",
+        "OCR_LOW_CONFIDENCE",
+        "OCR_UNVERIFIED"
+      ]
+    }
+  ]
+}

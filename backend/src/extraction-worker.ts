@@ -11,13 +11,18 @@ import { createServer } from "node:http";
 import { setTimeout as delay } from "node:timers/promises";
 import "reflect-metadata";
 import { validateEnvironment } from "./config/environment.js";
+import { observeDelivery } from "./infrastructure/observability/delivery-observation.js";
+import { serveWorkerMetrics } from "./infrastructure/observability/metrics.js";
+import { StructuredLogger } from "./infrastructure/observability/structured-logger.js";
 import { PrismaModule } from "./infrastructure/prisma/prisma.module.js";
+import { PrismaService } from "./infrastructure/prisma/prisma.service.js";
 import { OutboxService } from "./infrastructure/rabbitmq/outbox.service.js";
 import {
   EXTRACTION_QUEUE,
   ExtractionJobsService,
 } from "./modules/extraction/extraction-jobs.service.js";
 import { ExtractionCoreModule } from "./modules/extraction/extraction.module.js";
+import { SectionAnalysisJobsService } from "./modules/extraction/section-analysis-jobs.service.js";
 import { UUID } from "./modules/parsing/parsing-contract.js";
 import { ParsingDeliveryScope } from "./modules/parsing/parsing-delivery-scope.js";
 
@@ -33,7 +38,15 @@ const DEAD_QUEUE = "inspector.extraction.dead";
 })
 class ExtractionWorkerModule {}
 
-function readTaskId(content: Buffer): string | null {
+const TASK_EVENTS = {
+  "extraction.requested": "extraction",
+  "section_analysis.requested": "section_analysis",
+} as const;
+
+function readTask(content: Buffer): {
+  kind: (typeof TASK_EVENTS)[keyof typeof TASK_EVENTS];
+  taskId: string;
+} | null {
   if (content.length > 16_384) return null;
   let payload: unknown;
   try {
@@ -49,31 +62,42 @@ function readTaskId(content: Buffer): string | null {
     !("schema_version" in payload) ||
     payload.schema_version !== 1 ||
     !("event_type" in payload) ||
-    payload.event_type !== "extraction.requested" ||
+    typeof payload.event_type !== "string" ||
+    !Object.hasOwn(TASK_EVENTS, payload.event_type) ||
     !("task_id" in payload) ||
     typeof payload.task_id !== "string" ||
     !UUID.test(payload.task_id)
   )
     return null;
-  return payload.task_id;
+  return {
+    kind: TASK_EVENTS[payload.event_type as keyof typeof TASK_EVENTS],
+    taskId: payload.task_id,
+  };
 }
 
 async function main() {
+  Logger.overrideLogger(new StructuredLogger("extraction-worker"));
   const app = await NestFactory.createApplicationContext(
     ExtractionWorkerModule,
   );
   const config = app.get(ConfigService);
   const logger = new Logger("ExtractionWorker");
   const jobs = app.get(ExtractionJobsService);
+  const sectionJobs = app.get(SectionAnalysisJobsService);
   const outbox = app.get(OutboxService);
   const stopping = new AbortController();
   let connected = false;
   let lastTick = Date.now();
-  const server = createServer((_request, response) => {
-    response.writeHead(
-      connected && Date.now() - lastTick < 120_000 ? 200 : 503,
-    );
-    response.end();
+  const server = createServer((request, response) => {
+    void serveWorkerMetrics(request, response, app.get(PrismaService))
+      .then((handled) => {
+        if (handled) return;
+        response.writeHead(
+          connected && Date.now() - lastTick < 120_000 ? 200 : 503,
+        );
+        response.end();
+      })
+      .catch(() => response.writeHead(503).end());
   }).listen(
     Number(process.env.EXTRACTION_WORKER_HEALTH_PORT ?? 3004),
     "0.0.0.0",
@@ -91,8 +115,8 @@ async function main() {
   ) {
     if (!message || signal.aborted) return;
     try {
-      const taskId = readTaskId(message.content);
-      if (taskId === null) {
+      const task = readTask(message.content);
+      if (task === null) {
         // Quarantine metadata only: never copy untrusted payloads into a dead queue.
         await new Promise<void>((resolve, reject) =>
           owner.sendToQueue(
@@ -115,8 +139,10 @@ async function main() {
                 : resolve(),
           ),
         );
+      } else if (task.kind === "section_analysis") {
+        await sectionJobs.execute(task.taskId, signal);
       } else {
-        await jobs.execute(taskId, signal);
+        await jobs.execute(task.taskId, signal);
       }
       owner.ack(message);
     } catch {
@@ -165,7 +191,14 @@ async function main() {
             EXTRACTION_QUEUE,
             (message) => {
               void currentScope
-                .run((signal) => consume(message, ownerChannel, signal))
+                .run((signal) =>
+                  observeDelivery(
+                    message?.properties.headers,
+                    message?.properties.messageId,
+                    "extraction",
+                    () => consume(message, ownerChannel, signal),
+                  ),
+                )
                 .catch(channelClosed);
             },
             { noAck: false },
@@ -174,6 +207,7 @@ async function main() {
         }
         if (Date.now() >= recoverAt) {
           await jobs.recover();
+          await sectionJobs.recover();
           recoverAt = Date.now() + 5000;
         }
         await outbox.dispatchOne();

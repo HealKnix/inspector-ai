@@ -10,6 +10,71 @@ const bboxSchema = z
     ([x0, y0, x1, y1]) => x1 > x0 && y1 > y0,
     "Invalid visible-page rectangle",
   );
+const provenanceReasons = z
+  .array(z.string().regex(/^[a-z0-9_.:-]{1,128}$/i))
+  .max(100);
+const textProvenanceSchema = z
+  .object({
+    schema_version: z.literal(1),
+    status: z.enum(["selected", "ambiguous"]),
+    method: z.enum(["native", "ocr", "hybrid"]),
+    fragments: z
+      .array(
+        z
+          .object({
+            source: z.enum(["native", "ocr"]),
+            raw_text: z.string(),
+            bbox: bboxSchema,
+            native_valid: z.boolean().nullable(),
+            role: z.enum(["selected", "alternative"]),
+          })
+          .strict()
+          .refine(
+            (fragment) =>
+              fragment.source === "native"
+                ? typeof fragment.native_valid === "boolean"
+                : fragment.native_valid === null,
+            "Invalid fragment native validation",
+          ),
+      )
+      .min(1)
+      .max(10_000),
+    reasons: provenanceReasons,
+  })
+  .strict()
+  .refine(
+    (value) =>
+      value.status === "ambiguous"
+        ? value.reasons.length > 0
+        : value.fragments.some((fragment) => fragment.role === "selected"),
+    "Invalid provenance decision",
+  )
+  .refine((value) => {
+    const sources = new Set(value.fragments.map((fragment) => fragment.source));
+    return value.method === (sources.size > 1 ? "hybrid" : [...sources][0]);
+  }, "Provenance method does not match its fragment sources");
+const linkedIndices = z
+  .array(count)
+  .min(1)
+  .max(10_000)
+  .refine((items) => new Set(items).size === items.length);
+const tableLinkSchema = z
+  .object({
+    schema_version: z.literal(1),
+    status: z.enum(["associated", "ambiguous"]),
+    table_id: z.string().min(1).max(256).nullable(),
+    rows: linkedIndices,
+    columns: linkedIndices,
+    reasons: provenanceReasons,
+  })
+  .strict()
+  .refine(
+    (value) =>
+      value.status === "associated"
+        ? value.table_id !== null
+        : value.reasons.length > 0,
+    "Invalid table association",
+  );
 
 export const pageRegionSchema = z.object({
   id: z.string().min(1),
@@ -95,6 +160,9 @@ export const textBlockSchema = z
     column_span: z.number().int().positive().nullable(),
     region_id: z.string().min(1).optional(),
     include_in_main: z.boolean().optional(),
+    native_valid: z.boolean().optional(),
+    provenance: textProvenanceSchema.optional(),
+    table_link: tableLinkSchema.optional(),
   })
   .refine(
     (block) =>
@@ -107,6 +175,14 @@ export const textBlockSchema = z
         Number.isSafeInteger(block.row + block.row_span) &&
         Number.isSafeInteger(block.column + block.column_span)),
     "Incomplete or unsafe table coordinates",
+  )
+  .refine(
+    (block) =>
+      (block.native_valid === undefined || block.source === "native") &&
+      ((block.native_valid !== false &&
+        block.provenance?.status !== "ambiguous") ||
+        block.include_in_main === false),
+    "Unusable text must remain outside main content",
   );
 
 export const renderedPageSchema = z
@@ -134,6 +210,7 @@ export const parseArtifactSchema = z
   .object({
     schema_version: z.literal(1),
     region_schema_version: z.literal(1).optional(),
+    text_provenance_schema_version: z.literal(1).optional(),
     source_sha256: hash,
     pipeline_fingerprint: hash,
     versions: z.record(z.string(), z.string()),
@@ -158,8 +235,19 @@ export const parseArtifactSchema = z
   )
   .superRefine((artifact, context) => {
     const regional = artifact.region_schema_version === 1;
-    const regionProfile =
-      artifact.versions.pdf_region_profile === "paddle-regions-v1";
+    const regionProfile = ["paddle-regions-v1", "paddle-regions-v2"].includes(
+      artifact.versions.pdf_region_profile ?? "",
+    );
+    const provenanceVersioned = artifact.text_provenance_schema_version === 1;
+    if (
+      provenanceVersioned !==
+      (regional &&
+        artifact.versions.text_provenance === "par-text-provenance-v1")
+    )
+      context.addIssue({
+        code: "custom",
+        message: "Inconsistent text provenance marker",
+      });
     if (regional && !regionProfile) {
       context.addIssue({
         code: "custom",
@@ -168,6 +256,60 @@ export const parseArtifactSchema = z
     }
     const regionIds = new Set<string>();
     for (const [index, page] of artifact.pages.entries()) {
+      for (const [blockIndex, block] of page.blocks.entries()) {
+        const path = ["pages", index, "blocks", blockIndex];
+        if (
+          provenanceVersioned &&
+          block.raw_text.length > 0 &&
+          !block.provenance
+        )
+          context.addIssue({
+            code: "custom",
+            path,
+            message: "Nonempty PDF text requires provenance",
+          });
+        if (
+          provenanceVersioned
+            ? block.source === "native" && block.native_valid === undefined
+            : block.native_valid !== undefined ||
+              block.provenance !== undefined ||
+              block.table_link !== undefined
+        )
+          context.addIssue({
+            code: "custom",
+            path,
+            message: "Invalid versioned text metadata",
+          });
+        const link = block.table_link;
+        if (link?.table_id) {
+          const cells = page.blocks.filter(
+            (cell) =>
+              cell.kind === "table_cell" && cell.table_id === link.table_id,
+          );
+          if (
+            !cells.length ||
+            (link.status === "associated" &&
+              !link.rows.every((row) =>
+                link.columns.every((column) =>
+                  cells.some(
+                    (cell) =>
+                      cell.row !== null &&
+                      cell.column !== null &&
+                      row >= cell.row &&
+                      row < cell.row + (cell.row_span ?? 1) &&
+                      column >= cell.column &&
+                      column < cell.column + (cell.column_span ?? 1),
+                  ),
+                ),
+              ))
+          )
+            context.addIssue({
+              code: "custom",
+              path,
+              message: "Unresolved table association",
+            });
+        }
+      }
       const pdfPage = page.transform.structural_mapping !== true;
       if ((regional && !pdfPage) || (pdfPage && regionProfile && !regional)) {
         context.addIssue({

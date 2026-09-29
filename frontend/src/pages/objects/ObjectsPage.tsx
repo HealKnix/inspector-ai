@@ -136,7 +136,7 @@ export function ObjectsPage() {
                         <Table.Cell>
                           <Link
                             className="hover:text-accent flex items-center gap-3 py-2 font-medium"
-                            to={routeNames.OBJECT_DETAILS(object.id)}
+                            to={routeNames.OBJECT_UPLOAD(object.id)}
                           >
                             <span className="bg-accent/10 text-accent grid size-10 shrink-0 place-items-center rounded-xl">
                               <UploadIcon className="size-5" name="folder" />
@@ -158,11 +158,11 @@ export function ObjectsPage() {
                         </Table.Cell>
                         <Table.Cell>
                           <Link
-                            aria-label={`Открыть документы: ${object.name}`}
+                            aria-label={`Открыть объект: ${object.name}`}
                             className="text-accent inline-flex items-center gap-1 text-sm font-medium whitespace-nowrap"
-                            to={routeNames.OBJECT_DETAILS(object.id)}
+                            to={routeNames.OBJECT_UPLOAD(object.id)}
                           >
-                            Документы{" "}
+                            Открыть{" "}
                             <UploadIcon
                               className="size-4"
                               name="chevron-right"

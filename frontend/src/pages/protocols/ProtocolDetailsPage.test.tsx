@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
-import { mockProtocols } from "@/data/protocols";
+import { mockProtocols } from "@/pages/protocols/protocols-test-fixtures";
 import routeNames from "@/routes/routeNames";
 import { useProtocolStore } from "@/store/protocols";
 
@@ -34,7 +34,6 @@ describe("ProtocolDetailsPage", () => {
       screen.getByRole("heading", { name: "Протокол", level: 1 }),
     ).toBeInTheDocument();
     expect(screen.getByText("Сформирован")).toBeInTheDocument();
-    expect(screen.getByText("ДЕМО")).toBeVisible();
 
     const metadata = screen.getByLabelText("Сведения о протоколе");
     expect(within(metadata).getByText("Объект")).toBeInTheDocument();

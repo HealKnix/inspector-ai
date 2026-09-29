@@ -127,6 +127,8 @@ class RegionTests(unittest.TestCase):
             self.assertEqual(reader.detected,0); self.assertEqual(reader.recognized,[])
             self.assertIn("DRAWING 93.0",result["raw_text"])
             self.assertFalse(result["pages"][0]["blocks"][0]["include_in_main"])
+            self.assertTrue(result["pages"][0]["blocks"][0]["native_valid"])
+            self.assertEqual(result["pages"][0]["blocks"][0]["provenance"]["status"], "selected")
             self.assertEqual(result["pages"][0]["regions"][0]["kind"],kind)
 
     def test_cid_fallback_is_retained_for_audit_but_cannot_suppress_ocr(self):
@@ -152,9 +154,31 @@ class RegionTests(unittest.TestCase):
         native=[b for b in result["pages"][0]["blocks"] if b["source"]=="native"]
         self.assertEqual([b["raw_text"] for b in native],[original_text])
         self.assertFalse(native[0]["include_in_main"])
+        self.assertFalse(native[0]["native_valid"])
         self.assertEqual(len(reader.recognized),1)
         self.assertEqual(result["pages"][0]["regions"][0]["method"],"ocr")
         self.assertIn("NATIVE_TEXT_ENCODING",result["pages"][0]["regions"][0]["reasons"])
+
+    def test_skipped_regions_check_native_duplicates_and_conflicts_without_ocr(self):
+        for label in ("image", "formula"):
+            for second in ("DRAWING 93.0", "DRAWING 98.0"):
+                doc=pymupdf.open(); page=doc.new_page(width=300,height=200)
+                page.insert_text((30,40),"DRAWING 93.0")
+                page.insert_text((30,40),second)
+                reader=RegionReader([(label,[0,0,1,1],.99)],[[.1,.1,.8,.3]])
+                result=self.run_pdf(doc,reader)
+                native=[item for item in result["pages"][0]["blocks"] if item["source"]=="native"]
+                self.assertEqual(reader.detected,0)
+                self.assertEqual(reader.recognized,[])
+                self.assertEqual(len(native),2)
+                self.assertTrue(all(item["native_valid"] for item in native))
+                self.assertTrue(all(item["include_in_main"] is False for item in native))
+                if second=="DRAWING 93.0":
+                    self.assertEqual(native[0]["provenance"]["reasons"],["NATIVE_DUPLICATE_ALTERNATIVE_RETAINED"])
+                    self.assertEqual(native[1]["provenance"]["reasons"],["DUPLICATE_NATIVE_READING"])
+                else:
+                    self.assertTrue(all(item["provenance"]["status"]=="ambiguous" for item in native))
+                    self.assertIn("TEXT_READING_AMBIGUOUS",result["reasons"])
 
     def test_graphic_only_is_not_bad_quality_or_empty(self):
         doc=pymupdf.open(); page=doc.new_page(width=300,height=200)
@@ -254,6 +278,43 @@ class RegionTests(unittest.TestCase):
         self.assertEqual(page["regions"][0]["method"],"table_ocr")
         self.assertTrue(any(b["kind"]=="table_cell" and b["raw_text"]=="" for b in page["blocks"]))
         self.assertTrue(all(b["region_id"]==page["regions"][0]["id"] for b in page["blocks"]))
+
+    def test_hybrid_table_receives_selected_lines_and_preserves_global_alternatives(self):
+        doc=pymupdf.open(); page=doc.new_page(width=300,height=200)
+        page.insert_text((60,60),"NATIVE -12.5")
+        raw_box=page.get_text("dict")["blocks"][0]["lines"][0]["bbox"]
+        page_box=[raw_box[0]/300,raw_box[1]/200,raw_box[2]/300,raw_box[3]/200]
+        owner_box=[.1,.1,.8,.8]
+        local_box=[(page_box[0]-.1)/.7,(page_box[1]-.1)/.7,(page_box[2]-.1)/.7,(page_box[3]-.1)/.7]
+
+        class ConflictingTableReader(RegionReader):
+            def recognize_lines(self, image, polygons):
+                self.recognized.extend(polygons)
+                value=block("NATIVE 12.5",local_box,"ocr")
+                value["confidence"]=.95
+                return [value]
+
+            def structure_region(self, image, lines):
+                self.supplied_text=[item["raw_text"] for item in lines]
+                return [block("NATIVE -12.5 NATIVE 12.5",local_box,"ocr",table_id="t1",
+                              row=0,column=0,row_span=1,column_span=1),
+                        block("NATIVE -12.5 NATIVE 12.5",[0,0,1,1],"ocr","ocr/table[1]/recognition-text")],[]
+
+        # Force the recognition route with a separate uncovered detector crop;
+        # the fake recognizer deliberately returns a conflicting native crop.
+        reader=ConflictingTableReader([("table",owner_box,.99)],[[.1,.6,.7,.7]])
+        result=self.run_pdf(doc,reader)
+        parsed=result["pages"][0]
+        self.assertEqual(reader.supplied_text,["NATIVE -12.5"])
+        cells=[item for item in parsed["blocks"] if item["kind"]=="table_cell"]
+        self.assertEqual(cells[0]["raw_text"],"NATIVE -12.5")
+        self.assertTrue(cells[0]["include_in_main"])
+        selected=[item for item in parsed["blocks"] if item["include_in_main"]]
+        self.assertEqual(selected,cells)
+        wrong=[part for part in cells[0]["provenance"]["fragments"] if part["raw_text"]=="NATIVE 12.5"]
+        self.assertEqual(len(wrong),1)
+        self.assertLess(max(abs(a-b) for a,b in zip(wrong[0]["bbox"],page_box)),.001)
+        self.assertIn("NATIVE 12.5",result["raw_text"])
 
     def test_cropbox_four_rotations_rerender_matches_source_pixels(self):
         import numpy as np

@@ -11,13 +11,19 @@ import { createServer } from "node:http";
 import { setTimeout as delay } from "node:timers/promises";
 import "reflect-metadata";
 import { validateEnvironment } from "./config/environment.js";
+import { observeDelivery } from "./infrastructure/observability/delivery-observation.js";
+import { serveWorkerMetrics } from "./infrastructure/observability/metrics.js";
+import { StructuredLogger } from "./infrastructure/observability/structured-logger.js";
 import { PrismaModule } from "./infrastructure/prisma/prisma.module.js";
+import { PrismaService } from "./infrastructure/prisma/prisma.service.js";
 import { OutboxService } from "./infrastructure/rabbitmq/outbox.service.js";
 import {
   CLASSIFICATION_QUEUE,
   ClassificationJobsService,
 } from "./modules/identification/classification-jobs.service.js";
 import { ClassificationCoreModule } from "./modules/identification/classification.module.js";
+import { IdentificationJobsService } from "./modules/identification/identification-jobs.service.js";
+import { IdentificationCoreModule } from "./modules/identification/identification.module.js";
 import { UUID } from "./modules/parsing/parsing-contract.js";
 import { ParsingDeliveryScope } from "./modules/parsing/parsing-delivery-scope.js";
 
@@ -28,12 +34,15 @@ const DEAD_QUEUE = "inspector.classification.dead";
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnvironment }),
     PrismaModule,
     ClassificationCoreModule,
+    IdentificationCoreModule,
   ],
   providers: [OutboxService],
 })
 class ClassificationWorkerModule {}
 
-function readTaskId(content: Buffer): string | null {
+function readTaskId(
+  content: Buffer,
+): { id: string; identification: boolean } | null {
   if (content.length > 16_384) return null;
   let payload: unknown;
   try {
@@ -49,31 +58,43 @@ function readTaskId(content: Buffer): string | null {
     !("schema_version" in payload) ||
     payload.schema_version !== 1 ||
     !("event_type" in payload) ||
-    payload.event_type !== "classification.requested" ||
+    !["classification.requested", "identification.requested"].includes(
+      String(payload.event_type),
+    ) ||
     !("task_id" in payload) ||
     typeof payload.task_id !== "string" ||
     !UUID.test(payload.task_id)
   )
     return null;
-  return payload.task_id;
+  return {
+    id: payload.task_id,
+    identification: payload.event_type === "identification.requested",
+  };
 }
 
 async function main() {
+  Logger.overrideLogger(new StructuredLogger("classification-worker"));
   const app = await NestFactory.createApplicationContext(
     ClassificationWorkerModule,
   );
   const config = app.get(ConfigService);
   const logger = new Logger("ClassificationWorker");
   const jobs = app.get(ClassificationJobsService);
+  const identification = app.get(IdentificationJobsService);
   const outbox = app.get(OutboxService);
   const stopping = new AbortController();
   let connected = false;
   let lastTick = Date.now();
-  const server = createServer((_request, response) => {
-    response.writeHead(
-      connected && Date.now() - lastTick < 120_000 ? 200 : 503,
-    );
-    response.end();
+  const server = createServer((request, response) => {
+    void serveWorkerMetrics(request, response, app.get(PrismaService))
+      .then((handled) => {
+        if (handled) return;
+        response.writeHead(
+          connected && Date.now() - lastTick < 120_000 ? 200 : 503,
+        );
+        response.end();
+      })
+      .catch(() => response.writeHead(503).end());
   }).listen(
     Number(process.env.CLASSIFICATION_WORKER_HEALTH_PORT ?? 3003),
     "0.0.0.0",
@@ -116,7 +137,9 @@ async function main() {
           ),
         );
       } else {
-        await jobs.execute(taskId, signal);
+        if (taskId.identification)
+          await identification.execute(taskId.id, signal);
+        else await jobs.execute(taskId.id, signal);
       }
       owner.ack(message);
     } catch {
@@ -167,7 +190,16 @@ async function main() {
             CLASSIFICATION_QUEUE,
             (message) => {
               void currentScope
-                .run((signal) => consume(message, ownerChannel, signal))
+                .run((signal) =>
+                  observeDelivery(
+                    message?.properties.headers,
+                    message?.properties.messageId,
+                    message?.properties.type === "identification.requested"
+                      ? "identification"
+                      : "classification",
+                    () => consume(message, ownerChannel, signal),
+                  ),
+                )
                 .catch(channelClosed);
             },
             { noAck: false },
@@ -176,6 +208,7 @@ async function main() {
         }
         if (Date.now() >= recoverAt) {
           await jobs.recover();
+          await identification.recover();
           recoverAt = Date.now() + 5000;
         }
         await outbox.dispatchOne();

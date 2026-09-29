@@ -49,6 +49,28 @@ function mount(initialParsing: ParsingStatus) {
 }
 
 describe("classification polling", () => {
+  it("continues until saved document decisions are reflected after classification finishes", async () => {
+    vi.useFakeTimers();
+    vi.mocked(getClassificationStatus)
+      .mockResolvedValueOnce({
+        ...classificationStatus,
+        active: false,
+        review_active: true,
+      })
+      .mockResolvedValue({
+        ...classificationStatus,
+        active: false,
+        review_active: false,
+      });
+    const view = mount(parsingStatus);
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    await act(() => vi.advanceTimersByTimeAsync(2100));
+    expect(getClassificationStatus).toHaveBeenCalledTimes(2);
+    await act(() => vi.advanceTimersByTimeAsync(10_000));
+    expect(getClassificationStatus).toHaveBeenCalledTimes(2);
+    view.unmount();
+    view.client.clear();
+  });
   it("ожидает результаты при активном чтении и обновляется при публикации нового артефакта", async () => {
     vi.useFakeTimers();
     vi.mocked(getClassificationStatus).mockResolvedValue(classificationStatus);

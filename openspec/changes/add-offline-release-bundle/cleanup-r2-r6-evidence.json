@@ -1,0 +1,1246 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-09-27T07:22:29.1049377Z",
+  "status": "auto_approval_rejected_no_deletion",
+  "allowed_projects": [
+    "inspector-foundations-r2",
+    "inspector-foundations-r3",
+    "inspector-foundations-r4",
+    "inspector-foundations-r5",
+    "inspector-foundations-r6"
+  ],
+  "containers": [
+    {
+      "Id": "f3997c0cd47e566d85d14ee3fa930c57312a8d1ab7017a50c2fa4b1c6e797fc4",
+      "Name": "inspector-foundations-r6-frontend-1",
+      "Project": "inspector-foundations-r6",
+      "State": "exited",
+      "Volumes": [],
+      "PreservedBindSources": [
+        "D:\\Projects\\plcb-ds-hach-mik\\inspector-ai\\.test-output\\offline\\foundations-20260927-r6\\nginx.conf"
+      ]
+    },
+    {
+      "Id": "6eb680dc5bdabe9309d9bca620b3b1a9644fabe6349ba36bb11facf2a33363b0",
+      "Name": "inspector-foundations-r6-extraction-worker-1",
+      "Project": "inspector-foundations-r6",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r6_document-originals",
+        "inspector-foundations-r6_document-derived"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "5625a6463c2b1d3b3c472a7261288f6877299934a0ddf92e566b17032b1463e3",
+      "Name": "inspector-foundations-r6-backend-1",
+      "Project": "inspector-foundations-r6",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r6_document-quarantine",
+        "inspector-foundations-r6_document-derived",
+        "inspector-foundations-r6_document-originals"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "1f9d22bb00f31728dd0c3384bc0d7ebcbba4c83140d36a2e14da9bb418a16126",
+      "Name": "inspector-foundations-r6-parsing-worker-1",
+      "Project": "inspector-foundations-r6",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r6_document-derived",
+        "inspector-foundations-r6_document-originals"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "20ed0930fdc9dc766d07004daa8b911270c5d2322aaaa75a1fbc9ac7c901b274",
+      "Name": "inspector-foundations-r6-classification-worker-1",
+      "Project": "inspector-foundations-r6",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r6_document-originals",
+        "inspector-foundations-r6_document-derived"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "def7d2f18e3edddfc260cd2a8bacfa546d4af43d07cba038824a1b62d30fb813",
+      "Name": "inspector-foundations-r6-worker-1",
+      "Project": "inspector-foundations-r6",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r6_document-originals",
+        "inspector-foundations-r6_document-quarantine"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "0a6a998f9ed70f0ee96fbb50a16ddadd40df442f53af3cdca3847d12bed52581",
+      "Name": "inspector-foundations-r6-migrate-1",
+      "Project": "inspector-foundations-r6",
+      "State": "exited",
+      "Volumes": [],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "615bf73556fa18355bd98aaa7af4ab85abfc3190f480a87733ddd60fcd807d0e",
+      "Name": "inspector-foundations-r6-parser-1",
+      "Project": "inspector-foundations-r6",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r6_parser-models",
+        "inspector-foundations-r6_document-originals",
+        "inspector-foundations-r6_document-derived"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "baa9df9f34c31017a1e11f456970b42f2dc61c55265905515b9c9cde53ca3ffc",
+      "Name": "inspector-foundations-r6-clamav-1",
+      "Project": "inspector-foundations-r6",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r6_clamav-data"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "aae0a951b3e4b7cdf20985258b72211852420cae6e3905ee6fad48b6b42d69bd",
+      "Name": "inspector-foundations-r6-rabbitmq-1",
+      "Project": "inspector-foundations-r6",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r6_rabbitmq-data"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "a76750df1105cedf29bdce6a6e6fbd28c14156c1645d368f8746d87560ce60f6",
+      "Name": "inspector-foundations-r6-postgres-1",
+      "Project": "inspector-foundations-r6",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r6_postgres-data"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "4c5a48b25855b9a19639eff79a880fe4b0ee99a0a1914aaa146cc6e1e430a694",
+      "Name": "inspector-foundations-r6-redis-1",
+      "Project": "inspector-foundations-r6",
+      "State": "exited",
+      "Volumes": [
+        "9f0f35010bc83312c746f08d0551b300642898544d0a2c20a12a4bb8e7d54ed0"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "4c0866f238108027d6e11a7419b3dcc3f5414abd14ba1dcb9f92b53d7e31b9ba",
+      "Name": "inspector-foundations-r6-asset-restore-1",
+      "Project": "inspector-foundations-r6",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r6_parser-models",
+        "inspector-foundations-r6_clamav-data"
+      ],
+      "PreservedBindSources": [
+        "D:\\Projects\\plcb-ds-hach-mik\\inspector-ai\\.test-output\\offline\\foundations-20260927-r6\\assets",
+        "D:\\Projects\\plcb-ds-hach-mik\\inspector-ai\\.test-output\\offline\\foundations-20260927-r6\\tools"
+      ]
+    },
+    {
+      "Id": "b1048509a4879ecd0d736984236ae2904e6e106046bccad40b37726a024bea5b",
+      "Name": "inspector-foundations-r6-validator-1",
+      "Project": "inspector-foundations-r6",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r6_document-quarantine"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "b9569880c5ecf1be972b1237805f55db4c81f8d4c2a8f3748cb1d5729e1c6a67",
+      "Name": "inspector-foundations-r5-frontend-1",
+      "Project": "inspector-foundations-r5",
+      "State": "exited",
+      "Volumes": [],
+      "PreservedBindSources": [
+        "D:\\Projects\\plcb-ds-hach-mik\\inspector-ai\\.test-output\\offline\\foundations-20260927-r4\\nginx.conf"
+      ]
+    },
+    {
+      "Id": "0a7a8d17515cac43ab94a67580d7c9e5399455baf4ea3fbb12e0b8afb249f48d",
+      "Name": "inspector-foundations-r5-worker-1",
+      "Project": "inspector-foundations-r5",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r5_document-quarantine",
+        "inspector-foundations-r5_document-originals"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "f352cf2529f2b51271f9c09c8d1d8f9581e04aa245c406053ed3fcaf49cd197a",
+      "Name": "inspector-foundations-r5-classification-worker-1",
+      "Project": "inspector-foundations-r5",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r5_document-derived",
+        "inspector-foundations-r5_document-originals"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "a991465f220441390985048709eba4138959ba14977615a5796ca680fcfc203b",
+      "Name": "inspector-foundations-r5-extraction-worker-1",
+      "Project": "inspector-foundations-r5",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r5_document-derived",
+        "inspector-foundations-r5_document-originals"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "bbea2e4f9c472503ef77955590e48d63e5d62933764bd52dd97d30c50110542d",
+      "Name": "inspector-foundations-r5-backend-1",
+      "Project": "inspector-foundations-r5",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r5_document-originals",
+        "inspector-foundations-r5_document-quarantine",
+        "inspector-foundations-r5_document-derived"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "a894598e6f50b0c5190b8ad272e704bbac62debcfecd91e0456b4ef18f8221e3",
+      "Name": "inspector-foundations-r5-parsing-worker-1",
+      "Project": "inspector-foundations-r5",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r5_document-originals",
+        "inspector-foundations-r5_document-derived"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "b5a8eb789d149a19a0e85c74d6e1aba1c6aa6dc68bc280acdf3602151f2ca6e1",
+      "Name": "inspector-foundations-r5-migrate-1",
+      "Project": "inspector-foundations-r5",
+      "State": "exited",
+      "Volumes": [],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "94d9f5e0b9e4fd7c146a176e7250126d7265ecbc20af7ef1b9f3087e2c150f59",
+      "Name": "inspector-foundations-r5-parser-1",
+      "Project": "inspector-foundations-r5",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r5_document-originals",
+        "inspector-foundations-r5_document-derived",
+        "inspector-foundations-r5_parser-models"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "817cc7443f9ae6f11d34b68f95f32672769420b2e59621a7e2606ec3e494e8e1",
+      "Name": "inspector-foundations-r5-clamav-1",
+      "Project": "inspector-foundations-r5",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r5_clamav-data"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "9bb86dc88f91ac326a4c7c7740d8bbc2ebc6ebed3e5a5df5234f01e6e56cdb3b",
+      "Name": "inspector-foundations-r5-rabbitmq-1",
+      "Project": "inspector-foundations-r5",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r5_rabbitmq-data"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "b5d6e8d6c2c68ab3d157dad91affe2d656f73bfecf57461185b0d37f6b977113",
+      "Name": "inspector-foundations-r5-postgres-1",
+      "Project": "inspector-foundations-r5",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r5_postgres-data"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "d996cf6d0b1ead9f8f76ced18fdabf086d5dbe9e85e04a798893e24ee6211fcd",
+      "Name": "inspector-foundations-r5-redis-1",
+      "Project": "inspector-foundations-r5",
+      "State": "exited",
+      "Volumes": [
+        "05c410d7262e061872a618682c72c2ab26116903eea56415572a4076979fecb3"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "06dbddd2015c316e760cd7583f960d2eebd40cd011f21847a62c6678b72188e9",
+      "Name": "inspector-foundations-r5-asset-restore-1",
+      "Project": "inspector-foundations-r5",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r5_parser-models",
+        "inspector-foundations-r5_clamav-data"
+      ],
+      "PreservedBindSources": [
+        "D:\\Projects\\plcb-ds-hach-mik\\inspector-ai\\.test-output\\offline\\foundations-20260927-r4\\assets",
+        "D:\\Projects\\plcb-ds-hach-mik\\inspector-ai\\.test-output\\offline\\foundations-20260927-r4\\tools"
+      ]
+    },
+    {
+      "Id": "2978965d8f58acb94060a292e142f7a96e6ba59138e5fd0e639afb4c5cc34021",
+      "Name": "inspector-foundations-r5-validator-1",
+      "Project": "inspector-foundations-r5",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r5_document-quarantine"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "f8deda8b68ec1b792de1f32d496145454ee8c896b1584f57911f4835ab7d8623",
+      "Name": "inspector-foundations-r4-frontend-1",
+      "Project": "inspector-foundations-r4",
+      "State": "created",
+      "Volumes": [],
+      "PreservedBindSources": [
+        "D:\\Projects\\plcb-ds-hach-mik\\inspector-ai\\.test-output\\offline\\foundations-20260927-r4\\nginx.conf"
+      ]
+    },
+    {
+      "Id": "29c404661701db161f623f40237d4dbaa1a513b74f5a78500db5f35556106bb1",
+      "Name": "inspector-foundations-r4-classification-worker-1",
+      "Project": "inspector-foundations-r4",
+      "State": "created",
+      "Volumes": [
+        "inspector-foundations-r4_document-derived",
+        "inspector-foundations-r4_document-originals"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "5d9e449f1631a8166cb730dfd812ed898438e53fe68a598765d1268043c57ff6",
+      "Name": "inspector-foundations-r4-backend-1",
+      "Project": "inspector-foundations-r4",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r4_document-originals",
+        "inspector-foundations-r4_document-quarantine",
+        "inspector-foundations-r4_document-derived"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "9302320d28d0bd24230d57ded39b88f2b7e67a9977567beb70a2bc56c482c404",
+      "Name": "inspector-foundations-r4-extraction-worker-1",
+      "Project": "inspector-foundations-r4",
+      "State": "created",
+      "Volumes": [
+        "inspector-foundations-r4_document-derived",
+        "inspector-foundations-r4_document-originals"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "b568a0c067e7f01bbc74bc3116bc86c010c9c777adac662e52e52071969b40d7",
+      "Name": "inspector-foundations-r4-parsing-worker-1",
+      "Project": "inspector-foundations-r4",
+      "State": "created",
+      "Volumes": [
+        "inspector-foundations-r4_document-derived",
+        "inspector-foundations-r4_document-originals"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "86563758ac8ee775721dfc97ca903ad44a34ff791b3a7c86e82de44cde3e75a7",
+      "Name": "inspector-foundations-r4-worker-1",
+      "Project": "inspector-foundations-r4",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r4_document-originals",
+        "inspector-foundations-r4_document-quarantine"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "d62fb571d730da3f6d465d153f870376ba6a1e3a90f89333f6de8e510ff7a328",
+      "Name": "inspector-foundations-r4-migrate-1",
+      "Project": "inspector-foundations-r4",
+      "State": "exited",
+      "Volumes": [],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "81baa02237727acc92c209354106dba529e24fa459279b0212898e6e31b0b6e4",
+      "Name": "inspector-foundations-r4-clamav-1",
+      "Project": "inspector-foundations-r4",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r4_clamav-data"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "de1ed1bee38de36f260f9985f74c96d0f4167c4a7935e12ed6d1c66bc3008875",
+      "Name": "inspector-foundations-r4-parser-1",
+      "Project": "inspector-foundations-r4",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r4_document-originals",
+        "inspector-foundations-r4_parser-models",
+        "inspector-foundations-r4_document-derived"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "92435a79f69e464586814fa2856b63d9a7523f0128a837e8a56a43e77e83b5bb",
+      "Name": "inspector-foundations-r4-redis-1",
+      "Project": "inspector-foundations-r4",
+      "State": "exited",
+      "Volumes": [
+        "50827055c1beb040877812e0eeab82357209192a592a246d0260e71c6f79f728"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "0d80c905b650ffd1722c825e5548c78ca7f294a0721bbd9be1d25b75eb42b3ba",
+      "Name": "inspector-foundations-r4-postgres-1",
+      "Project": "inspector-foundations-r4",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r4_postgres-data"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "c739aacd84075199e74a7436c9d7c4f13467413c4a3db9eed822230c88c650bf",
+      "Name": "inspector-foundations-r4-rabbitmq-1",
+      "Project": "inspector-foundations-r4",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r4_rabbitmq-data"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "01667617aa78a9cef8537a0313f2c9e133bd42d1061326b08f83e3338f9f2bd3",
+      "Name": "inspector-foundations-r4-validator-1",
+      "Project": "inspector-foundations-r4",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r4_document-quarantine"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "49d1ff641d6b08122f828e6a8376650a92eafa9d1da3a0889cfca0b9a9be01d1",
+      "Name": "inspector-foundations-r4-asset-restore-1",
+      "Project": "inspector-foundations-r4",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r4_clamav-data",
+        "inspector-foundations-r4_parser-models"
+      ],
+      "PreservedBindSources": [
+        "D:\\Projects\\plcb-ds-hach-mik\\inspector-ai\\.test-output\\offline\\foundations-20260927-r4\\tools",
+        "D:\\Projects\\plcb-ds-hach-mik\\inspector-ai\\.test-output\\offline\\foundations-20260927-r4\\assets"
+      ]
+    },
+    {
+      "Id": "c6f44089eb62d562d59313cb6c90f645007f55dd3b8877a2f4ee12988f225cd7",
+      "Name": "inspector-foundations-r3-frontend-1",
+      "Project": "inspector-foundations-r3",
+      "State": "created",
+      "Volumes": [],
+      "PreservedBindSources": [
+        "D:\\Projects\\plcb-ds-hach-mik\\inspector-ai\\.test-output\\offline\\foundations-20260927-r3\\nginx.conf"
+      ]
+    },
+    {
+      "Id": "cc7e083baae213af0dd0170c4725dca675610569a5d569aff78562abdfbc7bc7",
+      "Name": "inspector-foundations-r3-classification-worker-1",
+      "Project": "inspector-foundations-r3",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r3_document-derived",
+        "inspector-foundations-r3_document-originals"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "eddc8b42d48055f5c266bc220915f62f9f5981d95242f1fe60d67c472417608c",
+      "Name": "inspector-foundations-r3-parsing-worker-1",
+      "Project": "inspector-foundations-r3",
+      "State": "created",
+      "Volumes": [
+        "inspector-foundations-r3_document-originals",
+        "inspector-foundations-r3_document-derived"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "c5609a87acda4ce9ab2269c8586f2ee45ed61e65cd68718c2d38481183b3ca01",
+      "Name": "inspector-foundations-r3-extraction-worker-1",
+      "Project": "inspector-foundations-r3",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r3_document-derived",
+        "inspector-foundations-r3_document-originals"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "9dff229b0f4bcea79fda833c7038f99324915b1d0c6b47abbf707c252badbdb2",
+      "Name": "inspector-foundations-r3-backend-1",
+      "Project": "inspector-foundations-r3",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r3_document-derived",
+        "inspector-foundations-r3_document-originals",
+        "inspector-foundations-r3_document-quarantine"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "68dba76a509a5a26ab46f03d630fcc04658036e63dbdaf9a7b7af8fc3798ac8c",
+      "Name": "inspector-foundations-r3-worker-1",
+      "Project": "inspector-foundations-r3",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r3_document-quarantine",
+        "inspector-foundations-r3_document-originals"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "ca32bf82086e32716bdfcff61c966a18efdba34ccaf3631667b422493d7da378",
+      "Name": "inspector-foundations-r3-migrate-1",
+      "Project": "inspector-foundations-r3",
+      "State": "exited",
+      "Volumes": [],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "5965cf02fb463cbbb53b99dab13bf20bf1e132be6969ebf0e8f6a72822708e85",
+      "Name": "inspector-foundations-r3-parser-1",
+      "Project": "inspector-foundations-r3",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r3_document-derived",
+        "inspector-foundations-r3_document-originals",
+        "inspector-foundations-r3_parser-models"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "543ea6052bb33c70071520e64b44652cda704a959de12c629a4dad98a0651f3e",
+      "Name": "inspector-foundations-r3-clamav-1",
+      "Project": "inspector-foundations-r3",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r3_clamav-data"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "beb291cb7f45b0eca685b316a82f311a9e1dc9c490e08b2ea99c84e94bc23d39",
+      "Name": "inspector-foundations-r3-rabbitmq-1",
+      "Project": "inspector-foundations-r3",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r3_rabbitmq-data"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "4dd10d11b581310b6a23941d47c0669d0c1b1c9d328fa3701de53546134b2cc4",
+      "Name": "inspector-foundations-r3-postgres-1",
+      "Project": "inspector-foundations-r3",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r3_postgres-data"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "83928c9f5f83c2e5118ddf5ee4832441a37af4d5caa2d8e934604753ffddc8ca",
+      "Name": "inspector-foundations-r3-redis-1",
+      "Project": "inspector-foundations-r3",
+      "State": "exited",
+      "Volumes": [
+        "83378f8f726f6d976ce25c7e9dd930ed333979231244d532b3756677bccc00a8"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "e460c55a42f0dbe71d16307c6ee76a4b91cabf59f0b635611d96e57834501a96",
+      "Name": "inspector-foundations-r3-asset-restore-1",
+      "Project": "inspector-foundations-r3",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r3_clamav-data",
+        "inspector-foundations-r3_parser-models"
+      ],
+      "PreservedBindSources": [
+        "D:\\Projects\\plcb-ds-hach-mik\\inspector-ai\\.test-output\\offline\\foundations-20260927-r3\\assets",
+        "D:\\Projects\\plcb-ds-hach-mik\\inspector-ai\\.test-output\\offline\\foundations-20260927-r3\\tools"
+      ]
+    },
+    {
+      "Id": "f202f56bed6bc7e97d4676745313feea2a956b0fc824c112030fe04160dde37d",
+      "Name": "inspector-foundations-r3-validator-1",
+      "Project": "inspector-foundations-r3",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r3_document-quarantine"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "2bd0eb12f806d6bc9632f3cb5c37e2a4ddf65351ad7c2795c44f8df1fda77ac2",
+      "Name": "inspector-foundations-r2-frontend-1",
+      "Project": "inspector-foundations-r2",
+      "State": "created",
+      "Volumes": [],
+      "PreservedBindSources": [
+        "D:\\Projects\\plcb-ds-hach-mik\\inspector-ai\\.test-output\\offline\\foundations-20260927-r2\\nginx.conf"
+      ]
+    },
+    {
+      "Id": "c484b0c70952f79df809cf4fb283301a706f69753e5ed3e53088495167869cbb",
+      "Name": "inspector-foundations-r2-backend-1",
+      "Project": "inspector-foundations-r2",
+      "State": "created",
+      "Volumes": [
+        "inspector-foundations-r2_document-derived",
+        "inspector-foundations-r2_document-originals",
+        "inspector-foundations-r2_document-quarantine"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "0d3010cf999ed9c09c0e4265ffc8fbc58132628ee56843a01c3a8a24ed70d22f",
+      "Name": "inspector-foundations-r2-extraction-worker-1",
+      "Project": "inspector-foundations-r2",
+      "State": "created",
+      "Volumes": [
+        "inspector-foundations-r2_document-derived",
+        "inspector-foundations-r2_document-originals"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "3aba7b22ad1ffa4c55815568014df10635f6302b4e219ef483713e8e80626aa1",
+      "Name": "inspector-foundations-r2-classification-worker-1",
+      "Project": "inspector-foundations-r2",
+      "State": "created",
+      "Volumes": [
+        "inspector-foundations-r2_document-derived",
+        "inspector-foundations-r2_document-originals"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "4c9da7c1ec4dbfcc29ab584be631f5f7d5d318b3793c43e0e831fe73f0abdf48",
+      "Name": "inspector-foundations-r2-parsing-worker-1",
+      "Project": "inspector-foundations-r2",
+      "State": "created",
+      "Volumes": [
+        "inspector-foundations-r2_document-derived",
+        "inspector-foundations-r2_document-originals"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "d88ba96b0e3865690807e8f8285ac6662fa91da469815419b85817bafdbeb28c",
+      "Name": "inspector-foundations-r2-worker-1",
+      "Project": "inspector-foundations-r2",
+      "State": "created",
+      "Volumes": [
+        "inspector-foundations-r2_document-originals",
+        "inspector-foundations-r2_document-quarantine"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "75eff2dc2bf0c8c0c66333a5786662d8c9f4f0cdf18ed88d7b43f728130dd75b",
+      "Name": "inspector-foundations-r2-migrate-1",
+      "Project": "inspector-foundations-r2",
+      "State": "exited",
+      "Volumes": [],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "f9f39d8b9086fe6ed81ac56ad6136139e01d916e88b0b43365efb57a27a86645",
+      "Name": "inspector-foundations-r2-parser-1",
+      "Project": "inspector-foundations-r2",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r2_document-originals",
+        "inspector-foundations-r2_parser-models",
+        "inspector-foundations-r2_document-derived"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "6218512b321ecb0e3e4dea2e8697048a978d4814716e580d7476c840bca17fe1",
+      "Name": "inspector-foundations-r2-clamav-1",
+      "Project": "inspector-foundations-r2",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r2_clamav-data"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "bd90fa2fa50335b091c3225e7b9c87a7a2bc81bbcb1f959c9c441b3038a1c262",
+      "Name": "inspector-foundations-r2-rabbitmq-1",
+      "Project": "inspector-foundations-r2",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r2_rabbitmq-data"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "14a6aa036b281fd7c21329fc1b1fdd59b840a9de74c8addc4a936fc48308228f",
+      "Name": "inspector-foundations-r2-postgres-1",
+      "Project": "inspector-foundations-r2",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r2_postgres-data"],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "3b1967405137fc4cc3fe06d71d292824562394503d23ab2d400994d59c1e95e8",
+      "Name": "inspector-foundations-r2-redis-1",
+      "Project": "inspector-foundations-r2",
+      "State": "exited",
+      "Volumes": [
+        "4cc523a496dcf7c6322f28ce1a83fa610598dfbbeaafbb88ec652b9973a54619"
+      ],
+      "PreservedBindSources": []
+    },
+    {
+      "Id": "e51f2ba53b68fed72ee2b2db80c5b93ea00c57132a93cf763c4bf9cdcd40345f",
+      "Name": "inspector-foundations-r2-asset-restore-1",
+      "Project": "inspector-foundations-r2",
+      "State": "exited",
+      "Volumes": [
+        "inspector-foundations-r2_clamav-data",
+        "inspector-foundations-r2_parser-models"
+      ],
+      "PreservedBindSources": [
+        "D:\\Projects\\plcb-ds-hach-mik\\inspector-ai\\.test-output\\offline\\foundations-20260927-r2\\assets",
+        "D:\\Projects\\plcb-ds-hach-mik\\inspector-ai\\.test-output\\offline\\foundations-20260927-r2\\tools"
+      ]
+    },
+    {
+      "Id": "8e0a15ac8c7ed84006e0cabe1fb39579d40207a04ce79a5d0b7b4a95dcc11e77",
+      "Name": "inspector-foundations-r2-validator-1",
+      "Project": "inspector-foundations-r2",
+      "State": "exited",
+      "Volumes": ["inspector-foundations-r2_document-quarantine"],
+      "PreservedBindSources": []
+    }
+  ],
+  "volumes": [
+    {
+      "Name": "05c410d7262e061872a618682c72c2ab26116903eea56415572a4076979fecb3",
+      "ProjectLabel": null,
+      "ReferencedBy": ["inspector-foundations-r5-redis-1"],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "4cc523a496dcf7c6322f28ce1a83fa610598dfbbeaafbb88ec652b9973a54619",
+      "ProjectLabel": null,
+      "ReferencedBy": ["inspector-foundations-r2-redis-1"],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "50827055c1beb040877812e0eeab82357209192a592a246d0260e71c6f79f728",
+      "ProjectLabel": null,
+      "ReferencedBy": ["inspector-foundations-r4-redis-1"],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "83378f8f726f6d976ce25c7e9dd930ed333979231244d532b3756677bccc00a8",
+      "ProjectLabel": null,
+      "ReferencedBy": ["inspector-foundations-r3-redis-1"],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "9f0f35010bc83312c746f08d0551b300642898544d0a2c20a12a4bb8e7d54ed0",
+      "ProjectLabel": null,
+      "ReferencedBy": ["inspector-foundations-r6-redis-1"],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r2_clamav-data",
+      "ProjectLabel": "inspector-foundations-r2",
+      "ReferencedBy": [
+        "inspector-foundations-r2-clamav-1",
+        "inspector-foundations-r2-asset-restore-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r2_document-derived",
+      "ProjectLabel": "inspector-foundations-r2",
+      "ReferencedBy": [
+        "inspector-foundations-r2-backend-1",
+        "inspector-foundations-r2-extraction-worker-1",
+        "inspector-foundations-r2-classification-worker-1",
+        "inspector-foundations-r2-parsing-worker-1",
+        "inspector-foundations-r2-parser-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r2_document-originals",
+      "ProjectLabel": "inspector-foundations-r2",
+      "ReferencedBy": [
+        "inspector-foundations-r2-backend-1",
+        "inspector-foundations-r2-extraction-worker-1",
+        "inspector-foundations-r2-classification-worker-1",
+        "inspector-foundations-r2-parsing-worker-1",
+        "inspector-foundations-r2-worker-1",
+        "inspector-foundations-r2-parser-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r2_document-quarantine",
+      "ProjectLabel": "inspector-foundations-r2",
+      "ReferencedBy": [
+        "inspector-foundations-r2-backend-1",
+        "inspector-foundations-r2-worker-1",
+        "inspector-foundations-r2-validator-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r2_parser-models",
+      "ProjectLabel": "inspector-foundations-r2",
+      "ReferencedBy": [
+        "inspector-foundations-r2-parser-1",
+        "inspector-foundations-r2-asset-restore-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r2_postgres-data",
+      "ProjectLabel": "inspector-foundations-r2",
+      "ReferencedBy": ["inspector-foundations-r2-postgres-1"],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r2_rabbitmq-data",
+      "ProjectLabel": "inspector-foundations-r2",
+      "ReferencedBy": ["inspector-foundations-r2-rabbitmq-1"],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r3_clamav-data",
+      "ProjectLabel": "inspector-foundations-r3",
+      "ReferencedBy": [
+        "inspector-foundations-r3-clamav-1",
+        "inspector-foundations-r3-asset-restore-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r3_document-derived",
+      "ProjectLabel": "inspector-foundations-r3",
+      "ReferencedBy": [
+        "inspector-foundations-r3-classification-worker-1",
+        "inspector-foundations-r3-parsing-worker-1",
+        "inspector-foundations-r3-extraction-worker-1",
+        "inspector-foundations-r3-backend-1",
+        "inspector-foundations-r3-parser-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r3_document-originals",
+      "ProjectLabel": "inspector-foundations-r3",
+      "ReferencedBy": [
+        "inspector-foundations-r3-classification-worker-1",
+        "inspector-foundations-r3-parsing-worker-1",
+        "inspector-foundations-r3-extraction-worker-1",
+        "inspector-foundations-r3-backend-1",
+        "inspector-foundations-r3-worker-1",
+        "inspector-foundations-r3-parser-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r3_document-quarantine",
+      "ProjectLabel": "inspector-foundations-r3",
+      "ReferencedBy": [
+        "inspector-foundations-r3-backend-1",
+        "inspector-foundations-r3-worker-1",
+        "inspector-foundations-r3-validator-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r3_parser-models",
+      "ProjectLabel": "inspector-foundations-r3",
+      "ReferencedBy": [
+        "inspector-foundations-r3-parser-1",
+        "inspector-foundations-r3-asset-restore-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r3_postgres-data",
+      "ProjectLabel": "inspector-foundations-r3",
+      "ReferencedBy": ["inspector-foundations-r3-postgres-1"],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r3_rabbitmq-data",
+      "ProjectLabel": "inspector-foundations-r3",
+      "ReferencedBy": ["inspector-foundations-r3-rabbitmq-1"],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r4_clamav-data",
+      "ProjectLabel": "inspector-foundations-r4",
+      "ReferencedBy": [
+        "inspector-foundations-r4-clamav-1",
+        "inspector-foundations-r4-asset-restore-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r4_document-derived",
+      "ProjectLabel": "inspector-foundations-r4",
+      "ReferencedBy": [
+        "inspector-foundations-r4-classification-worker-1",
+        "inspector-foundations-r4-backend-1",
+        "inspector-foundations-r4-extraction-worker-1",
+        "inspector-foundations-r4-parsing-worker-1",
+        "inspector-foundations-r4-parser-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r4_document-originals",
+      "ProjectLabel": "inspector-foundations-r4",
+      "ReferencedBy": [
+        "inspector-foundations-r4-classification-worker-1",
+        "inspector-foundations-r4-backend-1",
+        "inspector-foundations-r4-extraction-worker-1",
+        "inspector-foundations-r4-parsing-worker-1",
+        "inspector-foundations-r4-worker-1",
+        "inspector-foundations-r4-parser-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r4_document-quarantine",
+      "ProjectLabel": "inspector-foundations-r4",
+      "ReferencedBy": [
+        "inspector-foundations-r4-backend-1",
+        "inspector-foundations-r4-worker-1",
+        "inspector-foundations-r4-validator-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r4_parser-models",
+      "ProjectLabel": "inspector-foundations-r4",
+      "ReferencedBy": [
+        "inspector-foundations-r4-parser-1",
+        "inspector-foundations-r4-asset-restore-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r4_postgres-data",
+      "ProjectLabel": "inspector-foundations-r4",
+      "ReferencedBy": ["inspector-foundations-r4-postgres-1"],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r4_rabbitmq-data",
+      "ProjectLabel": "inspector-foundations-r4",
+      "ReferencedBy": ["inspector-foundations-r4-rabbitmq-1"],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r5_clamav-data",
+      "ProjectLabel": "inspector-foundations-r5",
+      "ReferencedBy": [
+        "inspector-foundations-r5-clamav-1",
+        "inspector-foundations-r5-asset-restore-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r5_document-derived",
+      "ProjectLabel": "inspector-foundations-r5",
+      "ReferencedBy": [
+        "inspector-foundations-r5-classification-worker-1",
+        "inspector-foundations-r5-extraction-worker-1",
+        "inspector-foundations-r5-backend-1",
+        "inspector-foundations-r5-parsing-worker-1",
+        "inspector-foundations-r5-parser-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r5_document-originals",
+      "ProjectLabel": "inspector-foundations-r5",
+      "ReferencedBy": [
+        "inspector-foundations-r5-worker-1",
+        "inspector-foundations-r5-classification-worker-1",
+        "inspector-foundations-r5-extraction-worker-1",
+        "inspector-foundations-r5-backend-1",
+        "inspector-foundations-r5-parsing-worker-1",
+        "inspector-foundations-r5-parser-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r5_document-quarantine",
+      "ProjectLabel": "inspector-foundations-r5",
+      "ReferencedBy": [
+        "inspector-foundations-r5-worker-1",
+        "inspector-foundations-r5-backend-1",
+        "inspector-foundations-r5-validator-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r5_parser-models",
+      "ProjectLabel": "inspector-foundations-r5",
+      "ReferencedBy": [
+        "inspector-foundations-r5-parser-1",
+        "inspector-foundations-r5-asset-restore-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r5_postgres-data",
+      "ProjectLabel": "inspector-foundations-r5",
+      "ReferencedBy": ["inspector-foundations-r5-postgres-1"],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r5_rabbitmq-data",
+      "ProjectLabel": "inspector-foundations-r5",
+      "ReferencedBy": ["inspector-foundations-r5-rabbitmq-1"],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r6_clamav-data",
+      "ProjectLabel": "inspector-foundations-r6",
+      "ReferencedBy": [
+        "inspector-foundations-r6-clamav-1",
+        "inspector-foundations-r6-asset-restore-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r6_document-derived",
+      "ProjectLabel": "inspector-foundations-r6",
+      "ReferencedBy": [
+        "inspector-foundations-r6-extraction-worker-1",
+        "inspector-foundations-r6-backend-1",
+        "inspector-foundations-r6-parsing-worker-1",
+        "inspector-foundations-r6-classification-worker-1",
+        "inspector-foundations-r6-parser-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r6_document-originals",
+      "ProjectLabel": "inspector-foundations-r6",
+      "ReferencedBy": [
+        "inspector-foundations-r6-extraction-worker-1",
+        "inspector-foundations-r6-backend-1",
+        "inspector-foundations-r6-parsing-worker-1",
+        "inspector-foundations-r6-classification-worker-1",
+        "inspector-foundations-r6-worker-1",
+        "inspector-foundations-r6-parser-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r6_document-quarantine",
+      "ProjectLabel": "inspector-foundations-r6",
+      "ReferencedBy": [
+        "inspector-foundations-r6-backend-1",
+        "inspector-foundations-r6-worker-1",
+        "inspector-foundations-r6-validator-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r6_parser-models",
+      "ProjectLabel": "inspector-foundations-r6",
+      "ReferencedBy": [
+        "inspector-foundations-r6-parser-1",
+        "inspector-foundations-r6-asset-restore-1"
+      ],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r6_postgres-data",
+      "ProjectLabel": "inspector-foundations-r6",
+      "ReferencedBy": ["inspector-foundations-r6-postgres-1"],
+      "Driver": "local",
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r6_rabbitmq-data",
+      "ProjectLabel": "inspector-foundations-r6",
+      "ReferencedBy": ["inspector-foundations-r6-rabbitmq-1"],
+      "Driver": "local",
+      "Exclusive": true
+    }
+  ],
+  "networks": [
+    {
+      "Name": "inspector-foundations-r2_offline",
+      "Project": "inspector-foundations-r2",
+      "ReferencedBy": [
+        "inspector-foundations-r2-frontend-1",
+        "inspector-foundations-r2-backend-1",
+        "inspector-foundations-r2-extraction-worker-1",
+        "inspector-foundations-r2-classification-worker-1",
+        "inspector-foundations-r2-parsing-worker-1",
+        "inspector-foundations-r2-worker-1",
+        "inspector-foundations-r2-migrate-1",
+        "inspector-foundations-r2-parser-1",
+        "inspector-foundations-r2-clamav-1",
+        "inspector-foundations-r2-rabbitmq-1",
+        "inspector-foundations-r2-postgres-1",
+        "inspector-foundations-r2-redis-1",
+        "inspector-foundations-r2-asset-restore-1",
+        "inspector-foundations-r2-validator-1"
+      ],
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r3_offline",
+      "Project": "inspector-foundations-r3",
+      "ReferencedBy": [
+        "inspector-foundations-r3-frontend-1",
+        "inspector-foundations-r3-classification-worker-1",
+        "inspector-foundations-r3-parsing-worker-1",
+        "inspector-foundations-r3-extraction-worker-1",
+        "inspector-foundations-r3-backend-1",
+        "inspector-foundations-r3-worker-1",
+        "inspector-foundations-r3-migrate-1",
+        "inspector-foundations-r3-parser-1",
+        "inspector-foundations-r3-clamav-1",
+        "inspector-foundations-r3-rabbitmq-1",
+        "inspector-foundations-r3-postgres-1",
+        "inspector-foundations-r3-redis-1",
+        "inspector-foundations-r3-asset-restore-1",
+        "inspector-foundations-r3-validator-1"
+      ],
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r4_offline",
+      "Project": "inspector-foundations-r4",
+      "ReferencedBy": [
+        "inspector-foundations-r4-frontend-1",
+        "inspector-foundations-r4-classification-worker-1",
+        "inspector-foundations-r4-backend-1",
+        "inspector-foundations-r4-extraction-worker-1",
+        "inspector-foundations-r4-parsing-worker-1",
+        "inspector-foundations-r4-worker-1",
+        "inspector-foundations-r4-migrate-1",
+        "inspector-foundations-r4-clamav-1",
+        "inspector-foundations-r4-parser-1",
+        "inspector-foundations-r4-redis-1",
+        "inspector-foundations-r4-postgres-1",
+        "inspector-foundations-r4-rabbitmq-1",
+        "inspector-foundations-r4-validator-1",
+        "inspector-foundations-r4-asset-restore-1"
+      ],
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r5_offline",
+      "Project": "inspector-foundations-r5",
+      "ReferencedBy": [
+        "inspector-foundations-r5-frontend-1",
+        "inspector-foundations-r5-worker-1",
+        "inspector-foundations-r5-classification-worker-1",
+        "inspector-foundations-r5-extraction-worker-1",
+        "inspector-foundations-r5-backend-1",
+        "inspector-foundations-r5-parsing-worker-1",
+        "inspector-foundations-r5-migrate-1",
+        "inspector-foundations-r5-parser-1",
+        "inspector-foundations-r5-clamav-1",
+        "inspector-foundations-r5-rabbitmq-1",
+        "inspector-foundations-r5-postgres-1",
+        "inspector-foundations-r5-redis-1",
+        "inspector-foundations-r5-asset-restore-1",
+        "inspector-foundations-r5-validator-1"
+      ],
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r6_ingress",
+      "Project": "inspector-foundations-r6",
+      "ReferencedBy": ["inspector-foundations-r6-frontend-1"],
+      "Exclusive": true
+    },
+    {
+      "Name": "inspector-foundations-r6_offline",
+      "Project": "inspector-foundations-r6",
+      "ReferencedBy": [
+        "inspector-foundations-r6-frontend-1",
+        "inspector-foundations-r6-extraction-worker-1",
+        "inspector-foundations-r6-backend-1",
+        "inspector-foundations-r6-parsing-worker-1",
+        "inspector-foundations-r6-classification-worker-1",
+        "inspector-foundations-r6-worker-1",
+        "inspector-foundations-r6-migrate-1",
+        "inspector-foundations-r6-parser-1",
+        "inspector-foundations-r6-clamav-1",
+        "inspector-foundations-r6-rabbitmq-1",
+        "inspector-foundations-r6-postgres-1",
+        "inspector-foundations-r6-redis-1",
+        "inspector-foundations-r6-asset-restore-1",
+        "inspector-foundations-r6-validator-1"
+      ],
+      "Exclusive": true
+    }
+  ],
+  "reclaimed_bytes": null,
+  "bytes_note": "Docker rm/volume rm do not report reclaimed bytes; no size claim made.",
+  "preserved": "All images, archive/bind files, DinD, r7/r8 and inspector-ai resources; no prune.",
+  "approval_review": {
+    "decision": "rejected",
+    "reason": "Irreversible removal of 70 containers and 40 volumes containing database/document storage requires explicit user authorization to destroy stored data, despite scoped test-project inventory.",
+    "executed": false,
+    "removed_containers": 0,
+    "removed_volumes": 0,
+    "removed_networks": 0,
+    "needs": "Explicit user authorization to delete stored data in inspector-foundations-r2, r3, r4, r5 and r6."
+  }
+}
